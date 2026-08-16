@@ -18,9 +18,13 @@ export function renderHomePage({ escapeHtml }) {
       <h1 id="home-title">GOAT LOCAL LAB</h1>
     </div>
     <div class="sprite-carousel-shell">
-      <button type="button" class="carousel-nav carousel-prev" id="btn-prev" aria-label="Anterior"></button>
+      <button type="button" class="carousel-nav carousel-prev" id="btn-prev" aria-label="Anterior">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ffd98c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
       <div class="sprite-carousel" role="listbox" aria-label="Modos de juego">${items}</div>
-      <button type="button" class="carousel-nav carousel-next" id="btn-next" aria-label="Siguiente"></button>
+      <button type="button" class="carousel-nav carousel-next" id="btn-next" aria-label="Siguiente">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ffd98c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
       <div class="sprite-menu-info" aria-live="polite">
         <span class="selected-mode-kicker">SELECCIÓN ACTUAL</span>
         <h2 id="sprite-menu-title">JUGAR</h2>

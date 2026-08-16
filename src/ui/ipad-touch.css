@@ -152,19 +152,35 @@ button:active,
    Duel Layout & Board Optimization for iPad 10 Aspect Ratio (~1.44:1)
    -------------------------------------------------------------------------- */
 .ipad-edition .duel-active main {
-  padding: 4px 10px calc(6px + var(--sab)) 10px;
+  padding: 2px 8px calc(4px + var(--sab)) 8px;
+  height: 100dvh;
+  box-sizing: border-box;
 }
 
 .ipad-edition .duel-page {
-  gap: 4px;
+  gap: 2px;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ipad-edition .duel-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  height: calc(100% - 44px);
 }
 
 .ipad-edition .table-frame {
-  padding: 6px 64px 6px 8px;
-  border-radius: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  padding: 4px 62px 2px 6px;
+  border-radius: 12px;
   border: 2px solid rgba(244, 189, 88, 0.6);
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.85), 0 16px 36px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
 }
 
 .ipad-edition .duel-pillar {
@@ -175,32 +191,133 @@ button:active,
 .ipad-edition .pillar-left { left: 4px; }
 .ipad-edition .pillar-right { right: 4px; }
 
+/* Stretched Duel Board Vertically to fill iPad Canvas */
+.ipad-edition .duel-active .duel-board {
+  display: grid !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  grid-template-rows: 34px 26px minmax(130px, 1.4fr) 26px minmax(130px, 1.4fr) 26px 74px !important;
+  gap: 2px !important;
+  align-content: stretch !important;
+}
+
+/* Opponent Hand & Meta Row aligned at top reference line */
+.ipad-edition .opponent-hand {
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  align-items: flex-start !important;
+}
+
+.ipad-edition .opponent-hand .card {
+  height: 32px !important;
+  width: auto !important;
+  aspect-ratio: var(--goat-card-aspect);
+}
+
+.ipad-edition .opponent-row.is-opponent {
+  min-height: 26px !important;
+  height: 26px !important;
+  margin-top: 0 !important;
+  padding: 2px 8px !important;
+}
+
+/* Duelling Fields stretched vertically */
+.ipad-edition .duelist-field {
+  display: grid !important;
+  grid-template-columns: 80px 1fr 80px !important;
+  gap: 4px !important;
+  min-height: 130px !important;
+  align-items: stretch !important;
+}
+
+.ipad-edition .field-zone-row {
+  display: grid !important;
+  grid-template-rows: auto 1fr !important;
+  height: 100% !important;
+  min-height: 60px !important;
+}
+
+.ipad-edition .zone-slots {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 4px !important;
+  height: 100% !important;
+  min-height: 58px !important;
+  align-items: center !important;
+}
+
+.ipad-edition .field-zone-row .zone-slots > .board-card-wrap,
+.ipad-edition .field-zone-row .zone-backrow > .board-card-wrap {
+  width: auto !important;
+  height: min(100%, 78px) !important;
+  aspect-ratio: var(--goat-card-aspect) !important;
+}
+
+.ipad-edition .field-zone-slot > .board-card-wrap {
+  width: auto !important;
+  height: min(100%, 72px) !important;
+  aspect-ratio: var(--goat-card-aspect) !important;
+}
+
+/* Center Mid Ribbon */
+.ipad-edition .duel-active .duel-mid {
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+}
+
+/* Player Meta Row aligned at bottom reference line */
+.ipad-edition .player-bottom.is-player {
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 2px 8px !important;
+  margin-bottom: 0 !important;
+}
+
 /* --------------------------------------------------------------------------
-   Hand Cards & Board Cards Touch Interactions
+   Hand Cards & Board Cards Touch Interactions (Strict Top Limit)
    -------------------------------------------------------------------------- */
 .ipad-edition .player-hand {
-  padding-bottom: calc(4px + var(--sab));
-  min-height: 80px;
+  min-height: 72px !important;
+  max-height: 74px !important;
+  height: 74px !important;
+  padding: 0 0 2px 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  align-items: flex-end !important;
+  z-index: 40 !important;
 }
 
-.ipad-edition .hand-strip .card {
-  min-width: 54px;
+.ipad-edition .player-hand .hand-strip,
+.ipad-edition .player-hand.hand-strip {
+  height: 100% !important;
+  align-items: flex-end !important;
+}
+
+.ipad-edition .player-hand .card {
+  height: 70px !important;
+  max-height: 70px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  aspect-ratio: var(--goat-card-aspect) !important;
+  border-radius: 4px !important;
   touch-action: manipulation;
   cursor: pointer;
-  border-radius: 4px;
-  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.25, 1), box-shadow 0.15s ease;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.25, 1), box-shadow 0.15s ease !important;
 }
 
-.ipad-edition .hand-strip .card:active {
-  transform: translateY(-12px) scale(1.1);
-  box-shadow: 0 8px 24px rgba(244, 189, 88, 0.7);
-  z-index: 50;
+.ipad-edition .player-hand .card:active {
+  transform: translateY(-8px) scale(1.08) !important;
+  box-shadow: 0 8px 20px rgba(244, 189, 88, 0.75) !important;
+  z-index: 50 !important;
 }
 
 /* Long-press holding visual cue */
 .ipad-edition .card.touch-holding {
   box-shadow: 0 0 20px 6px rgba(244, 189, 88, 0.95) !important;
-  transform: scale(1.12) translateY(-8px) !important;
+  transform: scale(1.1) translateY(-6px) !important;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
   z-index: 100;
 }
