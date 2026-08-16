@@ -1,5 +1,5 @@
 /* ==========================================================================
-   iPad 10 Touch-First Styles & Safe Area Adaptations
+   iPad 10 Touch-First Styles, Safe Areas, Smooth Momentum Scroll & Remastering
    Optimized for iPadOS (WebKit Safari / Standalone PWA) 2360x1640 (~1.44:1)
    ========================================================================== */
 
@@ -9,32 +9,67 @@
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
 
-  --ipad-touch-min: 44px;
-  --ipad-touch-pad: 8px;
-  --ipad-radius: 10px;
+  --ipad-touch-min: 46px;
+  --ipad-touch-pad: 10px;
+  --ipad-radius: 12px;
+  --ipad-gold: #f4bd58;
+  --ipad-gold-bright: #ffd98c;
+  --ipad-cyan: #55d6d2;
+  --ipad-surface: rgba(8, 15, 23, 0.96);
 }
 
-/* Global iPad viewport & touch constraints */
+/* --------------------------------------------------------------------------
+   Global iPad Viewport & Smooth Momentum Scrolling
+   -------------------------------------------------------------------------- */
 html, body.ipad-edition {
   width: 100vw;
-  height: 100dvh;
   min-height: 100dvh;
-  max-height: 100dvh;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  overscroll-behavior: none;
-  -webkit-overscroll-behavior: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  background-color: #060b10;
+}
+
+/* Custom iPad touch scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(5, 12, 19, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(244, 189, 88, 0.35);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  background: rgba(244, 189, 88, 0.7);
+}
+
+/* During an active duel, lock viewport so the arena stays fixed in place */
+html.duel-active,
+body.ipad-edition.duel-active,
+.duel-active #app {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  -webkit-overscroll-behavior: none !important;
 }
 
 #app {
   width: 100%;
-  height: 100%;
+  min-height: 100dvh;
   padding-top: var(--sat);
   padding-bottom: var(--sab);
   padding-left: var(--sal);
@@ -49,7 +84,7 @@ input, select, textarea {
 }
 
 /* --------------------------------------------------------------------------
-   Tactile Feedback on Tap/Touch (:active states)
+   Tactile Touch Feedback (:active states & haptic response)
    -------------------------------------------------------------------------- */
 button,
 .card-popover-action,
@@ -58,7 +93,10 @@ button,
 .builder-card-tile,
 .deck-preset,
 .section-tab,
-.menu-card {
+.menu-card,
+.mode-card,
+.primary-button,
+.ghost-button {
   touch-action: manipulation;
   -webkit-touch-callout: none;
 }
@@ -66,17 +104,55 @@ button,
 button:active,
 .card-popover-action:active,
 .phase-command:active,
-.response-option:active {
+.response-option:active,
+.menu-card:active,
+.mode-card:active {
   transform: scale(0.96) !important;
-  filter: brightness(1.22);
+  filter: brightness(1.25);
   transition: transform 60ms ease-out;
 }
 
 /* --------------------------------------------------------------------------
-   Duel Layout & Board Optimization for iPad 10 Aspect Ratio
+   Duel Topbar & Header Remaster for iPad
+   -------------------------------------------------------------------------- */
+.ipad-edition .duel-compact-head {
+  min-height: 48px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(13, 28, 37, 0.98), rgba(5, 12, 19, 0.99));
+  border: 1px solid rgba(244, 189, 88, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ipad-edition .duel-mark {
+  width: 38px;
+  height: 34px;
+  font-size: 11px;
+}
+
+.ipad-edition .duel-title-lockup strong {
+  font-size: 13px;
+  color: #fff;
+}
+
+.ipad-edition .duel-live-status {
+  padding: 6px 12px;
+}
+
+.ipad-edition .duel-menu-toggle {
+  width: 42px;
+  height: 42px;
+  font-size: 18px;
+  border: 1.5px solid rgba(244, 189, 88, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   Duel Layout & Board Optimization for iPad 10 Aspect Ratio (~1.44:1)
    -------------------------------------------------------------------------- */
 .ipad-edition .duel-active main {
-  padding: 4px 8px calc(4px + var(--sab)) 8px;
+  padding: 4px 10px calc(6px + var(--sab)) 10px;
 }
 
 .ipad-edition .duel-page {
@@ -85,168 +161,390 @@ button:active,
 }
 
 .ipad-edition .table-frame {
-  padding: 4px 60px 4px 6px;
+  padding: 6px 64px 6px 8px;
   border-radius: 14px;
+  border: 2px solid rgba(244, 189, 88, 0.6);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.85), 0 16px 36px rgba(0, 0, 0, 0.7);
 }
 
 .ipad-edition .duel-pillar {
-  width: 52px;
-  opacity: 0.85;
+  width: 56px;
+  opacity: 0.9;
 }
 
 .ipad-edition .pillar-left { left: 4px; }
 .ipad-edition .pillar-right { right: 4px; }
 
-/* Hand protection against Home Indicator */
+/* --------------------------------------------------------------------------
+   Hand Cards & Board Cards Touch Interactions
+   -------------------------------------------------------------------------- */
 .ipad-edition .player-hand {
   padding-bottom: calc(4px + var(--sab));
+  min-height: 80px;
 }
 
 .ipad-edition .hand-strip .card {
-  min-width: 48px;
+  min-width: 54px;
   touch-action: manipulation;
   cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.25, 1), box-shadow 0.15s ease;
 }
 
 .ipad-edition .hand-strip .card:active {
-  transform: translateY(-8px) scale(1.05);
+  transform: translateY(-12px) scale(1.1);
+  box-shadow: 0 8px 24px rgba(244, 189, 88, 0.7);
+  z-index: 50;
 }
 
-/* Long press cue on cards */
+/* Long-press holding visual cue */
 .ipad-edition .card.touch-holding {
-  box-shadow: 0 0 16px 4px rgba(244, 189, 88, 0.8) !important;
-  transform: scale(1.08) !important;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 0 20px 6px rgba(244, 189, 88, 0.95) !important;
+  transform: scale(1.12) translateY(-8px) !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  z-index: 100;
+}
+
+/* Card images rendering quality */
+.ipad-edition .card-image,
+.ipad-edition .card-back-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 3px;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* --------------------------------------------------------------------------
    Card Action Popover for Touch
    -------------------------------------------------------------------------- */
 .ipad-edition .card-action-popover {
-  z-index: 150;
-  min-width: 220px;
-  border: 1.5px solid var(--duel-gold);
+  z-index: 160;
+  min-width: 240px;
+  border: 2px solid var(--ipad-gold);
   border-radius: 12px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 15px rgba(244, 189, 88, 0.25);
-  background: rgba(8, 15, 23, 0.98);
+  background: linear-gradient(135deg, rgba(8, 15, 23, 0.98), rgba(15, 28, 40, 0.98));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 20px rgba(244, 189, 88, 0.3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .ipad-edition .card-action-popover header {
-  padding: 8px 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(244, 189, 88, 0.3);
+}
+
+.ipad-edition .card-action-popover header strong {
+  font-size: 14px;
+  color: #fff;
 }
 
 .ipad-edition .card-popover-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  gap: 6px;
-  padding: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  gap: 8px;
+  padding: 10px;
 }
 
 .ipad-edition .card-popover-action {
-  min-height: var(--ipad-touch-min);
-  padding: 8px 10px;
+  min-height: 48px;
+  padding: 10px 12px;
   border-radius: 8px;
   font-size: 13px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  background: linear-gradient(180deg, rgba(25, 45, 58, 0.9), rgba(14, 25, 34, 0.95));
+  border: 1px solid rgba(85, 214, 210, 0.4);
+  color: #edf6f5;
 }
 
 .ipad-edition .card-popover-action span {
   font-weight: 900;
-  font-size: 14px;
+  font-size: 15px;
+  color: var(--ipad-gold);
 }
 
 /* --------------------------------------------------------------------------
    Phase Rail & Duel Decision Bar Touch Targets
    -------------------------------------------------------------------------- */
 .ipad-edition .duel-phase-rail {
-  min-height: 44px;
+  min-height: 48px;
 }
 
 .ipad-edition .phase-command {
-  min-height: var(--ipad-touch-min);
-  padding: 8px 16px;
-  font-size: 14px;
-  border-radius: 8px;
-}
-
-.ipad-edition .duel-menu-toggle {
-  width: 40px;
-  height: 40px;
-  font-size: 16px;
+  min-height: 48px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #d7a94c, #9d6d1b);
+  color: #0c1118;
+  box-shadow: 0 4px 16px rgba(244, 189, 88, 0.4);
+  letter-spacing: 0.05em;
 }
 
 .ipad-edition .response-option {
-  min-height: 48px;
-  padding: 8px 14px;
-  font-size: 14px;
-  border-radius: 8px;
+  min-height: 52px;
+  padding: 10px 16px;
+  font-size: 15px;
+  border-radius: 10px;
+  border: 1.5px solid var(--ipad-gold);
+  background: rgba(14, 28, 38, 0.95);
 }
 
 /* --------------------------------------------------------------------------
-   Card Inspector & Modals on iPad
+   Card Inspector Modal on iPad (Full Screen & Readability)
    -------------------------------------------------------------------------- */
 .ipad-edition .duel-card-inspector {
-  max-width: 440px;
+  max-width: 480px;
   border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+  border: 2px solid var(--ipad-gold);
+  background: rgba(6, 12, 18, 0.98);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(244, 189, 88, 0.2);
+}
+
+.ipad-edition .duel-card-inspector header {
+  padding: 12px 16px;
+}
+
+.ipad-edition .duel-card-inspector header strong {
+  font-size: 16px;
+  color: #fff;
 }
 
 .ipad-edition .duel-card-inspector button[data-card-inspector-close] {
-  width: 40px;
-  height: 40px;
-  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+  border-radius: 8px;
 }
 
 .ipad-edition .inspector-art {
-  width: 140px;
+  width: 150px;
+}
+
+.ipad-edition .inspector-art .card {
+  width: 150px;
+  aspect-ratio: var(--goat-card-aspect);
 }
 
 .ipad-edition .inspector-copy p {
-  font-size: 13px;
-  line-height: 1.5;
-  max-height: 240px;
+  font-size: 14px;
+  line-height: 1.6;
+  max-height: 280px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  color: #d8e6e8;
 }
 
 /* --------------------------------------------------------------------------
-   Deck Builder Touch Improvements
+   Deck Builder Touch & Card Visual Redesign for iPad
    -------------------------------------------------------------------------- */
 .ipad-edition .builder-columns {
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 48% 52%;
+  gap: 14px;
+  align-items: start;
 }
 
 .ipad-edition .catalog-list,
-.ipad-edition .deck-card-list {
-  -webkit-overflow-scrolling: touch;
+.ipad-edition .deck-card-list,
+.ipad-edition .deck-library {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain;
+  max-height: calc(100dvh - 280px);
+  padding: 4px;
 }
 
+/* Rich Card Tiles in Deck Builder */
 .ipad-edition .builder-card-tile {
-  min-height: 52px;
-  padding: 6px 8px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-height: 74px !important;
+  padding: 6px 10px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(90deg, rgba(14, 25, 36, 0.95), rgba(8, 14, 22, 0.98)) !important;
+  border: 1px solid rgba(244, 189, 88, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  margin-bottom: 6px !important;
+}
+
+.ipad-edition .builder-card-tile.kind-monster {
+  border-left: 4px solid #d7a94c !important;
+}
+
+.ipad-edition .builder-card-tile.kind-spell {
+  border-left: 4px solid #1ba586 !important;
+}
+
+.ipad-edition .builder-card-tile.kind-trap {
+  border-left: 4px solid #b8336a !important;
+}
+
+.ipad-edition .builder-card-tile.kind-fusion {
+  border-left: 4px solid #9154b8 !important;
+}
+
+.ipad-edition .builder-card-visual {
+  width: 46px !important;
+  min-width: 46px !important;
+  height: 66px !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+  cursor: pointer !important;
+}
+
+.ipad-edition .builder-card-visual .card {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.ipad-edition .builder-card-visual .card-image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.ipad-edition .builder-card-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.ipad-edition .builder-card-name {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  cursor: pointer !important;
+}
+
+.ipad-edition .tile-stat-badge {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  display: inline-block !important;
+  width: fit-content !important;
+}
+
+.ipad-edition .monster-stat {
+  background: rgba(201, 136, 54, 0.25) !important;
+  color: #f4bd58 !important;
+  border: 1px solid rgba(201, 136, 54, 0.5) !important;
+}
+
+.ipad-edition .spell-stat {
+  background: rgba(27, 165, 134, 0.25) !important;
+  color: #55d6d2 !important;
+  border: 1px solid rgba(27, 165, 134, 0.5) !important;
+}
+
+.ipad-edition .trap-stat {
+  background: rgba(184, 51, 106, 0.25) !important;
+  color: #ff85b3 !important;
+  border: 1px solid rgba(184, 51, 106, 0.5) !important;
 }
 
 .ipad-edition .builder-card-add,
 .ipad-edition .builder-card-remove {
-  width: 38px;
-  height: 38px;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
 }
 
-/* Quick Filter chips in Deck Builder */
-.ipad-edition .builder-toolbar {
-  gap: 8px;
-  flex-wrap: wrap;
+.ipad-edition .builder-card-add {
+  background: rgba(85, 214, 210, 0.25) !important;
+  border: 1.5px solid var(--ipad-cyan) !important;
+  color: var(--ipad-cyan) !important;
 }
 
-.ipad-edition .builder-toolbar select,
-.ipad-edition .builder-toolbar input {
-  min-height: 40px;
+.ipad-edition .builder-card-remove {
+  background: rgba(240, 109, 120, 0.25) !important;
+  border: 1.5px solid #f06d78 !important;
+  color: #f06d78 !important;
+}
+
+.ipad-edition .zone-tabs {
+  display: flex !important;
+  gap: 6px !important;
+  margin-bottom: 8px !important;
+}
+
+.ipad-edition .zone-tab {
+  min-height: 44px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+}
+
+/* --------------------------------------------------------------------------
+   Menu Screens Polish & Momentum Scroll
+   -------------------------------------------------------------------------- */
+.ipad-edition .menu-page {
+  padding: 16px 24px calc(24px + var(--sab)) 24px;
+  overflow-y: visible;
+}
+
+.ipad-edition .mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.ipad-edition .mode-card {
+  min-height: 120px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(215, 169, 76, 0.4);
+  background: linear-gradient(180deg, rgba(14, 23, 33, 0.95), rgba(7, 12, 18, 0.98));
+}
+
+.ipad-edition .mode-card.selected {
+  border-color: var(--ipad-gold);
+  box-shadow: 0 0 20px rgba(244, 189, 88, 0.35);
+}
+
+.ipad-edition .play-config {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.ipad-edition .side-card {
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid rgba(215, 169, 76, 0.3);
+}
+
+.ipad-edition .primary-button {
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 10px;
+}
+
+.ipad-edition .ghost-button {
+  min-height: 44px;
+  font-size: 14px;
   border-radius: 8px;
 }

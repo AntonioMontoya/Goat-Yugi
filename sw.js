@@ -1,4 +1,4 @@
-const CACHE_NAME = "goat-ipad-pwa-v1";
+const CACHE_NAME = "goat-ipad-pwa-v2";
 
 const STATIC_ASSETS = [
   "./",

@@ -1,5 +1,5 @@
 # Yu-Gi-Oh! GOAT Format — Versión iPad 10 (PWA Táctil)
-.
+
 Esta carpeta contiene la adaptación completa de **GOAT Local Lab** para **iPad 10 (10.9" Liquid Retina)** y dispositivos táctiles iPadOS, configurada como una **Progressive Web App (PWA)** independiente y compatible con despliegue continuo mediante **GitHub Actions / GitHub Pages**.
 
 ---

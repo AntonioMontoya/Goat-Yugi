@@ -294,7 +294,7 @@ function cardImageFileName(name) {
   return `${cleaned || "unnamed-card"}.jpg`;
 }
 function cardImagePath(card) {
-  return `/goat-card-images/${encodeURIComponent(card?.imageFile ?? cardImageFileName(card?.name))}`;
+  return `../goat-card-images/${encodeURIComponent(card?.imageFile ?? cardImageFileName(card?.name))}`;
 }
 function statusPill(status) {
   const text = status === VALIDATION_STATUS.SUPPORTED ? "LISTO" : status === VALIDATION_STATUS.EXPERIMENTAL ? "EXPERIMENTAL" : status;
@@ -308,8 +308,8 @@ function cardMarkup(instance, { hidden = false, compact = false, motion = false,
     : Number(instance.location) === 4 || instance.zone === "MONSTER";
   const imageBacked = card?.kind !== CARD_KIND.TOKEN;
   const defense = monsterLike && (instance.defensePosition === true || instance.position === "DEFENSE");
-  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}"><img class="card-back-image" src="/goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /></div>`;
-  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="/goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
+  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}"><img class="card-back-image" src="../goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /></div>`;
+  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="../goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
   const fallback = `<div class="card-fallback"${imageBacked ? " hidden" : ""}>
     <div class="card-top"><span>${esc(monsterLike ? card.kind === CARD_KIND.TOKEN ? "TOKEN" : "MONSTER" : card.kind)}</span><span>${card.level ? `★${card.level}` : ""}</span></div>
     <div class="card-name">${esc(card.name)}</div>
@@ -803,8 +803,8 @@ function renderOcgcoreDuel(view = app.duel.view()) {
   return `<section class="page duel-page">
      ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, esc })}
      <div class="duel-layout"><div class="table-frame ${app.boardTilt ? "tilted" : ""} ${app.inspectedCard ? "has-inspector" : ""}">
-       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
-       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
+       <img src="../sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
+       <img src="../sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
        <div class="duel-board ${app.duelPresentation ? `feedback-${esc(app.duelPresentation.kind)} tier-${esc(app.duelPresentation.tier || "notable")}` : ""}">
          <div class="hand-strip opponent-hand">${playerHandMarkup(playerTwo, app.selectedCardUid, manual, userActions, affordanceInteraction)}</div>
          <div class="opponent-row player-row is-opponent"><div class="player-meta"><span class="avatar opponent-avatar">${manual ? "2" : esc(opponentName.slice(0, 1).toUpperCase())}</span><div><strong>${esc(playerName(playerTwo, manual))}</strong><small>${esc(playerTwoDeck.name)}</small></div>${lifePointMarkup(playerTwo)}</div><div class="hand-count">HAND <b>${playerTwo.handCount}</b><span class="deck-count">DECK ${playerTwo.deckCount}</span></div></div>

@@ -93,7 +93,7 @@ function cardImageFileName(name) {
 }
 
 function cardImagePath(card) {
-  return `/goat-card-images/${encodeURIComponent(card?.imageFile ?? cardImageFileName(card?.name))}`;
+  return `../goat-card-images/${encodeURIComponent(card?.imageFile ?? cardImageFileName(card?.name))}`;
 }
 
 function esc(value) {
