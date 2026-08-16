@@ -1,0 +1,847 @@
+/* ==========================================================================
+   Modo Prueba / Sandbox Scenario Editor Styles
+   ========================================================================== */
+.sandbox-page {
+  padding-bottom: 80px;
+}
+
+.sandbox-global-panel {
+  margin-bottom: 20px;
+  background: linear-gradient(150deg, rgba(17, 32, 41, 0.95), rgba(7, 14, 20, 0.98));
+}
+
+.sandbox-global-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+.sandbox-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sandbox-field > span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sandbox-field > strong { color: #f3d293; font: 800 12px var(--mono); }
+.sandbox-field > small { color: #77909a; font-size: 9px; line-height: 1.35; }
+
+.sandbox-field input,
+.sandbox-field select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgba(100, 216, 213, 0.28);
+  border-radius: 6px;
+  background: rgba(4, 10, 15, 0.88);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.sandbox-save-row {
+  display: flex;
+  gap: 8px;
+}
+
+.sandbox-save-row input {
+  flex: 1;
+}
+
+.sandbox-players-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.sandbox-player-card {
+  padding: 16px;
+  border-radius: 8px;
+  background: linear-gradient(160deg, rgba(14, 26, 34, 0.95), rgba(5, 11, 16, 0.98));
+  border: 1px solid rgba(100, 216, 213, 0.2);
+}
+
+.sandbox-player-card.player-0 {
+  border-top: 3px solid var(--cyan);
+}
+
+.sandbox-player-card.player-1 {
+  border-top: 3px solid #f3a25f;
+}
+
+.player-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(148, 180, 188, 0.16);
+}
+
+.player-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 12px;
+  background: rgba(100, 216, 213, 0.16);
+  color: var(--cyan);
+  border: 1px solid rgba(100, 216, 213, 0.4);
+}
+
+.player-1 .player-badge {
+  background: rgba(243, 162, 95, 0.16);
+  color: #f3a25f;
+  border-color: rgba(243, 162, 95, 0.4);
+}
+
+.player-title h3 {
+  margin: 0;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.player-lp-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-lp-field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.lp-input {
+  width: 90px;
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: var(--mono);
+  color: #ffd98c;
+  background: rgba(3, 7, 10, 0.9);
+  border: 1px solid rgba(255, 190, 79, 0.35);
+  border-radius: 4px;
+  text-align: right;
+}
+
+.quick-lp-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.mini-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid rgba(155, 192, 201, 0.22);
+  background: rgba(16, 32, 42, 0.8);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mini-btn:hover:not(:disabled) {
+  border-color: var(--cyan);
+  background: rgba(30, 65, 75, 0.9);
+  color: #fff;
+}
+
+.mini-btn.primary {
+  border-color: rgba(100, 216, 213, 0.5);
+  background: rgba(18, 55, 62, 0.9);
+  color: var(--cyan);
+}
+
+.mini-btn.primary:hover {
+  background: var(--cyan);
+  color: #041215;
+}
+
+.sandbox-zone-block {
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 6px;
+  background: rgba(8, 16, 23, 0.7);
+  border: 1px solid rgba(148, 180, 188, 0.1);
+}
+
+.zone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--dim);
+}
+
+.zone-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.sandbox-cards-strip {
+  display: flex;
+  gap: 8px;
+  min-height: 86px;
+  padding: 6px;
+  overflow-x: auto;
+  background: rgba(3, 7, 11, 0.5);
+  border-radius: 6px;
+  border: 1px dashed rgba(148, 180, 188, 0.18);
+  align-items: center;
+}
+
+.sandbox-cards-strip.mini-strip {
+  min-height: 60px;
+}
+
+.empty-strip-hint {
+  width: 100%;
+  padding: 14px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.strip-card-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 60px;
+  padding: 4px;
+  background: rgba(14, 27, 36, 0.9);
+  border: 1px solid rgba(100, 216, 213, 0.2);
+  border-radius: 4px;
+}
+
+.strip-thumb {
+  width: 100%;
+  aspect-ratio: var(--goat-card-aspect);
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.strip-name {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  font-size: 8px;
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strip-remove-btn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #c53929;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.strip-remove-btn:hover {
+  background: #e53935;
+  transform: scale(1.15);
+}
+
+.sandbox-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.sandbox-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 118px;
+  padding: 6px;
+  border-radius: 6px;
+  background: rgba(5, 12, 18, 0.85);
+  border: 1px dashed rgba(148, 180, 188, 0.24);
+  transition: all 0.15s ease;
+}
+
+.sandbox-slot.empty-slot {
+  cursor: pointer;
+}
+
+.sandbox-slot.empty-slot:hover {
+  border-color: var(--cyan);
+  background: rgba(10, 26, 35, 0.9);
+}
+
+.slot-num {
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--mono);
+  color: var(--dim);
+}
+
+.slot-add-btn {
+  margin: auto 0;
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--cyan);
+  cursor: pointer;
+}
+
+.sandbox-slot.filled-slot {
+  border-style: solid;
+  border-color: rgba(100, 216, 213, 0.4);
+  background: linear-gradient(150deg, rgba(16, 32, 42, 0.95), rgba(7, 15, 22, 0.98));
+}
+
+.sandbox-slot.pos-set {
+  border-color: rgba(243, 162, 95, 0.5);
+  background: linear-gradient(150deg, rgba(38, 22, 14, 0.95), rgba(15, 8, 5, 0.98));
+}
+
+.slot-card-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.slot-img {
+  width: 44px;
+  aspect-ratio: var(--goat-card-aspect);
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.slot-img.face-down {
+  filter: brightness(0.65) sepia(0.3);
+  transform: rotate(90deg);
+}
+
+.slot-card-name {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 8px;
+  font-weight: 700;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slot-pos-controls {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.pos-btn {
+  flex: 1;
+  padding: 3px 1px;
+  font-size: 8px;
+  font-weight: 700;
+  border: 1px solid rgba(148, 180, 188, 0.2);
+  border-radius: 3px;
+  background: rgba(8, 16, 22, 0.8);
+  color: var(--muted);
+  cursor: pointer;
+  text-align: center;
+}
+
+.pos-btn.active {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  color: #031014;
+}
+
+.slot-remove-btn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #b71c1c;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.slot-remove-btn:hover {
+  background: #f44336;
+}
+
+.sandbox-zone-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.deck-config-block {
+  margin-bottom: 0;
+}
+
+.deck-select-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sandbox-deck-select {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid rgba(100, 216, 213, 0.3);
+  border-radius: 4px;
+  background: rgba(3, 8, 12, 0.9);
+  color: var(--text);
+}
+
+.sandbox-bottom-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background: linear-gradient(150deg, rgba(16, 32, 42, 0.9), rgba(5, 11, 16, 0.96));
+  border: 1px solid rgba(100, 216, 213, 0.25);
+}
+
+.wide-cta {
+  padding: 12px 28px;
+  font-size: 15px;
+}
+
+/* ==========================================================================
+   Sandbox Card Picker Modal
+   ========================================================================== */
+.sandbox-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(1, 6, 11, 0.82);
+  backdrop-filter: blur(6px);
+  animation: result-fade-in 0.2s ease-out both;
+}
+
+.sandbox-modal-container {
+  display: flex;
+  flex-direction: column;
+  width: min(880px, 96vw);
+  max-height: 88vh;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(100, 216, 213, 0.45);
+  background: linear-gradient(150deg, rgba(14, 28, 37, 0.99), rgba(5, 11, 16, 0.99));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8), 0 0 30px rgba(100, 216, 213, 0.12);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #fff;
+}
+
+.modal-header small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.accent-text {
+  color: var(--cyan);
+}
+
+.modal-close-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 180, 188, 0.3);
+  background: rgba(7, 17, 24, 0.8);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.modal-close-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.picker-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 180, 188, 0.16);
+  padding-bottom: 8px;
+}
+
+.picker-tab {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.picker-tab.active {
+  border-color: rgba(100, 216, 213, 0.4);
+  background: rgba(18, 48, 56, 0.8);
+  color: var(--cyan);
+}
+
+.picker-deck-select-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: rgba(8, 18, 26, 0.6);
+  border-radius: 6px;
+}
+
+.picker-deck-select-row select {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(100, 216, 213, 0.3);
+  background: #040d13;
+  color: #fff;
+  font-size: 12px;
+}
+
+.picker-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.picker-controls input {
+  flex: 1;
+  min-width: 220px;
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid rgba(100, 216, 213, 0.3);
+  background: rgba(3, 8, 13, 0.9);
+  color: #fff;
+}
+
+.picker-work-filter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font: 10px var(--mono);
+  text-transform: uppercase;
+}
+
+.picker-work-filter select {
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid rgba(100, 216, 213, 0.3);
+  border-radius: 6px;
+  background: rgba(3, 8, 13, 0.9);
+  color: #fff;
+  font: 11px var(--sans);
+  text-transform: none;
+}
+
+.picker-work-filter select:focus {
+  border-color: var(--cyan);
+  outline: none;
+}
+
+.picker-kind-filters {
+  display: flex;
+  gap: 6px;
+}
+
+.kind-chip {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 180, 188, 0.2);
+  background: rgba(10, 22, 31, 0.7);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.kind-chip.active {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  color: #031014;
+}
+
+.picker-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+  max-height: 52vh;
+}
+
+.picker-card-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 180, 188, 0.16);
+  background: rgba(9, 20, 28, 0.85);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.picker-card-card:hover {
+  border-color: var(--cyan);
+  background: rgba(18, 44, 54, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+}
+
+.picker-card-card img {
+  width: 100%;
+  aspect-ratio: var(--goat-card-aspect);
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+.picker-card-meta {
+  width: 100%;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.picker-card-meta strong {
+  display: block;
+  font-size: 10px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-card-meta small {
+  display: block;
+  margin-top: 2px;
+  font-size: 8px;
+  color: var(--dim);
+  font-family: var(--mono);
+}
+
+.picker-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.picker-pagination:empty {
+  display: none;
+}
+
+/* ==========================================================================
+   HUD Sandbox in-duel Controls
+   ========================================================================== */
+.hud-sandbox-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(18, 40, 50, 0.85);
+  border: 1px solid rgba(100, 216, 213, 0.4);
+}
+
+.hud-sandbox-btn {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  border: 1px solid rgba(100, 216, 213, 0.3);
+  background: rgba(6, 17, 24, 0.9);
+  color: var(--cyan);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-sandbox-btn:hover {
+  background: var(--cyan);
+  color: #031014;
+}
+
+.hud-sandbox-btn.restart-btn {
+  border-color: rgba(243, 162, 95, 0.5);
+  color: #ffd17b;
+}
+
+.hud-sandbox-btn.restart-btn:hover {
+  background: #f3a25f;
+  color: #1a0c02;
+}
+
+@media (max-width: 900px) {
+  .sandbox-audit-grid {
+    grid-template-columns: 1fr;
+  }
+  .sandbox-audit-actions {
+    grid-column: auto;
+    align-items: stretch;
+  }
+  .sandbox-players-container {
+    grid-template-columns: 1fr;
+  }
+  .sandbox-slots-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+  .sandbox-slot {
+    min-height: 98px;
+    padding: 4px;
+  }
+  .slot-img {
+    width: 32px;
+  }
+}
+.sandbox-audit-panel {
+  margin-bottom: 18px;
+  border-color: rgba(100, 216, 213, 0.28);
+}
+
+.sandbox-audit-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(160px, 0.45fr) minmax(280px, 1.4fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.sandbox-audit-card,
+.sandbox-audit-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(148, 180, 188, 0.17);
+  border-radius: 8px;
+  background: rgba(5, 15, 22, 0.72);
+}
+
+.sandbox-audit-card > span:first-child,
+.sandbox-audit-actions > span {
+  color: var(--muted);
+  font: 10px var(--mono);
+  text-transform: uppercase;
+}
+
+.sandbox-audit-description textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  border: 1px solid rgba(100, 216, 213, 0.25);
+  border-radius: 6px;
+  background: rgba(3, 8, 13, 0.9);
+  color: var(--text);
+  padding: 9px;
+  font: 12px var(--sans);
+}
+
+.sandbox-audit-actions {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sandbox-audit-note {
+  display: block;
+  margin-top: 10px;
+  color: var(--dim);
+  font: 10px var(--mono);
+}
+
+.picker-card-meta .card-audit-badge {
+  margin: 5px auto 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

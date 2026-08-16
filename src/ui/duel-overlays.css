@@ -1,0 +1,113 @@
+.card-selection-modal,
+.duel-start-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(3, 7, 12, .78);
+  backdrop-filter: blur(8px);
+}
+
+.selection-modal-panel {
+  display: grid;
+  width: min(1040px, 94vw);
+  max-height: min(760px, 88vh);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(105, 211, 255, .68);
+  border-radius: 15px;
+  background: radial-gradient(circle at 15% 0, rgba(61, 167, 219, .15), transparent 33%), linear-gradient(145deg, #10243a, #08111d 68%);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .8), 0 0 38px rgba(79, 188, 244, .12);
+}
+
+.fusion-material-modal .selection-modal-panel {
+  border-color: rgba(197, 113, 255, .72);
+  background: radial-gradient(circle at 15% 0, rgba(151, 67, 217, .22), transparent 36%), linear-gradient(145deg, #21143a, #0a101d 68%);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .82), 0 0 42px rgba(178, 79, 255, .16);
+}
+.fusion-material-modal .selection-modal-head span { color: #d9a4ff; }
+.fusion-material-modal .selection-progress { border-color: rgba(211, 144, 255, .5); background: rgba(120, 43, 171, .24); color: #efd1ff; }
+.fusion-position-modal .selection-modal-panel { width: min(720px, 94vw); max-height: none; border-color: rgba(112, 222, 255, .72); }
+.position-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.position-choice { min-height: 176px; align-content: center; justify-items: center; text-align: center; }
+.position-choice strong { font-size: 15px; }
+.position-choice small { color: #9bb5c2; font-size: 9px; }
+.position-choice em { margin-top: 4px; }
+.position-choice-icon { position: relative; display: grid; width: 76px; height: 76px; place-items: center; border: 2px solid rgba(102, 224, 255, .7); border-radius: 50%; background: radial-gradient(circle, rgba(68, 189, 235, .26), rgba(9, 24, 42, .86) 68%); color: #abedff; font: 900 17px var(--mono); box-shadow: inset 0 0 24px rgba(53, 198, 255, .14), 0 8px 22px rgba(0, 0, 0, .34); }
+.position-choice-icon i { position: absolute; inset: 9px; border: 1px dashed currentColor; border-radius: 50%; opacity: .48; }
+.position-defense .position-choice-icon { border-color: rgba(198, 143, 255, .72); background: radial-gradient(circle, rgba(151, 82, 223, .26), rgba(20, 16, 45, .9) 68%); color: #e0c5ff; }
+
+.selection-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid rgba(130, 201, 229, .17);
+}
+.selection-modal-head span { color: #75d7ff; font: 800 9px var(--mono); letter-spacing: .15em; }
+.selection-modal-head h2 { margin: 5px 0 4px; color: #f3fbff; font-size: clamp(20px, 3vw, 32px); }
+.selection-modal-head p { margin: 0; color: #93aebd; font-size: 11px; }
+.selection-progress { min-width: 98px; padding: 10px 12px; border: 1px solid rgba(119, 215, 255, .44); border-radius: 999px; background: rgba(29, 106, 145, .24); color: #bcecff; font: 900 13px var(--mono); text-align: center; }
+
+.selection-candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: 12px;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+.card-choice { display: grid; min-width: 0; gap: 6px; padding: 9px; border: 1px solid rgba(143, 183, 201, .25); border-radius: 9px; background: rgba(13, 29, 45, .84); color: #eaf7fd; text-align: left; cursor: pointer; transition: .16s ease; }
+.card-choice:hover, .card-choice:focus-visible { border-color: rgba(104, 211, 255, .72); transform: translateY(-2px); outline: none; }
+.card-choice.selected { border-color: #65e6ff; background: linear-gradient(145deg, rgba(31, 119, 153, .72), rgba(11, 50, 78, .9)); box-shadow: 0 0 0 2px rgba(101, 230, 255, .18), 0 12px 27px rgba(0, 0, 0, .38), inset 0 0 20px rgba(69, 212, 255, .08); }
+.card-choice-visual { position: relative; width: min(100%, 118px); aspect-ratio: var(--goat-card-aspect); justify-self: center; }
+.card-choice-visual .card { width: 100%; height: 100%; min-height: 0; }
+.card-choice-visual i { position: absolute; top: 7px; right: 7px; display: none; width: 25px; height: 25px; place-items: center; border-radius: 50%; background: #5ce4ff; color: #032131; font: 900 11px var(--mono); font-style: normal; box-shadow: 0 3px 10px rgba(0,0,0,.55); }
+.card-choice.selected .card-choice-visual i { display: grid; }
+.card-choice strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.card-choice small { color: #8facba; font: 7px var(--mono); text-transform: uppercase; }
+.card-choice em { width: max-content; padding: 3px 6px; border-radius: 999px; background: rgba(255, 194, 84, .14); color: #ffd37a; font: 800 7px var(--mono); font-style: normal; }
+.selection-modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; padding: 14px 22px; border-top: 1px solid rgba(130, 201, 229, .17); background: rgba(3, 10, 18, .42); }
+.selection-modal-actions small { margin-right: auto; color: #829ba8; font-size: 9px; }
+.selection-confirm[disabled] { opacity: .42; cursor: not-allowed; }
+
+.duel-start-card { display: grid; width: min(470px, 92vw); justify-items: center; padding: 30px 28px 26px; overflow: hidden; border: 1px solid rgba(255, 197, 83, .67); border-radius: 16px; background: radial-gradient(circle at 50% 22%, rgba(255, 190, 73, .16), transparent 36%), linear-gradient(145deg, #211a19, #0b1119 72%); box-shadow: 0 30px 90px rgba(0,0,0,.82), 0 0 44px rgba(255, 178, 55, .13); text-align: center; }
+.start-eyebrow { color: #ffc65f; font: 900 9px var(--mono); letter-spacing: .18em; }
+.duel-coin { position: relative; display: grid; width: 124px; height: 124px; margin: 20px 0 17px; place-items: center; border: 0; border-radius: 50%; background: radial-gradient(circle, rgba(255,205,94,.24), transparent 67%); color: #3c2409; box-shadow: 0 18px 35px rgba(0,0,0,.55), 0 0 34px rgba(255, 187, 58, .2); animation: duel-coin-arrive .7s cubic-bezier(.2,.8,.25,1.2) 1 both; }
+.duel-coin img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: sepia(.12) saturate(1.18) brightness(1.06) drop-shadow(0 8px 10px rgba(0,0,0,.48)); }
+.duel-coin.tails { color: #d9f5ff; background: radial-gradient(circle, rgba(77,180,221,.22), transparent 68%); box-shadow: 0 18px 35px rgba(0,0,0,.55), 0 0 34px rgba(68, 185, 225, .22); }
+.duel-coin.tails img { filter: hue-rotate(142deg) saturate(1.48) brightness(.86) drop-shadow(0 8px 10px rgba(0,0,0,.55)); }
+.duel-coin i { position: absolute; inset: 17px; border: 1px solid currentColor; border-radius: 50%; opacity: .28; box-shadow: inset 0 0 12px currentColor; }
+.duel-coin b { position: absolute; right: 5px; bottom: 7px; z-index: 2; display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid currentColor; border-radius: 50%; background: rgba(31,19,7,.86); color: #ffe3a0; box-shadow: 0 4px 9px rgba(0,0,0,.46); font: 900 20px var(--mono); text-shadow: 0 2px 5px #000; }
+.duel-coin.tails b { background: rgba(7,28,40,.9); color: #d9f5ff; }
+.duel-start-card h2 { margin: 0 0 8px; color: #fff6df; font-size: 27px; }
+.duel-start-card p { max-width: 360px; margin: 0 0 20px; color: #a99f92; font-size: 11px; line-height: 1.45; }
+@keyframes duel-coin-arrive { from { opacity: 0; transform: translateY(-80px) rotateY(360deg) scale(.6); } to { opacity: 1; transform: none; } }
+.reduced-motion .duel-coin { animation: none; }
+
+@media (max-width: 720px) {
+  .card-selection-modal, .duel-start-overlay { padding: 10px; }
+  .selection-modal-panel { width: 100%; max-height: 94vh; }
+  .selection-modal-head { align-items: flex-start; padding: 15px; }
+  .selection-modal-head p { display: none; }
+  .selection-progress { min-width: 76px; }
+  .selection-candidate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+  .selection-modal-actions { flex-wrap: wrap; padding: 11px 12px; }
+  .selection-modal-actions small { width: 100%; }
+  .selection-modal-actions .ghost-button, .selection-modal-actions .primary-button { flex: 1; }
+}
+
+.duel-start-overlay .result-rays {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 400px; height: 400px;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(121,213,155,.08) 30deg, transparent 60deg, rgba(231,196,106,.06) 90deg, transparent 120deg);
+  border-radius: 50%;
+  animation: result-rays-spin 12s linear infinite;
+  pointer-events: none;
+}
+@keyframes result-rays-spin {
+  to { transform: translate(-50%,-50%) rotate(360deg); }
+}

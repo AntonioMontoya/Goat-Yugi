@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GOAT Lab" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#060b10" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="description" content="GOAT Local Lab: Simulador de Yu-Gi-Oh! GOAT Format optimizado para iPad 10 y control táctil." />
+    <title>GOAT Local Lab (iPad)</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./sprites/Sprite_Hud12.png" />
+    <script type="module" src="./src/main.js"></script>
+  </head>
+  <body class="ipad-edition">
+    <div id="app"></div>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").then(
+            (reg) => console.log("PWA Service Worker listo:", reg.scope),
+            (err) => console.warn("PWA Service Worker no pudo registrarse:", err)
+          );
+        });
+      }
+    </script>
+  </body>
+</html>

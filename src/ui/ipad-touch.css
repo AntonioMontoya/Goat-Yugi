@@ -1,0 +1,252 @@
+/* ==========================================================================
+   iPad 10 Touch-First Styles & Safe Area Adaptations
+   Optimized for iPadOS (WebKit Safari / Standalone PWA) 2360x1640 (~1.44:1)
+   ========================================================================== */
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
+  --ipad-touch-min: 44px;
+  --ipad-touch-pad: 8px;
+  --ipad-radius: 10px;
+}
+
+/* Global iPad viewport & touch constraints */
+html, body.ipad-edition {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+  box-sizing: border-box;
+}
+
+/* Prevent auto-zoom on inputs in iOS Safari by ensuring font-size >= 16px */
+input, select, textarea {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
+/* --------------------------------------------------------------------------
+   Tactile Feedback on Tap/Touch (:active states)
+   -------------------------------------------------------------------------- */
+button,
+.card-popover-action,
+.phase-command,
+.response-option,
+.builder-card-tile,
+.deck-preset,
+.section-tab,
+.menu-card {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+button:active,
+.card-popover-action:active,
+.phase-command:active,
+.response-option:active {
+  transform: scale(0.96) !important;
+  filter: brightness(1.22);
+  transition: transform 60ms ease-out;
+}
+
+/* --------------------------------------------------------------------------
+   Duel Layout & Board Optimization for iPad 10 Aspect Ratio
+   -------------------------------------------------------------------------- */
+.ipad-edition .duel-active main {
+  padding: 4px 8px calc(4px + var(--sab)) 8px;
+}
+
+.ipad-edition .duel-page {
+  gap: 4px;
+  height: 100%;
+}
+
+.ipad-edition .table-frame {
+  padding: 4px 60px 4px 6px;
+  border-radius: 14px;
+}
+
+.ipad-edition .duel-pillar {
+  width: 52px;
+  opacity: 0.85;
+}
+
+.ipad-edition .pillar-left { left: 4px; }
+.ipad-edition .pillar-right { right: 4px; }
+
+/* Hand protection against Home Indicator */
+.ipad-edition .player-hand {
+  padding-bottom: calc(4px + var(--sab));
+}
+
+.ipad-edition .hand-strip .card {
+  min-width: 48px;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.ipad-edition .hand-strip .card:active {
+  transform: translateY(-8px) scale(1.05);
+}
+
+/* Long press cue on cards */
+.ipad-edition .card.touch-holding {
+  box-shadow: 0 0 16px 4px rgba(244, 189, 88, 0.8) !important;
+  transform: scale(1.08) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* --------------------------------------------------------------------------
+   Card Action Popover for Touch
+   -------------------------------------------------------------------------- */
+.ipad-edition .card-action-popover {
+  z-index: 150;
+  min-width: 220px;
+  border: 1.5px solid var(--duel-gold);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 15px rgba(244, 189, 88, 0.25);
+  background: rgba(8, 15, 23, 0.98);
+}
+
+.ipad-edition .card-action-popover header {
+  padding: 8px 12px;
+}
+
+.ipad-edition .card-popover-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.ipad-edition .card-popover-action {
+  min-height: var(--ipad-touch-min);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ipad-edition .card-popover-action span {
+  font-weight: 900;
+  font-size: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   Phase Rail & Duel Decision Bar Touch Targets
+   -------------------------------------------------------------------------- */
+.ipad-edition .duel-phase-rail {
+  min-height: 44px;
+}
+
+.ipad-edition .phase-command {
+  min-height: var(--ipad-touch-min);
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.ipad-edition .duel-menu-toggle {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+.ipad-edition .response-option {
+  min-height: 48px;
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Card Inspector & Modals on iPad
+   -------------------------------------------------------------------------- */
+.ipad-edition .duel-card-inspector {
+  max-width: 440px;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+}
+
+.ipad-edition .duel-card-inspector button[data-card-inspector-close] {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+
+.ipad-edition .inspector-art {
+  width: 140px;
+}
+
+.ipad-edition .inspector-copy p {
+  font-size: 13px;
+  line-height: 1.5;
+  max-height: 240px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* --------------------------------------------------------------------------
+   Deck Builder Touch Improvements
+   -------------------------------------------------------------------------- */
+.ipad-edition .builder-columns {
+  gap: 12px;
+}
+
+.ipad-edition .catalog-list,
+.ipad-edition .deck-card-list {
+  -webkit-overflow-scrolling: touch;
+}
+
+.ipad-edition .builder-card-tile {
+  min-height: 52px;
+  padding: 6px 8px;
+}
+
+.ipad-edition .builder-card-add,
+.ipad-edition .builder-card-remove {
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Quick Filter chips in Deck Builder */
+.ipad-edition .builder-toolbar {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ipad-edition .builder-toolbar select,
+.ipad-edition .builder-toolbar input {
+  min-height: 40px;
+  border-radius: 8px;
+}

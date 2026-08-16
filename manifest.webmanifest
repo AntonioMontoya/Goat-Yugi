@@ -1,0 +1,26 @@
+{
+  "name": "Yu-Gi-Oh! GOAT Format Lab (iPad)",
+  "short_name": "GOAT Lab",
+  "description": "Simulador de Yu-Gi-Oh! GOAT Format optimizado para iPad y control táctil.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#060b10",
+  "theme_color": "#060b10",
+  "categories": ["games", "entertainment", "strategy"],
+  "icons": [
+    {
+      "src": "./sprites/Sprite_Hud12.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./sprites/Sprite_Hud13.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
