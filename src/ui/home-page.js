@@ -29,7 +29,6 @@ export function renderHomePage({ escapeHtml }) {
         <span class="selected-mode-kicker">SELECCIÓN ACTUAL</span>
         <h2 id="sprite-menu-title">JUGAR</h2>
         <p id="sprite-menu-desc">Prepara un duelo local o enfréntate a un bot.</p>
-        <button type="button" class="home-enter-btn" id="btn-enter-mode">ENTRAR AL MODO</button>
       </div>
       <img src="./sprites/Sprite_Ornamentacion9.png" class="carousel-rule carousel-rule-bottom" alt="" aria-hidden="true" />
     </div>

@@ -29,10 +29,8 @@ function updateCarouselVisuals({ focus = false } = {}) {
   const selectedItem = SPRITE_MENU_ITEMS[selectedIndex];
   const title = document.getElementById("sprite-menu-title");
   const description = document.getElementById("sprite-menu-desc");
-  const enterBtn = document.getElementById("btn-enter-mode");
   if (title) title.textContent = selectedItem.label.toUpperCase();
   if (description) description.textContent = selectedItem.desc;
-  if (enterBtn) enterBtn.textContent = `ENTRAR A ${selectedItem.label.toUpperCase()}`;
   if (focus) items[selectedIndex]?.focus({ preventScroll: true });
 }
 
@@ -81,10 +79,6 @@ export function initSpriteMenu(app, rerender, leaveFullscreen) {
       selectedIndex = index;
       openSelected({ app, rerender, leaveFullscreen });
     });
-  });
-
-  document.getElementById("btn-enter-mode")?.addEventListener("click", () => {
-    openSelected({ app, rerender, leaveFullscreen });
   });
 
   document.getElementById("btn-prev")?.addEventListener("click", () => selectOffset(-1, { focus: true }));
