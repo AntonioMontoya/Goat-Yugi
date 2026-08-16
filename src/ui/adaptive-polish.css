@@ -15,44 +15,44 @@
 }
 .section-play,
 .section-ladder {
-  --section-background: url('./sprites/Menu-Fondo-Patio.png');
-  --section-icon: url('./sprites/Sprite_Menu.png');
-  --section-texture: url('./sprites/Textura-Losa-Oscura.png');
+  --section-background: url('../sprites/Menu-Fondo-Patio.png');
+  --section-icon: url('../sprites/Sprite_Menu.png');
+  --section-texture: url('../sprites/Textura-Losa-Oscura.png');
 }
 .section-sandbox {
-  --section-background: url('./sprites/Menu-Fondo-Noche.png');
-  --section-icon: url('./sprites/Sprite_Menu2.png');
-  --section-texture: url('./sprites/Textura-Jeroglificos.png');
+  --section-background: url('../sprites/Menu-Fondo-Noche.png');
+  --section-icon: url('../sprites/Sprite_Menu2.png');
+  --section-texture: url('../sprites/Textura-Jeroglificos.png');
 }
 .section-card-viewer {
-  --section-background: url('./sprites/Menu-Fondo-Templo.png');
-  --section-icon: url('./sprites/Sprite_Menu3.png');
-  --section-texture: url('./sprites/Textura-Mural.png');
+  --section-background: url('../sprites/Menu-Fondo-Templo.png');
+  --section-icon: url('../sprites/Sprite_Menu3.png');
+  --section-texture: url('../sprites/Textura-Mural.png');
 }
 .section-deck-builder {
-  --section-background: url('./sprites/Menu-Fondo-Templo.png');
-  --section-icon: url('./sprites/Sprite_Menu4.png');
-  --section-texture: url('./sprites/Textura-Losa-Oscura.png');
+  --section-background: url('../sprites/Menu-Fondo-Templo.png');
+  --section-icon: url('../sprites/Sprite_Menu4.png');
+  --section-texture: url('../sprites/Textura-Losa-Oscura.png');
 }
 .section-bots {
-  --section-background: url('./sprites/Menu-Fondo-Santuario.png');
-  --section-icon: url('./sprites/Sprite_Menu5.png');
-  --section-texture: url('./sprites/Textura-Jeroglificos.png');
+  --section-background: url('../sprites/Menu-Fondo-Santuario.png');
+  --section-icon: url('../sprites/Sprite_Menu5.png');
+  --section-texture: url('../sprites/Textura-Jeroglificos.png');
 }
 .section-settings {
-  --section-background: url('./sprites/Menu-Fondo-Santuario.png');
-  --section-icon: url('./sprites/Sprite_Menu7.png');
-  --section-texture: url('./sprites/Textura-Mural.png');
+  --section-background: url('../sprites/Menu-Fondo-Santuario.png');
+  --section-icon: url('../sprites/Sprite_Menu7.png');
+  --section-texture: url('../sprites/Textura-Mural.png');
 }
 .section-training {
-  --section-background: url('./sprites/Menu-Fondo-Patio.png');
-  --section-icon: url('./sprites/Sprite_Menu8.png');
-  --section-texture: url('./sprites/Textura-Losa-Oscura.png');
+  --section-background: url('../sprites/Menu-Fondo-Patio.png');
+  --section-icon: url('../sprites/Sprite_Menu8.png');
+  --section-texture: url('../sprites/Textura-Losa-Oscura.png');
 }
 .section-research {
-  --section-background: url('./sprites/Menu-Fondo-Santuario.png');
-  --section-icon: url('./sprites/Sprite_Menu6.png');
-  --section-texture: url('./sprites/Textura-Mural.png');
+  --section-background: url('../sprites/Menu-Fondo-Santuario.png');
+  --section-icon: url('../sprites/Sprite_Menu6.png');
+  --section-texture: url('../sprites/Textura-Mural.png');
 }
 .mode-sub::before {
   background:
@@ -114,8 +114,8 @@
   color: #ffedbd;
   text-shadow: 0 2px 5px #000;
 }
-.mode-sub .primary-button:not(.wide) { background-image: url('./sprites/Sprite_Hud10.png') !important; }
-.mode-sub .ghost-button:not(.wide) { background-image: url('./sprites/Sprite_Hud11.png') !important; }
+.mode-sub .primary-button:not(.wide) { background-image: url('../sprites/Sprite_Hud10.png') !important; }
+.mode-sub .ghost-button:not(.wide) { background-image: url('../sprites/Sprite_Hud11.png') !important; }
 .mode-sub :is(.primary-button, .ghost-button):not(.wide):hover,
 .mode-sub :is(.primary-button, .ghost-button):not(.wide):focus-visible {
   filter: brightness(1.18) drop-shadow(0 0 8px rgba(91, 177, 222, .28));
@@ -136,7 +136,7 @@
   width: 25px !important;
   height: 25px !important;
   flex: 0 0 25px;
-  background: url('./sprites/Sprite_Circular.png') center/contain no-repeat !important;
+  background: url('../sprites/Sprite_Circular.png') center/contain no-repeat !important;
   filter: brightness(1.08) drop-shadow(0 0 5px rgba(76, 181, 218, .22));
   content: "" !important;
   transform: none !important;
@@ -198,7 +198,7 @@ html.duel-active #app,
   border-radius: clamp(6px, 1vw, 12px);
   background-image:
     linear-gradient(rgba(5, 10, 15, .12), rgba(5, 10, 15, .26)),
-    url('./sprites/Tablero.png');
+    url('../sprites/Tablero.png');
   background-position: center;
   background-size: cover;
 }
@@ -287,7 +287,7 @@ html.duel-active #app,
 .duel-active .duel-menu-toggle {
   min-width: 34px;
   min-height: 34px;
-  background: url('./sprites/Sprite_Circular.png') center/contain no-repeat;
+  background: url('../sprites/Sprite_Circular.png') center/contain no-repeat;
   color: #ffdfa2;
 }
 
