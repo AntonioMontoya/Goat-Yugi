@@ -548,3 +548,54 @@ button:active,
   font-size: 14px;
   border-radius: 8px;
 }
+
+/* --------------------------------------------------------------------------
+   Home Menu Touch Enhancements
+   -------------------------------------------------------------------------- */
+.ipad-edition .home-enter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  min-width: 240px;
+  margin-top: 14px;
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #060b10;
+  background: linear-gradient(180deg, #ffd98c, #d7a94c);
+  border: 2px solid #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(244, 189, 88, 0.5), 0 0 16px rgba(255, 217, 140, 0.4);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ipad-edition .home-enter-btn:active {
+  transform: scale(0.95);
+  filter: brightness(1.2);
+}
+
+.ipad-edition .carousel-nav {
+  width: 54px !important;
+  height: 54px !important;
+  min-width: 54px !important;
+  min-height: 54px !important;
+  border-radius: 50% !important;
+  background: rgba(14, 28, 38, 0.95) !important;
+  border: 2px solid var(--ipad-gold) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+}
+
+.ipad-edition .sprite-menu-item {
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+

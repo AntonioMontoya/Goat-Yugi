@@ -29,8 +29,10 @@ function updateCarouselVisuals({ focus = false } = {}) {
   const selectedItem = SPRITE_MENU_ITEMS[selectedIndex];
   const title = document.getElementById("sprite-menu-title");
   const description = document.getElementById("sprite-menu-desc");
+  const enterBtn = document.getElementById("btn-enter-mode");
   if (title) title.textContent = selectedItem.label.toUpperCase();
   if (description) description.textContent = selectedItem.desc;
+  if (enterBtn) enterBtn.textContent = `ENTRAR A ${selectedItem.label.toUpperCase()}`;
   if (focus) items[selectedIndex]?.focus({ preventScroll: true });
 }
 
@@ -49,12 +51,13 @@ export function initSpriteMenu(app, rerender, leaveFullscreen) {
   destroySpriteMenu();
   const canvas = document.getElementById("home-particles");
   if (canvas && app.settings.motionLevel !== "off") {
-    particles = new ParticleSystem(canvas, { type: "gold", density: 54, direction: "up", maxSize: 2, minSpeed: 0.08, maxSpeed: 0.34 });
+    particles = new ParticleSystem(canvas, { type: "gold", density: 40, direction: "up", maxSize: 2, minSpeed: 0.08, maxSpeed: 0.3 });
     particles.init();
   }
 
   selectedIndex = Math.max(0, SPRITE_MENU_ITEMS.findIndex((item) => item.mode === "play"));
   updateCarouselVisuals();
+
   keyHandler = (event) => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.target?.matches?.("input, select, textarea, [contenteditable='true']")) return;
@@ -72,45 +75,47 @@ export function initSpriteMenu(app, rerender, leaveFullscreen) {
   };
   document.addEventListener("keydown", keyHandler);
 
+  // Single-tap to open mode immediately on touch
   document.querySelectorAll(".sprite-menu-item").forEach((item, index) => {
     item.addEventListener("click", () => {
-      if (selectedIndex === index) openSelected({ app, rerender, leaveFullscreen });
-      else {
-        selectedIndex = index;
-        updateCarouselVisuals({ focus: true });
-      }
+      selectedIndex = index;
+      openSelected({ app, rerender, leaveFullscreen });
     });
   });
+
+  document.getElementById("btn-enter-mode")?.addEventListener("click", () => {
+    openSelected({ app, rerender, leaveFullscreen });
+  });
+
   document.getElementById("btn-prev")?.addEventListener("click", () => selectOffset(-1, { focus: true }));
   document.getElementById("btn-next")?.addEventListener("click", () => selectOffset(1, { focus: true }));
 
   const carousel = document.querySelector(".sprite-carousel-shell");
-  let pointerStart = null;
-  let wheelLocked = false;
-  const onPointerDown = (event) => { pointerStart = { x: event.clientX, y: event.clientY, id: event.pointerId }; };
-  const onPointerUp = (event) => {
-    if (!pointerStart || pointerStart.id !== event.pointerId) return;
-    const dx = event.clientX - pointerStart.x;
-    const dy = event.clientY - pointerStart.y;
-    pointerStart = null;
-    if (Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy) * 1.2) selectOffset(dx > 0 ? -1 : 1, { focus: true });
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  const onTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
   };
-  const onWheel = (event) => {
-    if (wheelLocked || Math.max(Math.abs(event.deltaX), Math.abs(event.deltaY)) < 18) return;
-    event.preventDefault();
-    wheelLocked = true;
-    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    selectOffset(delta > 0 ? 1 : -1, { focus: true });
-    window.setTimeout(() => { wheelLocked = false; }, 380);
+
+  const onTouchEnd = (e) => {
+    if (!e.changedTouches || !e.changedTouches[0]) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+      selectOffset(dx > 0 ? -1 : 1, { focus: false });
+    }
   };
-  carousel?.addEventListener("pointerdown", onPointerDown);
-  carousel?.addEventListener("pointerup", onPointerUp);
-  carousel?.addEventListener("pointercancel", () => { pointerStart = null; });
-  carousel?.addEventListener("wheel", onWheel, { passive: false });
+
+  carousel?.addEventListener("touchstart", onTouchStart, { passive: true });
+  carousel?.addEventListener("touchend", onTouchEnd, { passive: true });
+
   menuGestureCleanup = () => {
-    carousel?.removeEventListener("pointerdown", onPointerDown);
-    carousel?.removeEventListener("pointerup", onPointerUp);
-    carousel?.removeEventListener("wheel", onWheel);
+    carousel?.removeEventListener("touchstart", onTouchStart);
+    carousel?.removeEventListener("touchend", onTouchEnd);
   };
 }
 
