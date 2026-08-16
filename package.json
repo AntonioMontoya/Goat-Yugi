@@ -6,7 +6,7 @@
   "description": "Versión PWA táctil de Yu-Gi-Oh! GOAT Format para iPad 10.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node generate-sw.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
