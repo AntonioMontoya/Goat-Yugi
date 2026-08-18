@@ -1,19 +1,25 @@
 import { copyFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import { generateServiceWorker } from "./generate-sw.mjs";
 
 function copyPwaFilesPlugin() {
   return {
     name: "copy-pwa-files",
     closeBundle() {
       const distDir = fileURLToPath(new URL("dist", import.meta.url));
-      const swSrc = fileURLToPath(new URL("sw.js", import.meta.url));
-      const swDest = fileURLToPath(new URL("dist/sw.js", import.meta.url));
+      const rootDir = fileURLToPath(new URL(".", import.meta.url));
       const manifestSrc = fileURLToPath(new URL("manifest.webmanifest", import.meta.url));
       const manifestDest = fileURLToPath(new URL("dist/manifest.webmanifest", import.meta.url));
 
-      if (existsSync(swSrc)) copyFileSync(swSrc, swDest);
       if (existsSync(manifestSrc)) copyFileSync(manifestSrc, manifestDest);
+
+      // Automatically generate fresh sw.js with exact chunk hashes in dist and root
+      try {
+        generateServiceWorker(distDir, rootDir);
+      } catch (err) {
+        console.warn("[copy-pwa-files] Warning generating service worker:", err);
+      }
     },
   };
 }

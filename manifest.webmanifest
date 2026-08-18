@@ -2,7 +2,7 @@
   "name": "Yu-Gi-Oh! GOAT Format Lab (iPad)",
   "short_name": "GOAT Lab",
   "description": "Simulador de Yu-Gi-Oh! GOAT Format optimizado para iPad y control táctil.",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",

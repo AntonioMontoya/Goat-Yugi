@@ -1,50 +1,50 @@
-import "./styles.css"; import "./ui/duel-hud.css"; import "./ui/sprite-theme.css"; import "./ui/responsive-menu-system.css"; import "./ui/adaptive-polish.css"; import "./ui/visual-remaster.css"; import "./ui/ipad-touch.css";
+import "../../src/styles.css"; import "../../src/ui/duel-hud.css"; import "../../src/ui/sprite-theme.css"; import "../../src/ui/responsive-menu-system.css"; import "../../src/ui/adaptive-polish.css"; import "../../src/ui/visual-remaster.css"; import "./ui/ipad-touch.css";
 import { initIpadTouchController } from "./ui/ipad-touch-controller.js";
-import { CARD_DATABASE_VERSION, CARD_KIND, VALIDATION_STATUS } from "./engine/constants.js";
-import { CARDS, getCard } from "./engine/cards.js";
-import { copyLimit, listStatus } from "./format/banlist.js";
-import { createDuel, legalActions, observe, step } from "./engine/game.js";
-import { DECK_PRESETS, applySideDeckSwap, createCustomDeck, deckFromYdk, deckToYdk, getDeck, validateDeck } from "./decks/decks.js";
-import { NEXO_CANDIDATE_BOT_ID, UNIVERSAL_BOT_ID, botDescriptor, createBotForDeck, createBotRegistry, ensureBotDeckProfile, listActiveBotSpecs, hydrateBot, recordBotGame, recordBotModel, upsertBotIdentity } from "./bots/bot-system.js";
-import { DEFAULT_CORE_OPPONENT_DECKS, evaluateUniversalPolicy, universalQualityGate } from "./training/training.js";
-import { applyLadderResult, chooseLocalMatch, createLocalMatch, initialLadder, ladderView, recordMatchGame, upsertLadderBot } from "./ranking/ladder.js";
-import { hasReasoningCertification } from "./bots/intelligence.js";
-import { duelResultMarkup } from "./duel-result.js";
-import { loadLocalState, saveLocalState } from "./storage/local.js";
-import { loadBotRegistry, saveBotRegistry } from "./storage/bot-registry.js";
-import { cardForCode, createOcgcoreSession } from "./engine/ocgcore-session.js";
-import { OCGCORE_ASSET_SOURCE, OCGCORE_CARD_ENTRIES, OCGCORE_MISSING_SCRIPTS } from "./data/ocgcore-assets.js";
-import { bindMenuKeyboard, hashForMode, menuMarkup, modeFromHash } from "./ui/navigation.js";
-import { initSpriteMenu, destroySpriteMenu } from "./ui/sprite-menu.js"; import { renderHomePage } from "./ui/home-page.js"; import { installMenuScrollNavigation } from "./ui/menu-scroll.js";
-import { initSubmenuAtmosphere } from "./ui/submenu-atmosphere.js";
-import { initDuelAtmosphere } from "./ui/duel-atmosphere.js";
-import { createActionRegistry, registerAction } from "./ui/action-registry.js"; import { builderCardTileMarkup } from "./ui/deck-builder-cards.js"; import { decorateDeckLibrary } from "./ui/deck-library.js"; import { decorateDuelPiles } from "./ui/duel-piles.js";
-import { createDefaultScenarioState, loadSavedScenarios, persistSavedScenarios, renderSandboxPage } from "./ui/sandbox.js";
-import { startSandboxDuel as startSandboxDuelDriver, bindSandboxEvents } from "./ui/sandbox-driver.js";
-import { bindCardViewerEvents, createDefaultCardViewerState, renderCardViewerPage } from "./ui/lazy-card-viewer.js";
-import { loadFavoriteCardIds } from "./storage/card-favorites.js";
-import { CARD_WORK_STATUS_LABELS, loadCardWorkStatuses } from "./storage/card-review.js";
-import { orchestrateTraining } from "./ui/training-orchestrator.js";
-import { renderBotsPage } from "./ui/bots-page.js";
-import { installTrainingControls } from "./ui/training-controls.js";
-import { navigateApp, renderAppShell } from "./ui/app-shell.js";
-import { buildDeckKnowledge, describeDeckPlan } from "./bots/deck-strategy.js";
-import { deriveDuelFeedbackEvents, isPhaseAction, phaseLabel, visibleInstanceUids } from "./ui/duel-presentation.js";
-import { isFusionMaterialSelection, renderCardSelectionModal, syncCardSelection, toggleCardSelection } from "./ui/card-selection.js";
-import { renderSortCardModal, moveSortedCard, syncSortState } from "./ui/sort-card.js";
-import { renderCardAnnouncementModal } from "./ui/card-announcement.js";
-import { renderMultiChoiceModal, syncMultiChoiceState, toggleMultiChoice } from "./ui/multi-choice.js";
-import { adjustCounter, renderCounterAllocationModal, syncCounterState } from "./ui/counter-allocation.js";
-import { acceptDuelLoad, beginDuelLoad, isCurrentDuelLoad } from "./ui/duel-load-guard.js";
-import { duelStartOverlayMarkup } from "./ui/duel-overlays.js";
-import { renderSummonPositionModal } from "./ui/summon-position.js";
-import { actionsForCard, createDuelInteractionModel } from "./ui/duel-interaction.js";
-import { AUTO_PHASE_DELAY_MS, automaticPhasePlan } from "./ui/duel-phase-flow.js";
-import { cardAffordanceBadges, renderCardActionPopover, renderDecisionBar, renderDuelCardInspector, renderDuelTopbar, renderEventCue, renderEventDrawer, renderOpenActionShortcuts, renderPhaseAdvanceConfirmation, renderPhaseRail, renderResponseTray } from "./ui/duel-hud.js";
-import { createDuelAudioController } from "./ui/duel-audio.js";
+import { CARD_DATABASE_VERSION, CARD_KIND, VALIDATION_STATUS } from "../../src/engine/constants.js";
+import { CARDS, getCard } from "../../src/engine/cards.js";
+import { copyLimit, listStatus } from "../../src/format/banlist.js";
+import { createDuel, legalActions, observe, step } from "../../src/engine/game.js";
+import { DECK_PRESETS, applySideDeckSwap, createCustomDeck, deckFromYdk, deckToYdk, getDeck, validateDeck } from "../../src/decks/decks.js";
+import { NEXO_CANDIDATE_BOT_ID, UNIVERSAL_BOT_ID, botDescriptor, createBotForDeck, createBotRegistry, ensureBotDeckProfile, listActiveBotSpecs, hydrateBot, recordBotGame, recordBotModel, upsertBotIdentity } from "../../src/bots/bot-system.js";
+import { DEFAULT_CORE_OPPONENT_DECKS, evaluateUniversalPolicy, universalQualityGate } from "../../src/training/training.js";
+import { applyLadderResult, chooseLocalMatch, createLocalMatch, initialLadder, ladderView, recordMatchGame, upsertLadderBot } from "../../src/ranking/ladder.js";
+import { hasReasoningCertification } from "../../src/bots/intelligence.js";
+import { duelResultMarkup } from "../../src/duel-result.js";
+import { loadLocalState, saveLocalState } from "../../src/storage/local.js";
+import { loadBotRegistry, saveBotRegistry } from "../../src/storage/bot-registry.js";
+import { cardForCode, createOcgcoreSession } from "../../src/engine/ocgcore-session.js";
+import { OCGCORE_ASSET_SOURCE, OCGCORE_CARD_ENTRIES, OCGCORE_MISSING_SCRIPTS } from "../../src/data/ocgcore-assets.js";
+import { bindMenuKeyboard, hashForMode, menuMarkup, modeFromHash } from "../../src/ui/navigation.js";
+import { initSpriteMenu, destroySpriteMenu } from "../../src/ui/sprite-menu.js"; import { renderHomePage } from "../../src/ui/home-page.js"; import { installMenuScrollNavigation } from "../../src/ui/menu-scroll.js";
+import { initSubmenuAtmosphere } from "../../src/ui/submenu-atmosphere.js";
+import { initDuelAtmosphere } from "../../src/ui/duel-atmosphere.js";
+import { createActionRegistry, registerAction } from "../../src/ui/action-registry.js"; import { builderCardTileMarkup } from "../../src/ui/deck-builder-cards.js"; import { decorateDeckLibrary } from "../../src/ui/deck-library.js"; import { decorateDuelPiles } from "../../src/ui/duel-piles.js";
+import { createDefaultScenarioState, loadSavedScenarios, persistSavedScenarios, renderSandboxPage } from "../../src/ui/sandbox.js";
+import { startSandboxDuel as startSandboxDuelDriver, bindSandboxEvents } from "../../src/ui/sandbox-driver.js";
+import { bindCardViewerEvents, createDefaultCardViewerState, renderCardViewerPage } from "../../src/ui/lazy-card-viewer.js";
+import { loadFavoriteCardIds } from "../../src/storage/card-favorites.js";
+import { CARD_WORK_STATUS_LABELS, loadCardWorkStatuses } from "../../src/storage/card-review.js";
+import { orchestrateTraining } from "../../src/ui/training-orchestrator.js";
+import { renderBotsPage } from "../../src/ui/bots-page.js";
+import { installTrainingControls } from "../../src/ui/training-controls.js";
+import { navigateApp, renderAppShell } from "../../src/ui/app-shell.js";
+import { buildDeckKnowledge, describeDeckPlan } from "../../src/bots/deck-strategy.js";
+import { deriveDuelFeedbackEvents, isPhaseAction, phaseLabel, visibleInstanceUids } from "../../src/ui/duel-presentation.js";
+import { isFusionMaterialSelection, renderCardSelectionModal, syncCardSelection, toggleCardSelection } from "../../src/ui/card-selection.js";
+import { renderSortCardModal, moveSortedCard, syncSortState } from "../../src/ui/sort-card.js";
+import { renderCardAnnouncementModal } from "../../src/ui/card-announcement.js";
+import { renderMultiChoiceModal, syncMultiChoiceState, toggleMultiChoice } from "../../src/ui/multi-choice.js";
+import { adjustCounter, renderCounterAllocationModal, syncCounterState } from "../../src/ui/counter-allocation.js";
+import { acceptDuelLoad, beginDuelLoad, isCurrentDuelLoad } from "../../src/ui/duel-load-guard.js";
+import { duelStartOverlayMarkup } from "../../src/ui/duel-overlays.js";
+import { renderSummonPositionModal } from "../../src/ui/summon-position.js";
+import { actionsForCard, createDuelInteractionModel } from "../../src/ui/duel-interaction.js";
+import { AUTO_PHASE_DELAY_MS, automaticPhasePlan } from "../../src/ui/duel-phase-flow.js";
+import { cardAffordanceBadges, renderCardActionPopover, renderDecisionBar, renderDuelCardInspector, renderDuelTopbar, renderEventCue, renderEventDrawer, renderOpenActionShortcuts, renderPhaseAdvanceConfirmation, renderPhaseRail, renderResponseTray } from "../../src/ui/duel-hud.js";
+import { createDuelAudioController } from "../../src/ui/duel-audio.js";
 const root = document.querySelector("#app"); const actionRegistry = createActionRegistry(); const duelAudio = createDuelAudioController();
 let duelPresentationTimer = null; let duelBotTimer = null; let duelPhaseTimer = null; let duelPhaseTimerKey = null; let lifeMotionTimer = null;
-const SAVED_DECKS_KEY = "goat-local-lab-decks-v1"; const SETTINGS_KEY = "goat-local-lab-settings-v1"; const PLAY_SELECTION_KEY = "goat-local-lab-play-selection-v1";
+const SAVED_DECKS_KEY = "goat-local-lab-decks-v1"; const SETTINGS_KEY = "goat-local-lab-settings-v1"; const PLAY_SELECTION_KEY = "goat-local-lab-play-selection-v1"; const ACTIVE_DUEL_SESSION_KEY = "goat-local-lab-active-duel-session-v1";
 function loadSavedDecks() {
   if (typeof localStorage === "undefined") return [];
   try {
@@ -85,6 +85,47 @@ function loadPlaySelection() {
 }
 function persistPlaySelection() {
   try { if (typeof localStorage !== "undefined") localStorage.setItem(PLAY_SELECTION_KEY, JSON.stringify({ mode: app.playMode, botId: app.playBotId, deckId: app.playDeckId, opponentDeckId: app.playOpponentDeckId })); } catch { /* Keep the current selection in memory when storage is unavailable. */ }
+}
+function saveActiveDuelState() {
+  if (!app.duel || app.duel.kind !== "ocgcore" || app.duel.winner !== null || app.activeSandboxScenario) {
+    clearActiveDuelState();
+    return;
+  }
+  try {
+    if (typeof sessionStorage === "undefined") return;
+    const payload = {
+      seed: app.duel.seed,
+      startingPlayer: app.duel.startingPlayer ?? 0,
+      duelDeckId: app.duelDeckId,
+      opponentDeckId: app.opponentDeckId,
+      playMode: app.playMode,
+      playBotId: app.playBotId,
+      duelManual: app.duelManual,
+      pendingLadder: app.pendingLadder,
+      decisionJournal: app.duel.decisionJournal ?? [],
+      savedAt: Date.now(),
+    };
+    sessionStorage.setItem(ACTIVE_DUEL_SESSION_KEY, JSON.stringify(payload));
+  } catch (_) {}
+}
+function clearActiveDuelState() {
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem(ACTIVE_DUEL_SESSION_KEY);
+    }
+  } catch (_) {}
+}
+function loadSavedActiveDuelState() {
+  try {
+    if (typeof sessionStorage === "undefined") return null;
+    const stored = sessionStorage.getItem(ACTIVE_DUEL_SESSION_KEY);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    if (parsed && typeof parsed.seed === "number" && parsed.duelDeckId && parsed.opponentDeckId) {
+      return parsed;
+    }
+  } catch (_) {}
+  return null;
 }
 function builderDeckById(deckId) {
   if (DECK_PRESETS.some((deck) => deck.id === deckId)) return getDeck(deckId);
@@ -294,7 +335,7 @@ function cardImageFileName(name) {
   return `${cleaned || "unnamed-card"}.jpg`;
 }
 function cardImagePath(card) {
-  return `./goat-card-images/${encodeURIComponent(card?.imageFile ?? cardImageFileName(card?.name))}`;
+  return `/goat-card-images/${encodeURIComponent(card?.imageFile ?? cardImageFileName(card?.name))}`;
 }
 function statusPill(status) {
   const text = status === VALIDATION_STATUS.SUPPORTED ? "LISTO" : status === VALIDATION_STATUS.EXPERIMENTAL ? "EXPERIMENTAL" : status;
@@ -308,16 +349,16 @@ function cardMarkup(instance, { hidden = false, compact = false, motion = false,
     : Number(instance.location) === 4 || instance.zone === "MONSTER";
   const imageBacked = card?.kind !== CARD_KIND.TOKEN;
   const defense = monsterLike && (instance.defensePosition === true || instance.position === "DEFENSE");
-  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /></div>`;
-  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
+  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}"><img class="card-back-image" src="/goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /></div>`;
+  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="/goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
   const fallback = `<div class="card-fallback"${imageBacked ? " hidden" : ""}>
     <div class="card-top"><span>${esc(monsterLike ? card.kind === CARD_KIND.TOKEN ? "TOKEN" : "MONSTER" : card.kind)}</span><span>${card.level ? `★${card.level}` : ""}</span></div>
     <div class="card-name">${esc(card.name)}</div>
     ${monsterLike ? `<div class="card-stats">${card.atk} <span>/</span> ${card.def}</div>` : `<div class="card-type">${esc(card.spellType ?? card.trapType ?? card.kind)}</div>`}
     <div class="card-text">${esc(card.text)}</div>
   </div>`;
-  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card?.kind ?? "").toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="${esc(card?.name ?? "")}">
-    ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card?.name ?? "")}" loading="${esc(imageLoading ?? (compact ? "eager" : "lazy"))}" decoding="async" draggable="false" onerror="this.hidden=true;if(this.nextElementSibling)this.nextElementSibling.hidden=false;" />` : ""}
+  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="${esc(card.name)}">
+    ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card.name)}" loading="${esc(imageLoading ?? (compact ? "eager" : "lazy"))}" decoding="async" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false;" />` : ""}
     ${fallback}
   </div>`;
 }
@@ -572,6 +613,7 @@ function scheduleOcgcoreBotStep() {
       app.toast = `${app.duelBotProfile?.name ?? "Nexo"}: ${result.action.label}`;
     }
     settlePendingLadder();
+    saveActiveDuelState();
     render();
   }, delay);
 }
@@ -611,7 +653,7 @@ function setLifeMotion(before, after) {
 function renderDuel(view = null) {
   if (!app.duel) {
     if (app.duelError) return `<section class="page duel-page"><div class="empty-state duel-load-error"><span class="empty-icon">!</span><strong>No se pudo iniciar OCGCore</strong><p>${esc(app.duelError.message ?? String(app.duelError))}</p><button class="primary-button" data-duel-retry>Reintentar duelo</button></div></section>`;
-    if (!app.duelLoading) startDuel();
+    if (!app.duelLoading) resumeOrStartDuel();
     return `<section class="page duel-page"><div class="empty-state"><span class="empty-icon">◌</span><strong>Preparando duelo autoritativo</strong><p>Inicializando OCGCore en modo GOAT y cargando las cartas históricas…</p></div></section>`;
   }
   if (app.duel.kind === "ocgcore") return renderOcgcoreDuel(view);
@@ -803,8 +845,8 @@ function renderOcgcoreDuel(view = app.duel.view()) {
   return `<section class="page duel-page">
      ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, esc })}
      <div class="duel-layout"><div class="table-frame ${app.boardTilt ? "tilted" : ""} ${app.inspectedCard ? "has-inspector" : ""}">
-       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
-       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
+       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
+       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
        <div class="duel-board ${app.duelPresentation ? `feedback-${esc(app.duelPresentation.kind)} tier-${esc(app.duelPresentation.tier || "notable")}` : ""}">
          <div class="hand-strip opponent-hand">${playerHandMarkup(playerTwo, app.selectedCardUid, manual, userActions, affordanceInteraction)}</div>
          <div class="opponent-row player-row is-opponent"><div class="player-meta"><span class="avatar opponent-avatar">${manual ? "2" : esc(opponentName.slice(0, 1).toUpperCase())}</span><div><strong>${esc(playerName(playerTwo, manual))}</strong><small>${esc(playerTwoDeck.name)}</small></div>${lifePointMarkup(playerTwo)}</div><div class="hand-count">HAND <b>${playerTwo.handCount}</b><span class="deck-count">DECK ${playerTwo.deckCount}</span></div></div>
@@ -877,7 +919,96 @@ function renderResearch() {
   return `<section class="page research-page"><div class="page-head"><div><span class="eyebrow">FORMAT SPEC / CATALOG</span><h1>Catálogo GoatFormat</h1><p>Fuente completa cargada; la cobertura de reglas se mantiene separada y visible.</p></div><div class="head-actions"><span class="resource-chip">${CARDS.length} CARTAS</span><span class="resource-chip">${OCGCORE_CARD_ENTRIES.length} RUNTIME READY</span></div></div><div class="research-grid"><div class="research-intro"><div class="scope-card"><span class="eyebrow">FUENTE VERSIONADA</span><h2>CSV trazable</h2><p>El catálogo usa el CSV pegado en el proyecto. Cada fila conserva su ID estable, texto, procedencia, legalidad, familia de efecto y estado de validación. Las prohibidas publicadas aparte quedan separadas.</p><div class="source-links"><a href="https://www.goatformat.com/home/category/card-pool" target="_blank" rel="noreferrer">GoatFormat Card Pool ↗</a><a href="https://www.goatformat.com/basics.html" target="_blank" rel="noreferrer">Basic Mechanics ↗</a></div></div><div class="coverage-card"><div class="coverage-head"><span>OCGCORE RUNTIME READY</span><strong>${OCGCORE_CARD_ENTRIES.length}/${OCGCORE_CARD_ENTRIES.length}</strong></div><div class="coverage-bar"><span style="width:100%"></span></div><div class="coverage-legend"><span><i class="legend-dot green"></i>${supported} scripts cargados</span><span><i class="legend-dot amber"></i>${OCGCORE_MISSING_SCRIPTS.length} normales vía CDB</span></div><p>Las ${OCGCORE_CARD_ENTRIES.length} cartas tienen passcode/runtime asignado; ${supported} usan script y las ${OCGCORE_MISSING_SCRIPTS.length} normales se resuelven con la CDB y las reglas generales del core.</p></div></div><div class="research-list"><div class="side-card"><div class="side-title"><span>CONTRATOS</span><span class="tiny-label">LOCAL</span></div><div class="contract-line"><span class="contract-icon confirmed">✓</span><div><strong>Catálogo completo de la fuente</strong><small>${CARDS.length} registros únicos y hash de origen guardado.</small></div><span class="contract-state">CONFIRMED</span></div><div class="contract-line"><span class="contract-icon confirmed">✓</span><div><strong>Banlist April 2005</strong><small>El constructor resuelve límites por ID estable.</small></div><span class="contract-state">CONFIRMED</span></div><div class="contract-line"><span class="contract-icon confirmed">✓</span><div><strong>Backend OCGCore</strong><small>La mesa visual y el modo headless usan MODE_GOAT y la misma fuente técnica.</small></div><span class="contract-state">CONFIRMED</span></div><div class="contract-line"><span class="contract-icon partial">~</span><div><strong>Rulings y Damage Step</strong><small>La base del core está activa; los casos históricos deben conservar escenarios de regresión.</small></div><span class="contract-state">PARTIAL</span></div></div><div class="side-card data-map"><div class="side-title"><span>DATOS Y VERSIONES</span><span class="tiny-label">LOCAL</span></div><div class="data-row"><span>Engine</span><b>OCGCore ${OCGCORE_ASSET_SOURCE.scriptRepositoryRevision.slice(0, 8)}</b></div><div class="data-row"><span>Format</span><b>goat-tcg-apr-2005-v0.1</b></div><div class="data-row"><span>Card DB</span><b>${CARD_DATABASE_VERSION}</b></div><div class="data-row"><span>Replay</span><b>DLP1 / varint</b></div><div class="data-row"><span>Persistencia</span><b>runs / checkpoints / chunks</b></div></div></div></div></section>`;
 }
 
-function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckId, botId = null, ladder = null, deckOverride = null, opponentDeckOverride = null } = {}) {
+async function resumeSavedDuel(savedState) {
+  const loadEpoch = beginDuelLoad(app);
+  clearDuelBotTimer();
+  clearAutomaticPhaseTimer();
+  if (lifeMotionTimer) window.clearTimeout(lifeMotionTimer);
+  lifeMotionTimer = null;
+  app.lifeMotion = [];
+  app.selectedCardUid = null;
+  app.inspectedCard = null;
+  app.activeSandboxScenario = null;
+  app.activeSandboxDecks = null;
+  app.duelDeckId = savedState.duelDeckId;
+  app.opponentDeckId = savedState.opponentDeckId;
+  app.playMode = savedState.playMode ?? "bot";
+  app.playBotId = savedState.playBotId ?? UNIVERSAL_BOT_ID;
+  app.pendingLadder = savedState.pendingLadder ?? null;
+  app.duelManual = savedState.duelManual ?? false;
+
+  const deck = builderDeckById(app.duelDeckId);
+  const opponentDeck = builderDeckById(app.opponentDeckId);
+  const selectedBotId = app.pendingLadder?.botId ?? app.playBotId;
+  const storedBot = app.botRegistry?.bots?.find((bot) => bot.id === selectedBotId);
+  const storedModel = storedBot?.profiles?.[app.opponentDeckId]?.model;
+  const trainedModel = storedModel?.policyWeights || storedModel?.featureWeights || storedModel?.parameters ? storedModel : null;
+  const opponentBot = app.duelManual ? null : createBotForDeck({ botId: selectedBotId, deckId: app.opponentDeckId, deck: opponentDeck, seed: savedState.seed ^ 0x9e3779b9, manifest: trainedModel ?? (storedBot?.custom ? storedBot : null) });
+  app.duelBotProfile = opponentBot ? botDescriptor(opponentBot) : null;
+  app.lastBotRecordedSeed = null;
+
+  app.duelLoading = true;
+  app.duelError = null;
+  app.duelStart = null;
+  setDuelPresentation(null);
+  if (app.duel?.destroy) app.duel.destroy();
+  app.duel = null;
+
+  const session = await createOcgcoreSession({
+    deckA: deck.main,
+    deckB: opponentDeck.main,
+    fusionA: deck.fusion ?? [],
+    fusionB: opponentDeck.fusion ?? [],
+    seed: savedState.seed,
+    startingPlayer: savedState.startingPlayer,
+    manual: true,
+    pacedBot: false,
+    pacedPhases: false,
+    bot: opponentBot,
+  });
+
+  const journal = Array.isArray(savedState.decisionJournal) ? savedState.decisionJournal : [];
+  for (const entry of journal) {
+    if (session.destroyed || session.winner !== null) break;
+    if (entry.kind === "continue") {
+      session.continuePhase();
+    } else if (entry.response) {
+      session.duel.respond(entry.response);
+      session.decisionCount += 1;
+      session.advance();
+    }
+  }
+
+  session.manual = app.duelManual;
+  session.pacedBot = !app.duelManual;
+  session.pacedPhases = true;
+  session.decisionJournal = [...journal];
+
+  if (!acceptDuelLoad(app, loadEpoch, session)) return false;
+  app.duel = session;
+  app.duelLoading = false;
+  app.duelError = null;
+  saveActiveDuelState();
+  app.toast = "Partida reanudada correctamente.";
+  render();
+  return true;
+}
+
+function resumeOrStartDuel(options = {}) {
+  const savedState = loadSavedActiveDuelState();
+  if (savedState && !options.fresh && !app.activeSandboxScenario) {
+    resumeSavedDuel(savedState).catch((e) => {
+      console.warn("[GOAT Lab] Reanudación fallida, iniciando nuevo duelo:", e);
+      clearActiveDuelState();
+      startDuel(options);
+    });
+    return;
+  }
+  startDuel(options);
+}
+
+function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckId, botId = null, ladder = null, deckOverride = null, opponentDeckOverride = null, fresh = false } = {}) {
+  if (fresh) clearActiveDuelState();
   app.duelEventLog = { open: false, search: "", filter: "all", scrollTop: 0 };
   const loadEpoch = beginDuelLoad(app);
   clearDuelBotTimer();
@@ -940,6 +1071,7 @@ function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckI
       app.duel = session;
       app.duelLoading = false;
       app.duelError = null;
+      saveActiveDuelState();
       render();
     })
     .catch((error) => {
@@ -989,6 +1121,7 @@ function runBotTurns() {
 
 function settlePendingLadder() {
   if (!app.duel || app.duel.winner === null) return;
+  clearActiveDuelState();
   const result = app.duel.winner === 0 ? "win" : app.duel.winner === 1 ? "loss" : "draw";
   if (app.duelBotProfile && app.lastBotRecordedSeed !== app.duel.seed) {
     const botResult = result === "win" ? "loss" : result === "loss" ? "win" : "draw";
@@ -1040,6 +1173,7 @@ function submitOcgcoreAction(action) {
   if (phaseAction) app.duel.respond(phaseAction);
   const after = currentDuelView();
   recordDuelTransition(phaseAction ?? action, before, after);
+  saveActiveDuelState();
   return after;
 }
 
@@ -1095,6 +1229,7 @@ function scheduleAutomaticPhaseAdvance() {
     recordDuelTransition(action, before, after);
     app.toast = `Fase: ${phaseLabel(after.phase)}.`;
     settlePendingLadder();
+    saveActiveDuelState();
     render();
   }, AUTO_PHASE_DELAY_MS);
 }
@@ -1270,7 +1405,7 @@ function bindEvents() {
 
 function handleSecondaryAction(action) {
   if (action === "show-more-cards") { app.builderCatalogLimit += 200; render(); return; }
-  if (action === "new-duel") { startDuel(); app.toast = "Nuevo duelo creado con una semilla diferente."; render(); return; }
+  if (action === "new-duel") { startDuel({ fresh: true }); app.toast = "Nuevo duelo creado con una semilla diferente."; render(); return; }
   if (action === "view-result-board") { app.resultDismissed = true; render(); return; }
   if (action === "tilt") { app.boardTilt = !app.boardTilt; render(); return; }
   if (action === "reset-builder") { app.builderDeck = builderDeckById(app.builderDeckId); app.builderZone = "main"; app.toast = "Preset restaurado."; render(); return; } if (action === "new-builder") { app.builderDeck = createCustomDeck({ id: `custom-${Date.now()}`, name: "Nuevo deck" }); app.builderDeckId = app.builderDeck.id; app.builderZone = "main"; app.builderSearch = ""; app.builderDeckSearch = ""; app.builderFilter = "all"; app.builderWorkFilter = "all"; app.builderSort = "name"; app.builderCatalogLimit = 200; app.builderMotion = null; app.toast = "Nuevo deck vacío listo para crear desde cero."; render(); return; }
@@ -1285,7 +1420,7 @@ function handleSecondaryAction(action) {
   if (action === "reset-ladder") { app.ladder = initialLadder(); saveLocalState(app.ladder); app.toast = "Ladder local restaurada."; render(); return; }
   if (action === "ladder-duel") {
     const bot = chooseLocalMatch(app.ladder, { difficulty: "all", deckId: app.playDeckId });
-    startDuel({ deckId: "chaos-turbo", opponentDeckId: bot.deckId, ladder: { botId: bot.id, opponentRating: bot.rating, opponentName: bot.name, mode: "ladder" } });
+    startDuel({ deckId: "chaos-turbo", opponentDeckId: bot.deckId, ladder: { botId: bot.id, opponentRating: bot.rating, opponentName: bot.name, mode: "ladder" }, fresh: true });
     app.toast = `Duelo puntuable contra ${bot.name}.`; navigate("duel"); return;
   }
 }
@@ -1308,7 +1443,6 @@ function renderTraining() {
     ? `<div class="eval-score"><strong>${Math.round(evaluation.winRate * 100)}%</strong><span>win rate</span></div><div class="eval-lines"><div><span>Partidas</span><b>${evaluation.games}</b></div><div><span>Mazos</span><b>${evaluation.deckCount ?? 0}</b></div><div><span>Inválidas</span><b class="${evaluation.invalid ? "danger-text" : "good-text"}">${evaluation.invalid}</b></div></div>`
     : `<div class="empty-state"><strong>Sin evaluación separada</strong><p>Sus semillas y mazos no participan en el aprendizaje.</p></div>`;
   return `<section class="page training-page"><div class="page-head"><div><span class="eyebrow">NEXO LAB / CURRÍCULO MULTIMAZO</span><h1>Refinar la IA universal</h1><p>El mismo bot aprende sobre varios mazos; sus guardas de coherencia no se pueden sobrescribir.</p></div><div class="head-actions"><span class="resource-chip">OFFLINE</span><span class="resource-chip">WORKERS ${t.workers}</span></div></div><div class="training-grid"><aside class="training-config side-card"><div class="side-title"><span>CONFIGURAR TRABAJO</span><span class="tiny-label">${esc(status)}</span></div><label>Bot<input value="Nexo" disabled/></label><label>Mazo de foco<select id="training-deck" ${t.running ? "disabled" : ""}>${deckOptions}</select></label><label>Presupuesto máximo<input id="training-total" type="number" min="10" max="10000" step="100" value="${t.total}" ${t.running ? "disabled" : ""}/></label><div class="config-row"><span>Checkpoint</span><strong>Cada 25 duelos o al pausar</strong></div><div class="training-actions"><button class="primary-button wide" data-action="${actionName}">${actionLabel}</button><button class="ghost-button wide" data-action="cancel-training" ${t.running || t.candidate ? "" : "disabled"}>Cancelar y conservar</button></div><div class="training-actions"><button class="ghost-button wide" data-action="evaluate-training" ${t.candidate && !t.running ? "" : "disabled"}>Evaluar aparte</button><button class="ghost-button wide" data-action="clean-training" ${t.bytes ? "" : "disabled"}>Limpiar temporales</button></div><p class="fine-print">El presupuesto no otorga nivel. La promoción exige razonamiento intacto, 0 duelos inválidos y evidencia multimazo separada.</p></aside><div class="training-main"><div class="run-banner"><div class="run-status"><span class="status-orb ${t.running ? "running" : status === "COMPLETED" ? "done" : ""}"></span><div><strong>${esc(statusLabel)}</strong><small>${t.complete}/${t.total} duelos</small></div></div><div class="progress"><span style="width:${progress}%"></span></div><div class="progress-number">${progress}%</div></div><div class="metric-grid">${trainingMetric("PARTIDAS", stats?.games ?? t.complete, "OCGCore")}${trainingMetric("WIN RATE", stats ? `${Math.round(stats.winRate * 100)}%` : "—", "entrenamiento")}${trainingMetric("INVÁLIDAS", stats?.invalid ?? "—", "debe ser 0")}${trainingMetric("MODELO", t.bytes ? `${(t.bytes / 1024).toFixed(1)} KB` : "—", "compacto")}</div><div class="resource-panel side-card"><div class="data-row"><span>Checkpoint</span><b>${t.checkpoint ? `${t.checkpoint.completed}/${t.total}` : "pendiente"}</b></div><div class="data-row"><span>Evaluación</span><b>${evaluation ? `${evaluation.games} duelos · ${evaluation.deckCount ?? 0} mazos` : "pendiente"}</b></div><div class="data-row"><span>Promoción</span><b>${t.certification?.certified ? "permitida" : esc(t.certification?.reason ?? "pendiente")}</b></div></div><div class="training-panels"><div class="side-card candidate-card"><div class="side-title"><span>REFINAMIENTO CANDIDATO</span><span class="tiny-label">NEXO</span></div>${candidateMarkup}</div><div class="side-card evaluation-card"><div class="side-title"><span>EVALUACIÓN SEPARADA</span><span class="tiny-label">SEMILLAS NUEVAS</span></div>${evaluationMarkup}</div></div></div></div></section>`;
-  return `<section class="page training-page"><div class="page-head"><div><span class="eyebrow">BOT LAB / LOCAL SELF-PLAY</span><h1>Entrenamiento real</h1><p>Los duelos se ejecutan headless con OCGCore y cada lote actualiza una política aprendida con máscara de acciones.</p></div><div class="head-actions"><span class="resource-chip">OFFLINE</span><span class="resource-chip">WORKERS ${t.workers}</span></div></div><div class="training-grid"><aside class="training-config side-card"><div class="side-title"><span>CONFIGURAR TRABAJO</span><span class="tiny-label">${esc(status)}</span></div><label>Bot<input id="training-bot" value="${esc(t.candidate?.name ?? "Self-Play Learner")}" ${t.running ? "disabled" : ""}/></label><label>Deck<select id="training-deck" ${t.running ? "disabled" : ""}>${DECK_PRESETS.slice(0, 2).map((deck) => `<option value="${deck.id}" ${deck.id === t.deckId ? "selected" : ""}>${esc(deck.name)}</option>`).join("")}</select></label><label>Presupuesto de partidas<input id="training-total" type="number" min="10" max="10000" step="100" value="${t.total}" ${t.running ? "disabled" : ""}/></label><div class="config-row"><span>Rivales</span><div class="tag-list">${t.opponentDeckIds.map((deckId) => `<span>${esc(getDeck(deckId).name)}</span>`).join("")}</div></div><div class="config-row"><span>Checkpoint</span><strong>Cada 250 duelos o al pausar</strong></div><div class="training-actions"><button class="primary-button wide" data-action="${actionName}">${actionLabel}</button><button class="ghost-button wide" data-action="cancel-training" ${t.running || t.candidate ? "" : "disabled"}>Cancelar y conservar candidato</button></div><div class="training-actions"><button class="ghost-button wide" data-action="evaluate-training" ${t.candidate && !t.running ? "" : "disabled"}>Evaluar separado</button><button class="ghost-button wide" data-action="clean-training" ${t.bytes ? "" : "disabled"}>Limpiar temporales</button></div><p class="fine-print">Policy gradient Monte Carlo con action masking: solo elige respuestas legales que ofrece OCGCore. El modelo se conserva como candidato hasta superar evaluación independiente.</p></aside><div class="training-main"><div class="run-banner"><div class="run-status"><span class="status-orb ${t.running ? "running" : status === "COMPLETED" ? "done" : ""}"></span><div><strong>${esc(statusLabel)}</strong><small>${t.running ? `Duelo ${t.complete} de ${t.total}` : t.candidate ? `Candidato ${esc(t.candidate.name)} · ${t.complete}/${t.total}` : "Configura presupuesto y lanza un lote"}</small></div></div><div class="progress"><span style="width:${t.total ? Math.round((t.complete / t.total) * 100) : 0}%"></span></div><div class="progress-number">${t.total ? Math.round((t.complete / t.total) * 100) : 0}%</div></div><div class="metric-grid">${trainingMetric("PARTIDAS", stats?.games ?? t.complete, "headless")}${trainingMetric("WIN RATE", stats ? `${Math.round(stats.winRate * 100)}%` : "—", "entrenamiento")}${trainingMetric("VELOCIDAD", t.speed ? `${t.speed.toFixed(1)}/s` : "—", "duelos terminados")}${trainingMetric("DATOS TEMPORALES", t.bytes ? `${(t.bytes / 1024).toFixed(1)} KB` : "—", "duelpack")}</div><div class="resource-panel side-card"><div class="side-title"><span>RECURSOS Y CHECKPOINT</span><span class="tiny-label">MEDICIÓN HONESTA</span></div><div class="data-row"><span>Workers</span><b>${t.workers} · hilo principal</b></div><div class="data-row"><span>CPU/RAM</span><b>gestionados por el runtime local</b></div><div class="data-row"><span>Checkpoint</span><b>${t.checkpoint ? `${t.checkpoint.completed} duelos · ${new Date(t.checkpoint.savedAt).toLocaleTimeString("es-ES")}` : "pendiente"}</b></div><div class="data-row"><span>Evaluación</span><b>${evaluation ? `${evaluation.games} duelos separados` : "pendiente"}</b></div></div><div class="training-panels"><div class="side-card candidate-card"><div class="side-title"><span>CANDIDATO / MODELO</span><span class="tiny-label">${t.candidate ? `v${t.candidate.version ?? 1}` : "—"}</span></div>${t.candidate ? `<div class="candidate-head"><span class="bot-avatar">P</span><div><strong>${esc(t.candidate.name)}</strong><small>${esc(t.candidate.algorithm)} · ${t.approved ? "APROBADO LOCAL" : "CANDIDATO"}</small></div><span class="status-pill status-${t.approved ? "supported" : "experimental"}">${t.approved ? "APROBADO" : "REVISAR"}</span></div><div class="weight-grid">${Object.entries(t.candidate.weights ?? t.candidate.parameters ?? t.candidate.featureWeights ?? {}).slice(0, 6).map(([key, value]) => `<div><span>${esc(key)}</span><b>${Number(value).toFixed(2)}</b></div>`).join("")}</div><div class="candidate-actions"><button class="text-button" data-action="approve-candidate">Aprobar candidato</button><button class="text-button" data-action="discard-candidate">Descartar candidato</button></div>` : `<div class="empty-state"><span class="empty-icon">⌁</span><strong>Sin candidato</strong><p>El checkpoint aparecerá después de la primera tanda.</p></div>`}</div><div class="side-card evaluation-card"><div class="side-title"><span>EVALUACIÓN SEPARADA</span><span class="tiny-label">NO TRAINING DATA</span></div>${evaluation ? `<div class="eval-score"><strong>${Math.round(evaluation.winRate * 100)}%</strong><span>win rate</span></div><div class="eval-lines"><div><span>Partidas</span><b>${evaluation.games}</b></div><div><span>Invalid actions</span><b class="${evaluation.invalid ? "danger-text" : "good-text"}">${evaluation.invalid}</b></div><div><span>Avg decisions</span><b>${Math.round(evaluation.averageDecisions)}</b></div></div>` : `<div class="empty-state"><span class="empty-icon">◌</span><strong>Sin evaluación</strong><p>Usa el conjunto separado cuando el lote esté pausado o completo.</p></div>`}</div></div></div></div></section>`;
 }
 
 async function startTraining({ resume = false } = {}) {
@@ -1337,7 +1471,7 @@ function handleAction(action) {
     app.playOpponentDeckId = app.botCatalogDeckId;
     app.opponentDeckId = app.botCatalogDeckId;
     persistPlaySelection();
-    startDuel({ deckId: app.playDeckId, opponentDeckId: app.botCatalogDeckId, botId: app.playBotId });
+    startDuel({ deckId: app.playDeckId, opponentDeckId: app.botCatalogDeckId, botId: app.playBotId, fresh: true });
     app.toast = `Duelo contra Nexo con ${builderDeckById(app.botCatalogDeckId).name}.`;
     navigate("duel");
     return;
@@ -1350,10 +1484,10 @@ function handleAction(action) {
     app.opponentDeckId = app.playOpponentDeckId;
     if (app.playMode === "ranked") {
       const bot = chooseLocalMatch(app.ladder, { difficulty: "all", deckId: app.playDeckId });
-      startDuel({ deckId: app.playDeckId, opponentDeckId: bot.deckId, ladder: { botId: bot.id, opponentRating: bot.rating, opponentName: bot.name, mode: "ladder" } });
+      startDuel({ deckId: app.playDeckId, opponentDeckId: bot.deckId, ladder: { botId: bot.id, opponentRating: bot.rating, opponentName: bot.name, mode: "ladder" }, fresh: true });
       app.toast = `Duelo ranked contra ${bot.name}.`;
     } else {
-      startDuel({ deckId: app.playDeckId, opponentDeckId: app.playOpponentDeckId, botId: app.playBotId });
+      startDuel({ deckId: app.playDeckId, opponentDeckId: app.playOpponentDeckId, botId: app.playBotId, fresh: true });
       app.toast = `Duelo preparado: ${builderDeckById(app.playDeckId).name} contra ${builderDeckById(app.playOpponentDeckId).name}.`;
     }
     navigate("duel");
@@ -1421,7 +1555,7 @@ function handleAction(action) {
     const pending = app.pendingLadder;
     if (pending?.match && !pending.match.completed) {
       const currentDeck = pending.currentDeck ?? builderDeckById(app.duelDeckId);
-      startDuel({ deckId: app.duelDeckId, opponentDeckId: pending.opponentDeckId ?? app.opponentDeckId, deckOverride: currentDeck, ladder: { ...pending, settledSeed: null } });
+      startDuel({ deckId: app.duelDeckId, opponentDeckId: pending.opponentDeckId ?? app.opponentDeckId, deckOverride: currentDeck, ladder: { ...pending, settledSeed: null }, fresh: true });
       app.toast = `Comienza la partida ${pending.match.gameNumber + 1} de la serie.`;
       render();
     }
@@ -1462,7 +1596,7 @@ function handleAction(action) {
   }
   if (action === "discard-candidate") { app.training.candidate = null; app.training.approved = false; app.training.status = "DISCARDED"; app.toast = "Candidato descartado; las métricas se conservan."; render(); return; }
   if (action === "clean-training") { app.training.results = []; app.training.bytes = 0; app.training.status = "CLEANED"; app.toast = "Chunks temporales eliminados del estado de la interfaz; métricas y candidato conservados."; render(); return; }
-  if (action === "ladder-practice") { const bot = chooseLocalMatch(app.ladder, { difficulty: "all", deckId: app.playDeckId }); startDuel({ deckId: app.duelDeckId, opponentDeckId: bot.deckId, ladder: { botId: bot.id, opponentRating: bot.rating, opponentName: bot.name, mode: "practice" } }); app.toast = `Práctica contra ${bot.name}; no modifica el rating.`; navigate("duel"); return; }
+  if (action === "ladder-practice") { const bot = chooseLocalMatch(app.ladder, { difficulty: "all", deckId: app.playDeckId }); startDuel({ deckId: app.duelDeckId, opponentDeckId: bot.deckId, ladder: { botId: bot.id, opponentRating: bot.rating, opponentName: bot.name, mode: "practice" }, fresh: true }); app.toast = `Práctica contra ${bot.name}; no modifica el rating.`; navigate("duel"); return; }
   if (action === "start-training" && app.training.status === "PAUSED") { startTraining({ resume: true }); return; }
   handleSecondaryAction(action);
 }
@@ -1487,6 +1621,28 @@ window.addEventListener("keydown", (event) => {
     app.selectedCardUid = null;
     app.inspectedCard = null;
     render();
+  }
+});
+window.addEventListener("error", (event) => {
+  console.error("[GOAT Lab Global Error]", event.error || event.message);
+});
+window.addEventListener("unhandledrejection", (event) => {
+  console.warn("[GOAT Lab Unhandled Rejection]", event.reason);
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (app.mode === "duel" && app.duel) {
+      saveActiveDuelState();
+    }
+  } else {
+    if (app.mode === "duel") {
+      render();
+    }
+  }
+});
+window.addEventListener("pagehide", () => {
+  if (app.mode === "duel" && app.duel) {
+    saveActiveDuelState();
   }
 });
 if (!window.location.hash) window.history.replaceState({ mode: app.mode }, "", hashForMode(app.mode)); render(); void installBundledBotModels();

@@ -960,6 +960,8 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
   const session = {
     kind: "ocgcore",
     seed,
+    startingPlayer: firstSeat,
+    decisionJournal: [],
     duel,
     errors,
     brave,
@@ -1173,6 +1175,7 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
     },
     continuePhase() {
       if (!this.phasePaused || this.destroyed || this.winner !== null) return this.view();
+      this.decisionJournal.push({ kind: "continue" });
       this.phasePaused = false;
       this.botPending = false;
       return this.advance();
@@ -1184,6 +1187,7 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
         && action.coreResponse.type === OcgResponseType.SELECT_CHAIN
         && action.coreResponse.index === null;
       this.lastDeclinedChain = declinedChain ? chainWindowFingerprint(this.pending, this) : null;
+      this.decisionJournal.push({ kind: "player", response: action.coreResponse, repeatPrompt: action.repeatPrompt ?? null });
       this.duel.respond(action.coreResponse);
       this.pending = null;
       this.decisionCount += 1;
@@ -1201,6 +1205,7 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
             decisions: this.decisionCount,
           });
           if (!response) break;
+          this.decisionJournal.push({ kind: "bot", response });
           this.duel.respond(response);
           this.pending = null;
           this.decisionCount += 1;
@@ -1236,6 +1241,7 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
       const signature = responseSignature(response);
       const action = actions.find((candidate) => responseSignature(candidate.coreResponse) === signature)
         ?? { label: "Astra continúa su jugada", coreResponse: response, actionKind: "bot" };
+      this.decisionJournal.push({ kind: "bot", response });
       this.duel.respond(response);
       this.pending = null;
       this.botPending = false;

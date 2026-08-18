@@ -44,9 +44,14 @@ export class ParticleSystem {
     window.removeEventListener('mousemove', this.handleMouseMove);
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
+      this.animationId = null;
     }
     this.particles = [];
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    if (this.ctx && this.canvas) {
+      try {
+        this.ctx.clearRect(0, 0, this.canvas.width || 1, this.canvas.height || 1);
+      } catch (_) {}
+    }
   }
 
   resize() {
