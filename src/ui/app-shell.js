@@ -5,9 +5,9 @@ export function renderAppShell({ app, content, menu, rank, escapeHtml }) {
   
   return `<div class="app-shell section-${app.mode} ${isHome ? 'mode-home' : isDuel ? 'mode-duel' : 'mode-sub'}">
     ${!isDuel ? `<header class="topbar sprite-topbar">
-      <img src="./sprites/Sprite_Ornamentación6.png" class="sprite-img sprite-topbar-ornament" alt="" aria-hidden="true" />
+      <img src="/sprites/Sprite_Ornamentación6.png" class="sprite-img sprite-topbar-ornament" alt="" aria-hidden="true" />
       <button class="brand sprite-brand" data-home aria-label="Ir al inicio">
-        <img src="./sprites/Sprite_Ornamentacion.png" class="sprite-img brand-icon" alt="" />
+        <img src="/sprites/Sprite_Ornamentacion.png" class="sprite-img brand-icon" alt="" />
         <span><strong>GOAT LOCAL LAB</strong><small>2005 TCG</small></span>
       </button>
       ${menu}
@@ -17,7 +17,7 @@ export function renderAppShell({ app, content, menu, rank, escapeHtml }) {
     ${isDuel ? '<canvas id="duel-particles-dust" class="duel-particle-layer" aria-hidden="true"></canvas><canvas id="duel-particles-embers" class="duel-particle-layer" aria-hidden="true"></canvas>' : ''}
     <main id="main-content" tabindex="-1">${content}</main>
     <div class="toast" role="status">${escapeHtml(app.toast)}</div>
-    ${!isDuel && !isHome ? `<footer class="footer-bar sprite-footer"><img class="sprite-footer-plate" src="./sprites/Sprite_Submenu11.png" alt="" aria-hidden="true" /><div class="sprite-footer-copy"><span>LOCAL ONLY · SIN SERVIDOR</span><span>GOAT TCG APRIL 2005</span><span class="footer-right">RULES ENGINE: <b>${app.duelError ? "NO DISPONIBLE" : "OCGCORE / GOAT"}</b></span></div></footer>` : ''}
+    ${!isDuel && !isHome ? `<footer class="footer-bar sprite-footer"><img class="sprite-footer-plate" src="/sprites/Sprite_Submenu11.png" alt="" aria-hidden="true" /><div class="sprite-footer-copy"><span>LOCAL ONLY · SIN SERVIDOR</span><span>GOAT TCG APRIL 2005</span><span class="footer-right">RULES ENGINE: <b>${app.duelError ? "NO DISPONIBLE" : "OCGCORE / GOAT"}</b></span></div></footer>` : ''}
   </div>`;
 }
 

@@ -31,8 +31,8 @@
 .reduced-motion .duel-particle-layer,
 .motion-off .duel-particle-layer { display: none; }
 
-img[src^="./sprites/"],
-img[src*="./sprites/"] { object-fit: contain; object-position: center; }
+img[src^="/sprites/"],
+img[src*="/sprites/"] { object-fit: contain; object-position: center; }
 
 /* The source background is 16:9. Do not constrain it to the old 1180px
    content width, which created the false 4:3 presentation on wide screens. */
@@ -196,7 +196,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   height: 13px !important;
   flex: 0 0 13px;
   border: 0 !important;
-  background: url('../sprites/Sprite_Circular.png') center/contain no-repeat !important;
+  background: url('/sprites/Sprite_Circular.png') center/contain no-repeat !important;
   content: "" !important;
   filter: sepia(.18) saturate(1.15) drop-shadow(0 0 4px rgba(231, 185, 84, .26));
   pointer-events: none;
@@ -419,8 +419,8 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border-bottom: 1px solid rgba(224, 177, 76, .7);
   background:
     linear-gradient(180deg, rgba(5, 10, 16, .97), rgba(8, 14, 20, .94)),
-    url('../sprites/Sprite_Ornamentación6.png') center/ min(566px, 42vw) auto no-repeat,
-    url('../sprites/Sprite_Baldosa3.png') center/64px 92px repeat-x;
+    url('/sprites/Sprite_Ornamentación6.png') center/ min(566px, 42vw) auto no-repeat,
+    url('/sprites/Sprite_Baldosa3.png') center/64px 92px repeat-x;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .48), inset 0 -1px rgba(255, 220, 132, .18);
 }
 
@@ -453,8 +453,8 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border-top: 1px solid rgba(224, 177, 76, .66);
   background:
     linear-gradient(90deg, rgba(6, 11, 16, .98), rgba(15, 22, 28, .96), rgba(6, 11, 16, .98)),
-    url('../sprites/Sprite_Ornamentación6.png') center/ min(566px, 58vw) auto no-repeat,
-    url('../sprites/Sprite_Baldosa3.png') center/62px 92px repeat-x;
+    url('/sprites/Sprite_Ornamentación6.png') center/ min(566px, 58vw) auto no-repeat,
+    url('/sprites/Sprite_Baldosa3.png') center/62px 92px repeat-x;
   box-shadow: 0 -10px 28px rgba(0, 0, 0, .46), inset 0 1px rgba(255, 220, 132, .12);
 }
 
@@ -465,7 +465,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   width: 58px;
   height: 58px;
   transform: translateX(-50%);
-  background: url('../sprites/Sprite_Menu7.png') center/contain no-repeat;
+  background: url('/sprites/Sprite_Menu7.png') center/contain no-repeat;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .72));
   opacity: .92;
   content: "";
@@ -482,7 +482,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border-bottom: 1px solid rgba(222, 175, 78, .46);
   background:
     linear-gradient(90deg, rgba(49, 37, 20, .3), transparent 70%),
-    url('../sprites/Sprite_Ornamentacion9.png') center bottom/min(492px, 48vw) auto no-repeat;
+    url('/sprites/Sprite_Ornamentacion9.png') center bottom/min(492px, 48vw) auto no-repeat;
   box-shadow: inset 0 -1px rgba(255, 224, 147, .12);
 }
 
@@ -496,7 +496,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 }
 
 .section-play .page-head::before,
-.section-ladder .page-head::before { background-image: url('../sprites/Sprite_ornamentacion4.png') !important; background-size: 88px 92px !important; }
+.section-ladder .page-head::before { background-image: url('/sprites/Sprite_ornamentacion4.png') !important; background-size: 88px 92px !important; }
 
 .mode-sub .page-head::after {
   display: block !important;
@@ -504,7 +504,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   bottom: -30px !important;
   width: 230px !important;
   height: 118px !important;
-  background: url('../sprites/Sprite_Ornamentacion5.png') right bottom/contain no-repeat !important;
+  background: url('/sprites/Sprite_Ornamentacion5.png') right bottom/contain no-repeat !important;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .55)) !important;
   opacity: .18 !important;
   content: "" !important;
@@ -529,7 +529,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 
 .mode-sub :is(.mode-card, .play-config > .side-card, .settings-grid > .side-card, .ladder-hero, .ladder-grid > .side-card, .ladder-history-card, .experienced-bots-panel, .bots-layout > .side-card, .bots-roster, .training-config, .training-main > .side-card, .training-panels > .side-card, .builder-top, .deck-library, .builder-main, .card-viewer-toolbar, .sandbox-global-panel, .sandbox-player-card, .sandbox-bottom-bar) {
   border: 1px solid transparent;
-  border-image-source: url('../sprites/Sprite_Hud11.png');
+  border-image-source: url('/sprites/Sprite_Hud11.png');
   border-image-slice: 24 43 fill;
   border-image-width: 1px;
   border-image-outset: 0;
@@ -545,7 +545,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border-bottom: 1px solid rgba(222, 175, 78, .28);
   background-image:
     linear-gradient(90deg, rgba(47, 33, 18, .6), rgba(8, 14, 20, .16)),
-    url('../sprites/Sprite_Hud.png');
+    url('/sprites/Sprite_Hud.png');
   background-position: center, right center;
   background-size: auto, min(393px, 58%) auto;
   background-repeat: no-repeat;
@@ -557,8 +557,8 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   background-image:
     linear-gradient(145deg, rgba(12, 26, 34, .93), rgba(5, 12, 18, .97)),
     var(--section-texture),
-    url('../sprites/Sprite_Ornamentacion_Esquina.png'),
-    url('../sprites/Sprite_Ornamentacion_Esquina.png');
+    url('/sprites/Sprite_Ornamentacion_Esquina.png'),
+    url('/sprites/Sprite_Ornamentacion_Esquina.png');
   background-position: center, center, top left, bottom right;
   background-size: auto, 430px auto, 44px 46px, 44px 46px;
   background-repeat: no-repeat, repeat, no-repeat, no-repeat;
@@ -592,9 +592,9 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   pointer-events: none;
 }
 
-.mode-sub .mode-card[data-play-mode="bot"] { --mode-watermark: url('../sprites/Sprite_Menu.png'); }
-.mode-sub .mode-card[data-play-mode="local"] { --mode-watermark: url('../sprites/Sprite_Ornamentacion2.png'); }
-.mode-sub .mode-card[data-play-mode="ranked"] { --mode-watermark: url('../sprites/Sprite_Menu5.png'); }
+.mode-sub .mode-card[data-play-mode="bot"] { --mode-watermark: url('/sprites/Sprite_Menu.png'); }
+.mode-sub .mode-card[data-play-mode="local"] { --mode-watermark: url('/sprites/Sprite_Ornamentacion2.png'); }
+.mode-sub .mode-card[data-play-mode="ranked"] { --mode-watermark: url('/sprites/Sprite_Menu5.png'); }
 
 .mode-sub .mode-card .mode-icon {
   display: grid;
@@ -625,12 +625,12 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .mode-sub .mode-card .mode-state { align-self: end; margin-top: 12px; }
 
 .mode-sub .mode-card.selected {
-  border-image-source: url('../sprites/Sprite_Hud10.png');
+  border-image-source: url('/sprites/Sprite_Hud10.png');
   background-image:
     linear-gradient(145deg, rgba(59, 40, 18, .94), rgba(7, 16, 23, .96)),
     var(--section-texture),
-    url('../sprites/Sprite_Ornamentacion_Esquina.png'),
-    url('../sprites/Sprite_Ornamentacion_Esquina.png');
+    url('/sprites/Sprite_Ornamentacion_Esquina.png'),
+    url('/sprites/Sprite_Ornamentacion_Esquina.png');
   box-shadow: 0 18px 40px rgba(0, 0, 0, .5), 0 0 26px rgba(219, 166, 64, .12), inset 0 0 26px rgba(245, 193, 77, .08);
 }
 
@@ -648,7 +648,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   left: 16px;
   width: 30px;
   height: 30px;
-  background: url('../sprites/Sprite_Ornamentacion2.png') center/contain no-repeat;
+  background: url('/sprites/Sprite_Ornamentacion2.png') center/contain no-repeat;
   opacity: .78;
   content: "";
   pointer-events: none;
@@ -656,7 +656,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 
 .play-page .deck-pick .side-title { padding-left: 38px; }
 .play-page .start-card { padding-top: 20px; }
-.play-page .start-card::before { background-image: url('../sprites/Sprite_Menu6.png'); }
+.play-page .start-card::before { background-image: url('/sprites/Sprite_Menu6.png'); }
 .play-page .start-card::after {
   position: absolute;
   right: 50%;
@@ -664,7 +664,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   width: min(290px, 76%);
   height: 82px;
   transform: translateX(50%);
-  background: url('../sprites/Sprite_Ornamentacion5.png') center/contain no-repeat;
+  background: url('/sprites/Sprite_Ornamentacion5.png') center/contain no-repeat;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .48));
   opacity: .3;
   content: "";
@@ -680,7 +680,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .mode-sub :is(.primary-button, .ghost-button, .wide-cta):not(:disabled) {
   min-height: 46px;
   border: 1px solid transparent !important;
-  border-image-source: url('../sprites/Sprite_Hud11.png');
+  border-image-source: url('/sprites/Sprite_Hud11.png');
   border-image-slice: 24 43 fill;
   border-image-width: 1px;
   border-image-repeat: stretch;
@@ -691,7 +691,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 }
 
 .mode-sub :is(.primary-button, .wide-cta):not(:disabled) {
-  border-image-source: url('../sprites/Sprite_Hud10.png');
+  border-image-source: url('/sprites/Sprite_Hud10.png');
   border-image-slice: 24 46 fill;
   background: linear-gradient(180deg, rgba(130, 88, 26, .98), rgba(56, 37, 14, .98)) !important;
   color: #fff0c4;
@@ -702,7 +702,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   width: 18px !important;
   height: 22px !important;
   flex: 0 0 18px;
-  background: url('../sprites/Sprite_Ornamentación7.png') center/contain no-repeat !important;
+  background: url('/sprites/Sprite_Ornamentación7.png') center/contain no-repeat !important;
   filter: drop-shadow(0 0 4px rgba(245, 190, 79, .35));
   content: "" !important;
 }
@@ -723,17 +723,17 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   width: 13px;
   height: 15px;
   flex: 0 0 13px;
-  background: url('../sprites/Sprite_Ornamentación7.png') center/contain no-repeat;
+  background: url('/sprites/Sprite_Ornamentación7.png') center/contain no-repeat;
   content: "";
   opacity: .9;
 }
 
-.mode-sub .status-pill::before { background-image: url('../sprites/Sprite_Ornamentacion8.png'); }
+.mode-sub .status-pill::before { background-image: url('/sprites/Sprite_Ornamentacion8.png'); }
 
 .section-ladder .ladder-hero {
   background-image:
     linear-gradient(90deg, rgba(42, 29, 18, .85), rgba(8, 15, 21, .94) 48%, rgba(8, 15, 21, .96)),
-    url('../sprites/Sprite_Escaleras.png'),
+    url('/sprites/Sprite_Escaleras.png'),
     var(--section-texture);
   background-position: center, right bottom, center;
   background-size: auto, min(324px, 28vw) auto, 430px auto;
@@ -748,7 +748,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   bottom: 8px;
   width: 180px;
   height: 180px;
-  background: url('../sprites/Sprite_Hud12.png') center/contain no-repeat;
+  background: url('/sprites/Sprite_Hud12.png') center/contain no-repeat;
   filter: saturate(.72) sepia(.12);
   opacity: .12;
   content: "";
@@ -762,7 +762,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   bottom: 10px;
   width: 136px;
   height: 136px;
-  background: url('../sprites/Sprite_Hud13.png') center/contain no-repeat;
+  background: url('/sprites/Sprite_Hud13.png') center/contain no-repeat;
   filter: saturate(.7);
   opacity: .1;
   content: "";
@@ -789,7 +789,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   width: min(300px, 70%);
   height: min(464px, 84%);
   transform: translate(-50%, -50%);
-  background: url('../sprites/Sprite_Canva-Carta.png') center/contain no-repeat;
+  background: url('/sprites/Sprite_Canva-Carta.png') center/contain no-repeat;
   filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .52));
   opacity: .48;
   content: "";
@@ -868,7 +868,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .mode-sub .sprite-topbar {
   background-image:
     linear-gradient(180deg, rgba(5, 10, 16, .82), rgba(6, 12, 18, .84)),
-    url('../sprites/Sprite_Submenu1.png');
+    url('/sprites/Sprite_Submenu1.png');
   background-position: center, left center;
   background-size: auto, min(626px, 44vw) auto;
   background-repeat: no-repeat, no-repeat;
@@ -878,7 +878,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .mode-sub .sprite-topbar-ornament { display: none !important; }
 
 .mode-sub .page-head {
-  background-image: url('../sprites/Sprite_Submenu11.png');
+  background-image: url('/sprites/Sprite_Submenu11.png');
   background-position: left bottom;
   background-size: min(720px, 52%) auto;
   background-repeat: no-repeat;
@@ -892,7 +892,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border-image: none;
   border-radius: 0;
   background-color: rgba(5, 12, 18, .96);
-  background-image: url('../sprites/Sprite_Submenu6.png');
+  background-image: url('/sprites/Sprite_Submenu6.png');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -903,7 +903,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   min-height: 42px;
   padding: 11px 15px 9px;
   border: 0;
-  background-image: url('../sprites/Sprite_Submenu8.png');
+  background-image: url('/sprites/Sprite_Submenu8.png');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -915,20 +915,20 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border: 0;
   border-image: none;
   background-color: #07121a;
-  background-image: url('../sprites/Sprite_Submenu6.png');
+  background-image: url('/sprites/Sprite_Submenu6.png');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
 }
 
-.mode-sub .mode-card[data-play-mode="bot"] { background-image: url('../sprites/Sprite_Submenu5.png'); }
-.mode-sub .mode-card[data-play-mode="local"] { background-image: url('../sprites/Sprite_Submenu6.png'); }
-.mode-sub .mode-card[data-play-mode="ranked"] { background-image: url('../sprites/Sprite_Submenu7.png'); }
+.mode-sub .mode-card[data-play-mode="bot"] { background-image: url('/sprites/Sprite_Submenu5.png'); }
+.mode-sub .mode-card[data-play-mode="local"] { background-image: url('/sprites/Sprite_Submenu6.png'); }
+.mode-sub .mode-card[data-play-mode="ranked"] { background-image: url('/sprites/Sprite_Submenu7.png'); }
 
 .mode-sub .mode-card.selected {
   border: 0;
   border-image: none;
-  background-image: url('../sprites/Sprite_Submenu5.png');
+  background-image: url('/sprites/Sprite_Submenu5.png');
   box-shadow: 0 18px 38px rgba(0, 0, 0, .42), 0 0 20px rgba(242, 190, 73, .13);
 }
 
@@ -951,8 +951,8 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .mode-sub .mode-card .mode-state { align-self: end; }
 
 .play-page .deck-pick,
-.play-page .start-card { background-image: url('../sprites/Sprite_Submenu6.png'); }
-.play-page .start-card { background-image: url('../sprites/Sprite_Submenu7.png'); }
+.play-page .start-card { background-image: url('/sprites/Sprite_Submenu6.png'); }
+.play-page .start-card { background-image: url('/sprites/Sprite_Submenu7.png'); }
 .play-page .deck-pick::before,
 .play-page .start-card::before,
 .play-page .start-card::after { display: none; }
@@ -963,7 +963,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border: 0 !important;
   border-image: none !important;
   border-radius: 0 !important;
-  background-image: url('../sprites/Sprite_Submenu12.png') !important;
+  background-image: url('/sprites/Sprite_Submenu12.png') !important;
   background-position: center;
   background-size: 100% auto;
   background-repeat: no-repeat;
@@ -971,11 +971,11 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   text-shadow: 0 2px 5px #000;
 }
 
-.mode-sub :is(.primary-button, .wide-cta):not(:disabled) { background-image: url('../sprites/Sprite_Submenu13.png') !important; }
+.mode-sub :is(.primary-button, .wide-cta):not(:disabled) { background-image: url('/sprites/Sprite_Submenu13.png') !important; }
 
 .play-page .start-card .primary-button.wide:not(:disabled),
 .mode-sub .primary-button.wide:not(:disabled) {
-  background-image: url('../sprites/Sprite_Submenu10.png') !important;
+  background-image: url('/sprites/Sprite_Submenu10.png') !important;
   min-height: 70px;
   background-size: contain;
   background-position: center;
@@ -985,11 +985,11 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 
 .mode-sub :is(.resource-chip, .status-pill, .count-badge)::before { display: none; content: none; }
 
-.section-ladder .ladder-hero { background-image: url('../sprites/Sprite_Submenu7.png'); }
+.section-ladder .ladder-hero { background-image: url('/sprites/Sprite_Submenu7.png'); }
 .section-bots .bots-ready,
-.settings-page .settings-guide { background-image: url('../sprites/Sprite_Submenu7.png'); }
+.settings-page .settings-guide { background-image: url('/sprites/Sprite_Submenu7.png'); }
 .training-page .candidate-card,
-.training-page .evaluation-card { background-image: url('../sprites/Sprite_Submenu6.png'); }
+.training-page .evaluation-card { background-image: url('/sprites/Sprite_Submenu6.png'); }
 .section-ladder .ladder-hero::before,
 .section-bots .bots-ready::before,
 .settings-page .settings-guide::before,
@@ -1015,7 +1015,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .mode-sub .page-head::before { background-size: contain !important; }
 
 .section-play .page-head::before,
-.section-ladder .page-head::before { background-image: url('../sprites/Sprite_Submenu4.png') !important; }
+.section-ladder .page-head::before { background-image: url('/sprites/Sprite_Submenu4.png') !important; }
 
 .mode-sub .page-head::after {
   position: absolute !important;
@@ -1028,7 +1028,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   width: min(760px, 56vw) !important;
   height: 58px !important;
   transform: translateX(-50%) !important;
-  background: url('../sprites/Sprite_Submenu11.png') center/contain no-repeat !important;
+  background: url('/sprites/Sprite_Submenu11.png') center/contain no-repeat !important;
   filter: drop-shadow(0 5px 8px rgba(0, 0, 0, .55));
   opacity: .84 !important;
   content: "" !important;
@@ -1043,7 +1043,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   padding-inline: 11px;
   border: 0;
   border-radius: 0;
-  background: url('../sprites/Sprite_Submenu3.png') center/auto 100% no-repeat;
+  background: url('/sprites/Sprite_Submenu3.png') center/auto 100% no-repeat;
   box-shadow: none;
 }
 
@@ -1057,8 +1057,8 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .play-page .deck-pick .side-title,
 .play-page .start-card > .eyebrow { background-position: center; background-size: cover; background-repeat: no-repeat; }
 
-.play-page .deck-pick .side-title { padding-left: 52px !important; background-image: url('../sprites/Sprite_Submenu8.png'); }
-.play-page .play-config > .deck-pick:nth-child(2) .side-title { background-image: url('../sprites/Sprite_Submenu9.png'); }
+.play-page .deck-pick .side-title { padding-left: 52px !important; background-image: url('/sprites/Sprite_Submenu8.png'); }
+.play-page .play-config > .deck-pick:nth-child(2) .side-title { background-image: url('/sprites/Sprite_Submenu9.png'); }
 
 .play-page .start-card { padding-top: 0; }
 
@@ -1068,7 +1068,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   align-items: center;
   margin: 0 -22px;
   padding: 11px 15px 9px 52px;
-  background-image: url('../sprites/Sprite_Submenu8.png');
+  background-image: url('/sprites/Sprite_Submenu8.png');
   color: #e8c86e;
   text-shadow: 0 2px 4px #000;
 }
@@ -1077,7 +1077,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   min-height: 46px;
   padding: 5px 14px !important;
   border: 10px solid transparent !important;
-  border-image-source: url('../sprites/Sprite_Submenu12.png') !important;
+  border-image-source: url('/sprites/Sprite_Submenu12.png') !important;
   border-image-slice: 11 18 fill !important;
   border-image-width: 10px 16px !important;
   border-image-repeat: stretch !important;
@@ -1086,7 +1086,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   box-shadow: none !important;
 }
 
-.mode-sub .primary-button:not(.wide):not(:disabled) { border-image-source: url('../sprites/Sprite_Submenu13.png') !important; }
+.mode-sub .primary-button:not(.wide):not(:disabled) { border-image-source: url('/sprites/Sprite_Submenu13.png') !important; }
 
 /* Tall information panels use the natural-width slice of the authored
    surface.  This keeps the watermark quiet instead of scaling it to the
@@ -1106,14 +1106,14 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
    sprite by height and veil it with a dark wash. Its proportions remain
    intact and the centre watermark stays subordinate to the copy. */
 .settings-page .settings-grid > .side-card {
-  background-image: linear-gradient(rgba(5, 12, 18, .42), rgba(5, 12, 18, .62)), url('../sprites/Sprite_Submenu6.png') !important;
+  background-image: linear-gradient(rgba(5, 12, 18, .42), rgba(5, 12, 18, .62)), url('/sprites/Sprite_Submenu6.png') !important;
   background-position: center, center;
   background-size: auto 100%, auto 100% !important;
 }
 
 .settings-page .settings-guide,
 .section-bots .bots-ready {
-  background-image: linear-gradient(rgba(5, 12, 18, .42), rgba(5, 12, 18, .62)), url('../sprites/Sprite_Submenu7.png') !important;
+  background-image: linear-gradient(rgba(5, 12, 18, .42), rgba(5, 12, 18, .62)), url('/sprites/Sprite_Submenu7.png') !important;
   background-position: center, center;
   background-size: auto 100%, auto 100% !important;
 }
@@ -1128,7 +1128,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .section-sandbox .sandbox-global-panel,
 .section-sandbox .sandbox-player-card,
 .section-sandbox .sandbox-bottom-bar {
-  background-image: linear-gradient(rgba(5, 12, 18, .46), rgba(5, 12, 18, .68)), url('../sprites/Sprite_Submenu6.png') !important;
+  background-image: linear-gradient(rgba(5, 12, 18, .46), rgba(5, 12, 18, .68)), url('/sprites/Sprite_Submenu6.png') !important;
   background-position: center, center;
   background-size: auto 100%, auto 100% !important;
 }
@@ -1145,7 +1145,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .mode-sub::before { background: linear-gradient(180deg, rgba(3, 7, 12, .08), rgba(3, 7, 12, .24) 54%, rgba(3, 7, 12, .56)); }
 .mode-sub .sprite-topbar { background-image: linear-gradient(180deg, rgba(6, 10, 15, .98), rgba(9, 14, 20, .96)); background-size: auto; }
 .mode-sub .main-nav[data-open="true"] {
-  background-image: linear-gradient(rgba(5, 10, 15, .93), rgba(5, 10, 15, .98)), url('../sprites/Sprite_Submenu1.png');
+  background-image: linear-gradient(rgba(5, 10, 15, .93), rgba(5, 10, 15, .98)), url('/sprites/Sprite_Submenu1.png');
   background-position: center, top center;
   background-size: auto, 100% auto;
   background-repeat: no-repeat;
@@ -1168,7 +1168,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   padding: 0 0 0 50px;
   border: 0;
   border-radius: 0;
-  background: url('../sprites/Sprite_Submenu3.png') center/114px 61px no-repeat;
+  background: url('/sprites/Sprite_Submenu3.png') center/114px 61px no-repeat;
   box-shadow: none;
 }
 .mode-sub .home-control span { display: none; }
@@ -1182,14 +1182,14 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   border: 0;
   border-radius: 0;
-  background-image: url('../sprites/Sprite_Submenu5.png');
+  background-image: url('/sprites/Sprite_Submenu5.png');
   background-position: center;
   background-size: 100% 100%;
   background-repeat: no-repeat;
 }
 .mode-sub .mode-card[data-play-mode="bot"],
 .mode-sub .mode-card[data-play-mode="local"],
-.mode-sub .mode-card[data-play-mode="ranked"] { background-image: url('../sprites/Sprite_Submenu5.png'); background-size: 100% 100%; background-blend-mode: normal; }
+.mode-sub .mode-card[data-play-mode="ranked"] { background-image: url('/sprites/Sprite_Submenu5.png'); background-size: 100% 100%; background-blend-mode: normal; }
 .mode-sub .mode-card .mode-icon {
   display: block;
   width: auto;
@@ -1209,7 +1209,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .mode-sub .mode-card p { grid-row: 3; grid-column: 1; align-self: start; margin-top: 5px; }
 .mode-sub .mode-card .mode-state { grid-row: 4; grid-column: 1; align-self: end; margin-top: 8px; }
 .mode-sub .mode-card.selected {
-  background-image: linear-gradient(rgba(255, 197, 76, .09), rgba(7, 18, 26, .04)), url('../sprites/Sprite_Submenu5.png');
+  background-image: linear-gradient(rgba(255, 197, 76, .09), rgba(7, 18, 26, .04)), url('/sprites/Sprite_Submenu5.png');
   background-size: 100% 100%, 100% 100%;
   background-blend-mode: normal, normal;
   box-shadow: inset 0 0 28px rgba(255, 190, 67, .16), 0 0 22px rgba(242, 190, 73, .16);
@@ -1230,8 +1230,8 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 }
 .play-page .deck-pick { aspect-ratio: 467 / 167; }
 .play-page .start-card { aspect-ratio: 471 / 168; position: relative; overflow: visible; }
-.mode-sub .play-page .play-config > .deck-pick { background-image: url('../sprites/Sprite_Submenu6.png') !important; background-size: 100% auto !important; background-position: center top !important; }
-.mode-sub .play-page .play-config > .start-card { background-image: url('../sprites/Sprite_Submenu7.png') !important; background-size: 100% auto !important; background-position: center top !important; }
+.mode-sub .play-page .play-config > .deck-pick { background-image: url('/sprites/Sprite_Submenu6.png') !important; background-size: 100% auto !important; background-position: center top !important; }
+.mode-sub .play-page .play-config > .start-card { background-image: url('/sprites/Sprite_Submenu7.png') !important; background-size: 100% auto !important; background-position: center top !important; }
 .play-page .deck-pick::before,
 .play-page .start-card::before,
 .play-page .start-card::after { display: none !important; content: none !important; }
@@ -1264,7 +1264,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border: 0 !important;
   border-image: none !important;
   border-radius: 0 !important;
-  background: url('../sprites/Sprite_Submenu10.png') center/100% 100% no-repeat !important;
+  background: url('/sprites/Sprite_Submenu10.png') center/100% 100% no-repeat !important;
   box-shadow: none !important;
   color: #fff1ca;
 }
@@ -1283,7 +1283,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   padding: 12px 22px 12px 52px;
   border: 0;
   border-radius: 0;
-  background: url('../sprites/Sprite_Submenu8.png') center/100% 100% no-repeat;
+  background: url('/sprites/Sprite_Submenu8.png') center/100% 100% no-repeat;
   box-shadow: none;
   color: #fff;
   font-size: 11px;
@@ -1369,7 +1369,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
   border: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background-image: url('../sprites/Sprite_Submenu12.png') !important;
+  background-image: url('/sprites/Sprite_Submenu12.png') !important;
   background-position: center;
   background-size: contain;
   background-repeat: no-repeat;
@@ -1384,7 +1384,7 @@ img[src*="./sprites/"] { object-fit: contain; object-position: center; }
 .duel-active .duel-phase-rail li > small { display: none !important; }
 .duel-active .duel-phase-rail li.complete > span { color: #b9e1db; filter: brightness(.96) saturate(1.08); }
 .duel-active .duel-phase-rail li.current > span {
-  background-image: url('../sprites/Sprite_Submenu13.png') !important;
+  background-image: url('/sprites/Sprite_Submenu13.png') !important;
   color: #fff3c8;
   filter: brightness(1.06) saturate(1.08) drop-shadow(0 0 7px rgba(245, 193, 78, .38));
   transform: none !important;

@@ -37,7 +37,7 @@ export function renderPhaseRail({ view, model, esc, registerAction }) {
   const commands = automatedOcgcore && view?.botPending
     ? `<span class="phase-auto is-opponent"><i></i><b>Rival actuando</b></span>`
     : automatedOcgcore && model.autoPhaseAdvance
-      ? `<span class="phase-auto" data-testid="phase-auto"><i></i><b>Avance automático</b><small>2,4 s</small></span>`
+      ? `<span class="phase-auto" data-testid="phase-auto"><i></i><b>Avance automático</b><small>0,3 s</small></span>`
       : model.mode === "response"
         ? `<small class="phase-locked">Decide en la ventana de acciones</small>`
         : direct.length
@@ -135,7 +135,7 @@ export function renderResponseTray({ view, model, revealed = false, cardForCode,
   if (!revealed && options.length) {
     const alertTitle = view?.pendingType === "SELECT_EFFECTYN" ? "Tienes una posible activación" : "Tienes una respuesta disponible";
     const yesLabel = view?.pendingType === "SELECT_EFFECTYN" ? "Ver activación" : "Responder";
-    return `<section class="duel-response-tray response-alert" data-testid="response-tray" role="alertdialog" aria-label="${esc(alertTitle)}"><div class="response-alert-animation" data-testid="response-alert-animation" aria-hidden="true"><img class="response-alert-ornament" src="./sprites/Sprite_Ornamentacion8.png" alt="" /></div><div class="response-copy"><span>${esc(eyebrow)}</span><strong>${esc(alertTitle)}</strong><small>${esc(title)}</small></div><div class="response-alert-actions"><button type="button" class="response-reveal" data-action-options-reveal><span>FX</span><b>${esc(yesLabel)}</b></button>${decline ? registerButton(decline, "response-decline", { esc, registerAction, label: view?.pendingType === "SELECT_EFFECTYN" ? "No activar" : "No responder" }) : ""}</div></section>`;
+    return `<section class="duel-response-tray response-alert" data-testid="response-tray" role="alertdialog" aria-label="${esc(alertTitle)}"><div class="response-alert-animation" data-testid="response-alert-animation" aria-hidden="true"><img class="response-alert-ornament" src="/sprites/Sprite_Ornamentacion8.png" alt="" /></div><div class="response-copy"><span>${esc(eyebrow)}</span><strong>${esc(alertTitle)}</strong><small>${esc(title)}</small></div><div class="response-alert-actions"><button type="button" class="response-reveal" data-action-options-reveal><span>FX</span><b>${esc(yesLabel)}</b></button>${decline ? registerButton(decline, "response-decline", { esc, registerAction, label: view?.pendingType === "SELECT_EFFECTYN" ? "No activar" : "No responder" }) : ""}</div></section>`;
   }
   return `<section class="duel-response-tray response-revealed" data-testid="response-tray-options" role="region" aria-label="${esc(title)}"><div class="response-copy"><span>${esc(eyebrow)}</span><strong>${esc(title)}</strong><small>${esc(detail)}</small></div><div class="response-options">${options.map((action) => responseOption(action, { cardForCode, cardMarkup, esc, registerAction })).join("") || `<span class="response-required">Elige la respuesta obligatoria disponible.</span>`}</div>${decline ? registerButton(decline, "response-decline", { esc, registerAction, label: "No hacer nada" }) : ""}</section>`;
 }

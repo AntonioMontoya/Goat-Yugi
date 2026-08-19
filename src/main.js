@@ -1007,6 +1007,15 @@ function resumeOrStartDuel(options = {}) {
   startDuel(options);
 }
 
+function flipCoinStartingPlayer() {
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const buffer = new Uint32Array(1);
+    crypto.getRandomValues(buffer);
+    return buffer[0] % 2;
+  }
+  return Math.random() < 0.5 ? 0 : 1;
+}
+
 function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckId, botId = null, ladder = null, deckOverride = null, opponentDeckOverride = null, fresh = false } = {}) {
   if (fresh) clearActiveDuelState();
   app.duelEventLog = { open: false, search: "", filter: "all", scrollTop: 0 };
@@ -1060,7 +1069,7 @@ function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckI
   app.counterAllocation = { key: null, counters: [] };
   app.duelFeedbackSeen = new Set();
   app.resultDismissed = false;
-  const startingPlayer = Math.random() < 0.5 ? 0 : 1;
+  const startingPlayer = flipCoinStartingPlayer();
   app.duelStart = { open: true, winner: startingPlayer, side: startingPlayer === 0 ? "CARA" : "CRUZ", configured: false };
   setDuelPresentation(null);
   if (app.duel?.destroy) app.duel.destroy();

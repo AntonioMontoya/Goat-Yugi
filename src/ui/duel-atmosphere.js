@@ -1,58 +1,38 @@
 import { ParticleSystem } from "./particles.js";
 
 let duelParticleSystems = [];
-let activeDustCanvas = null;
-let activeEmbersCanvas = null;
 
 export function initDuelAtmosphere({ mode, motionLevel }) {
-  const dustCanvas = document.getElementById("duel-particles-dust");
-  const embersCanvas = document.getElementById("duel-particles-embers");
-  const systemReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
-
-  if (mode !== "duel" || motionLevel !== "full" || systemReducedMotion || !dustCanvas) {
-    if (duelParticleSystems.length) {
-      duelParticleSystems.forEach((system) => system.destroy());
-      duelParticleSystems = [];
-      activeDustCanvas = null;
-      activeEmbersCanvas = null;
-    }
-    return;
-  }
-
-  // If the particle systems are already running on the exact same DOM canvas elements, don't recreate
-  if (duelParticleSystems.length > 0 && activeDustCanvas === dustCanvas && activeEmbersCanvas === embersCanvas) {
-    return;
-  }
-
   duelParticleSystems.forEach((system) => system.destroy());
   duelParticleSystems = [];
-  activeDustCanvas = dustCanvas;
-  activeEmbersCanvas = embersCanvas;
 
-  const compact = window.innerWidth < 768;
+  const systemReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  if (mode !== "duel" || motionLevel !== "full" || systemReducedMotion) return;
+
+  const compact = window.innerWidth < 720;
   const layers = [
     {
-      canvas: dustCanvas,
+      canvas: document.getElementById("duel-particles-dust"),
       options: {
         type: "gold",
-        density: compact ? 10 : 20,
+        density: compact ? 14 : 34,
         direction: "up",
-        minSize: 0.45,
-        maxSize: 1.5,
-        minSpeed: 0.025,
-        maxSpeed: 0.12,
+        minSize: .45,
+        maxSize: 1.7,
+        minSpeed: .025,
+        maxSpeed: .16,
       },
     },
     {
-      canvas: embersCanvas,
+      canvas: document.getElementById("duel-particles-embers"),
       options: {
         type: "fire",
-        density: compact ? 5 : 10,
+        density: compact ? 7 : 18,
         direction: "up",
-        minSize: 0.55,
-        maxSize: 1.6,
-        minSpeed: 0.05,
-        maxSpeed: 0.20,
+        minSize: .55,
+        maxSize: 1.9,
+        minSpeed: .06,
+        maxSpeed: .28,
       },
     },
   ];

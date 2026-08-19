@@ -1,11 +1,9 @@
 import { isPhaseAction, phaseStepId } from "./duel-presentation.js";
 
-const OPEN_PHASE_COMMANDS = new Set(["SELECT_IDLECMD", "SELECT_BATTLECMD"]);
-const ALWAYS_MANUAL_PHASES = new Set(["MAIN_1", "BATTLE", "MAIN_2"]);
+export const AUTO_PHASE_DELAY_MS = 300;
 
-// Long enough for every phase to register visually without making an empty
-// phase feel stalled. Presentation cues finish before this timer begins.
-export const AUTO_PHASE_DELAY_MS = 2400;
+const OPEN_PHASE_COMMANDS = new Set(["SELECT_IDLECMD", "SELECT_BATTLECMD"]);
+const ALWAYS_MANUAL_PHASES = new Set(["MAIN_1"]);
 
 function isDeclineAction(action) {
   return action?.actionKind === "decline"

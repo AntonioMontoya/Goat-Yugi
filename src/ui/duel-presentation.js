@@ -291,8 +291,8 @@ function deriveLegacyDuelPresentation({ action, before, after }) {
 }
 
 const FEEDBACK_DEFAULTS = Object.freeze({
-  turn:     { duration: 1000,  soundId: "turn",     blocking: false, tier: "notable" },
-  phase:    { duration: 400,   soundId: "phase",    blocking: false, tier: "subtle" },
+  turn:     { duration: 1100,  soundId: "turn",     blocking: true,  tier: "major" },
+  phase:    { duration: 1100,  soundId: "phase",    blocking: true,  tier: "major" },
   activate: { duration: 850,   soundId: "activate", blocking: false, tier: "notable" },
   chain:    { duration: 1200,  soundId: "chain",    blocking: true,  tier: "epic" },
   flip:     { duration: 1000,  soundId: "flip",     blocking: false, tier: "notable" },
@@ -574,9 +574,9 @@ export function deriveDuelFeedbackEvents({ action, before, after }) {
     result.push(feedbackEvent("turn", null, {
       turn: after.turn,
       actor: after.turnPlayer,
-      eyebrow: `TURNO ${String(after.turn).padStart(2, "0")} · ${actorLabel(after.turnPlayer)}`,
-      title: `Turno de ${actorLabel(after.turnPlayer)}`,
-      detail: `${phaseLabel(after.phase)} · comienza el robo antes de abrir la prioridad.`,
+      eyebrow: `TURNO ${String(after.turn).padStart(2, "0")} · ${actorLabel(after.turnPlayer).toUpperCase()}`,
+      title: phaseLabel(after.phase),
+      detail: `Comienza el turno de ${actorLabel(after.turnPlayer)}.`,
     }));
   }
   if (phaseChanged && !turnChanged) {
