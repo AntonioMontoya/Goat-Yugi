@@ -16,20 +16,20 @@ body { min-width: 280px; overflow-x: hidden; }
   min-height: 100dvh;
   padding-bottom: 0;
   background-color: #080c12;
-  background-image: var(--section-background, url('/sprites/Menu-Fondo-Templo.png'));
+  background-image: var(--section-background, url('../sprites/Menu-Fondo-Templo.png'));
   background-position: center top;
   background-size: cover;
   background-attachment: fixed;
 }
 .section-play,
-.section-ladder { --section-background: url('/sprites/Menu-Fondo-Arena.png'); }
+.section-ladder { --section-background: url('../sprites/Menu-Fondo-Arena.png'); }
 .section-sandbox,
 .section-training,
-.section-research { --section-background: url('/sprites/Menu-Fondo-Noche.png'); }
+.section-research { --section-background: url('../sprites/Menu-Fondo-Noche.png'); }
 .section-card-viewer,
 .section-deck-builder,
 .section-bots,
-.section-settings { --section-background: url('/sprites/Menu-Fondo-Templo.png'); }
+.section-settings { --section-background: url('../sprites/Menu-Fondo-Templo.png'); }
 .mode-sub::before {
   inset-block-start: 76px;
   background: linear-gradient(180deg, rgba(5, 9, 14, .64), rgba(5, 9, 14, .84) 46%, rgba(5, 9, 14, .93));

@@ -851,8 +851,8 @@ function renderOcgcoreDuel(view = app.duel.view()) {
   return `<section class="page duel-page">
      ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, esc })}
      <div class="duel-layout"><div class="table-frame ${app.boardTilt ? "tilted" : ""} ${app.inspectedCard ? "has-inspector" : ""}">
-       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
-       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
+       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
+       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
        <div class="duel-board ${app.duelPresentation ? `feedback-${esc(app.duelPresentation.kind)} tier-${esc(app.duelPresentation.tier || "notable")}` : ""}">
          <div class="hand-strip opponent-hand">${playerHandMarkup(playerTwo, app.selectedCardUid, manual, userActions, affordanceInteraction)}</div>
          <div class="opponent-row player-row is-opponent"><div class="player-meta"><span class="avatar opponent-avatar">${manual ? "2" : esc(opponentName.slice(0, 1).toUpperCase())}</span><div><strong>${esc(playerName(playerTwo, manual))}</strong><small>${esc(playerTwoDeck.name)}</small></div>${lifePointMarkup(playerTwo)}</div><div class="hand-count">HAND <b>${playerTwo.handCount}</b><span class="deck-count">DECK ${playerTwo.deckCount}</span></div></div>

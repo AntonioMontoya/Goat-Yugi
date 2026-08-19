@@ -48,7 +48,7 @@ export function menuMarkup({ activeMode, open, escapeHtml }) {
   const buttons = [MENU_ITEMS[0], ...SECTION_ITEMS].map(({ mode, label, sprite, desc }, index) => {
     const selected = activeMode === mode;
     return `<button type="button" class="nav-item ${selected ? "active" : ""}" data-mode="${mode}" ${selected ? 'aria-current="page"' : ""}>
-      <img src="/sprites/${sprite}.png" alt="" aria-hidden="true" />
+      <img src="./sprites/${sprite}.png" alt="" aria-hidden="true" />
       <span class="nav-item-copy"><small>${String(index + 1).padStart(2, "0")}</small><strong>${escapeHtml(label)}</strong><em>${escapeHtml(desc)}</em></span>
     </button>`;
   }).join("");
@@ -56,7 +56,7 @@ export function menuMarkup({ activeMode, open, escapeHtml }) {
   return `<div class="section-switcher" aria-label="Cambiar de sección">
       <button type="button" class="section-arrow" data-mode="${previous.mode}" aria-label="Anterior: ${escapeHtml(previous.label)}"><span aria-hidden="true">&lsaquo;</span></button>
       <button type="button" class="section-current" data-menu-toggle aria-controls="main-menu" aria-expanded="${open}">
-        <img src="/sprites/${current.sprite}.png" alt="" aria-hidden="true" />
+        <img src="./sprites/${current.sprite}.png" alt="" aria-hidden="true" />
         <span><small>SECCIÓN ${activeIndex + 1} / ${SECTION_ITEMS.length}</small><strong>${escapeHtml(current.label)}</strong></span>
         <b aria-hidden="true">${open ? "×" : "▾"}</b>
       </button>
