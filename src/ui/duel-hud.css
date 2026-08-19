@@ -166,11 +166,11 @@
 .duel-active .field-zone-slot > .board-card-wrap { width: auto; height: min(100%, 82px); aspect-ratio: var(--goat-card-aspect); }
 .board-card-wrap > .board-card-button { width: 100%; height: 100%; }
 
-.duel-active .card-action-popover { position: absolute; right: auto; bottom: calc(100% + 7px); left: 50%; z-index: 95; display: grid !important; width: max-content; min-width: 128px; max-width: min(250px, calc(100vw - 24px)); gap: 5px; padding: 6px; transform: translateX(-50%); border: 1px solid rgba(244, 189, 88, .72); border-radius: 7px; background: rgba(5, 12, 19, .98); box-shadow: 0 13px 30px rgba(0, 0, 0, .72); }
-.duel-active .card-action-popover-below { top: calc(100% + 7px); bottom: auto; }
-.duel-active .field-zone-slot .card-action-popover { left: 0; transform: none; }
-.card-action-popover::after { position: absolute; bottom: -5px; left: calc(50% - 5px); width: 9px; height: 9px; transform: rotate(45deg); border-right: 1px solid rgba(244, 189, 88, .72); border-bottom: 1px solid rgba(244, 189, 88, .72); background: #071019; content: ""; }
-.card-action-popover-below::after { top: -5px; bottom: auto; transform: rotate(225deg); }
+.duel-active .card-action-popover { position: absolute; right: auto; bottom: calc(100% + 9px); left: 50%; z-index: 180; display: grid !important; width: max-content; min-width: 140px; max-width: min(260px, calc(100vw - 24px)); gap: 5px; padding: 6px 8px; transform: translateX(calc(-50% + var(--popover-nudge-x, 0px))); border: 1.5px solid rgba(244, 189, 88, .85); border-radius: 8px; background: rgba(5, 12, 19, .98); box-shadow: 0 14px 34px rgba(0, 0, 0, .85), 0 0 16px rgba(244, 189, 88, .25); }
+.duel-active .card-action-popover-below { top: calc(100% + 9px); bottom: auto; }
+.duel-active .field-zone-slot .card-action-popover { left: 0; transform: translateX(var(--popover-nudge-x, 0px)); }
+.card-action-popover::after { position: absolute; bottom: -5px; left: calc(50% - var(--popover-nudge-x, 0px) - 5px); width: 9px; height: 9px; transform: rotate(45deg); border-right: 1.5px solid rgba(244, 189, 88, .85); border-bottom: 1.5px solid rgba(244, 189, 88, .85); background: #050c13; content: ""; pointer-events: none; }
+.card-action-popover-below::after { top: -5px; bottom: auto; transform: rotate(225deg); border-right: 1.5px solid rgba(244, 189, 88, .85); border-bottom: 1.5px solid rgba(244, 189, 88, .85); }
 .card-action-popover header { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 7px; padding: 0 1px 4px; border-bottom: 1px solid rgba(157, 188, 192, .15); }
 .card-action-popover header > span { min-width: 0; }
 .card-action-popover header small,

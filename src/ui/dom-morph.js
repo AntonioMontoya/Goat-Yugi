@@ -1,7 +1,7 @@
 /**
- * Reconciliación DOM ultrarrápida (Zero-Dependency DOM Morphing).
- * Preserva los elementos DOM existentes (en especial <img> y <canvas>) para eliminar
- * el parpadeo de recarga de imágenes en WebKit / Safari al actualizar fases, notificaciones o eventos.
+ * Reconciliación DOM ultrarrápida con soporte para claves (Keyed DOM Morphing).
+ * Preserva de forma persistente los elementos DOM existentes (en especial <img>, <canvas>, <input>, <select>)
+ * para eliminar por completo el parpadeo de recarga de imágenes en WebKit / Safari al actualizar fases, notificaciones o eventos.
  */
 export function morphDom(targetNode, newHtmlString) {
   if (!targetNode) return;
@@ -25,6 +25,17 @@ export function morphDom(targetNode, newHtmlString) {
   morph(oldRoot, newRoot);
 }
 
+function getNodeKey(node) {
+  if (!node || node.nodeType !== Node.ELEMENT_NODE) return null;
+  return (
+    node.getAttribute("data-card-inspect") ||
+    node.getAttribute("data-action-id") ||
+    node.getAttribute("data-testid") ||
+    node.getAttribute("id") ||
+    null
+  );
+}
+
 function morph(oldNode, newNode) {
   if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
     oldNode.parentNode?.replaceChild(newNode.cloneNode(true), oldNode);
@@ -40,7 +51,7 @@ function morph(oldNode, newNode) {
 
   if (oldNode.nodeType === Node.ELEMENT_NODE) {
     // Preservar lienzos canvas y no reiniciar contextos de partículas
-    if (oldNode.tagName === "CANVAS" && oldNode.id === newNode.id) {
+    if (oldNode.tagName === "CANVAS") {
       return;
     }
 
@@ -48,7 +59,7 @@ function morph(oldNode, newNode) {
     const oldAttrs = oldNode.attributes;
     const newAttrs = newNode.attributes;
 
-    // Eliminar atributos que ya no existen
+    // Eliminar atributos que ya no existen en el nuevo nodo
     for (let i = oldAttrs.length - 1; i >= 0; i--) {
       const name = oldAttrs[i].name;
       if (!newNode.hasAttribute(name)) {
@@ -56,16 +67,19 @@ function morph(oldNode, newNode) {
       }
     }
 
-    // Establecer o actualizar nuevos atributos
+    // Establecer o actualizar nuevos atributos sin reasignar 'src' idéntico en imágenes (evita reload en WebKit)
     for (let i = 0; i < newAttrs.length; i++) {
       const name = newAttrs[i].name;
       const value = newAttrs[i].value;
+      if (name === "src" && oldNode.getAttribute("src") === value) {
+        continue;
+      }
       if (oldNode.getAttribute(name) !== value) {
         oldNode.setAttribute(name, value);
       }
     }
 
-    // Para imágenes, si la fuente (src) es la misma, no tocar el elemento para evitar que WebKit parpadee
+    // Para imágenes con la misma fuente, terminar aquí (no tocar hijos ni recargar)
     if (oldNode.tagName === "IMG") {
       return;
     }
@@ -87,25 +101,60 @@ function morph(oldNode, newNode) {
       }
     }
 
-    // Reconciliar nodos hijos
+    // Reconciliación de nodos hijos con búsqueda por clave
     const oldChildren = Array.from(oldNode.childNodes);
     const newChildren = Array.from(newNode.childNodes);
 
-    const oldLen = oldChildren.length;
-    const newLen = newChildren.length;
-    const maxLen = Math.max(oldLen, newLen);
+    const oldKeyed = new Map();
+    const oldUnkeyed = [];
 
-    for (let i = 0; i < maxLen; i++) {
-      const oldChild = oldChildren[i];
-      const newChild = newChildren[i];
-
-      if (!oldChild && newChild) {
-        oldNode.appendChild(newChild.cloneNode(true));
-      } else if (oldChild && !newChild) {
-        oldNode.removeChild(oldChild);
-      } else if (oldChild && newChild) {
-        morph(oldChild, newChild);
+    for (let i = 0; i < oldChildren.length; i++) {
+      const child = oldChildren[i];
+      const key = getNodeKey(child);
+      if (key) {
+        oldKeyed.set(key, child);
+      } else {
+        oldUnkeyed.push(child);
       }
+    }
+
+    let unkeyedIdx = 0;
+
+    for (let i = 0; i < newChildren.length; i++) {
+      const newChild = newChildren[i];
+      const key = getNodeKey(newChild);
+
+      let matchingOldChild = null;
+      if (key && oldKeyed.has(key)) {
+        matchingOldChild = oldKeyed.get(key);
+        oldKeyed.delete(key);
+      } else if (!key && unkeyedIdx < oldUnkeyed.length) {
+        // Encontrar siguiente hijo no clave compatible
+        while (unkeyedIdx < oldUnkeyed.length) {
+          const candidate = oldUnkeyed[unkeyedIdx++];
+          if (candidate.nodeName === newChild.nodeName) {
+            matchingOldChild = candidate;
+            break;
+          }
+        }
+      }
+
+      if (matchingOldChild) {
+        // Reordenar si la posición no coincide
+        if (oldNode.childNodes[i] !== matchingOldChild) {
+          oldNode.insertBefore(matchingOldChild, oldNode.childNodes[i] || null);
+        }
+        morph(matchingOldChild, newChild);
+      } else {
+        // Nuevo nodo no existente antes
+        const cloned = newChild.cloneNode(true);
+        oldNode.insertBefore(cloned, oldNode.childNodes[i] || null);
+      }
+    }
+
+    // Eliminar nodos viejos que sobran
+    while (oldNode.childNodes.length > newChildren.length) {
+      oldNode.removeChild(oldNode.lastChild);
     }
   }
 }

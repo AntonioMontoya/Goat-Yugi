@@ -502,16 +502,22 @@ function render() {
 }
 function positionCardPopovers() {
   window.requestAnimationFrame(() => {
-    const inspector = document.querySelector("[data-testid='card-inspector']")?.getBoundingClientRect();
     document.querySelectorAll("[data-testid='card-action-popover']").forEach((popover) => {
       popover.style.removeProperty("--popover-nudge-x");
       popover.classList.remove("is-below");
       let rect = popover.getBoundingClientRect();
-      if (rect.top < 54) { popover.classList.add("is-below"); rect = popover.getBoundingClientRect(); }
-      const safeLeft = 8;
-      const safeRight = window.innerWidth - 8;
-      let nudge = rect.left < safeLeft ? safeLeft - rect.left : rect.right > safeRight ? safeRight - rect.right : 0;
-      if (inspector && rect.right > inspector.left && rect.left < inspector.right) nudge -= rect.right - inspector.left + 8;
+      if (rect.top < 54) {
+        popover.classList.add("is-below");
+        rect = popover.getBoundingClientRect();
+      }
+      const safeLeft = 10;
+      const safeRight = window.innerWidth - 10;
+      let nudge = 0;
+      if (rect.left < safeLeft) {
+        nudge = safeLeft - rect.left;
+      } else if (rect.right > safeRight) {
+        nudge = safeRight - rect.right;
+      }
       popover.style.setProperty("--popover-nudge-x", `${Math.round(nudge)}px`);
     });
   });

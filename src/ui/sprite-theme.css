@@ -322,12 +322,17 @@
 .duel-active .duel-pillar.pillar-left { left: 4px; }
 .duel-active .duel-pillar.pillar-right { right: 4px; transform: translateY(-50%) scaleX(-1); }
 .duel-active .duel-board { z-index: 5; width: calc(100% - clamp(150px, 13vw, 220px)); max-width: 1120px; align-self: center; }
-.duel-active .player-row { width: calc(100% + 72px); margin-inline: -36px; padding-inline: 18px; }
 .duel-active .hand-row { gap: 8px; }
-.duel-active .hand-card-wrap { width: 96px; min-width: 60px; flex: 0 1 96px; transform: translateY(var(--fan-lift, 0)) rotate(var(--fan-angle, 0)); transform-origin: 50% 110%; transition: transform .18s ease, filter .18s ease; }
-.duel-active .opponent-hand .hand-card-wrap { width: 86px; min-width: 56px; flex-basis: 86px; transform: translateY(calc(var(--fan-lift, 0px) * -1)) rotate(var(--fan-angle, 0)); transform-origin: 50% -10%; }
-.duel-active .hand-card-wrap:hover,
-.duel-active .hand-card-wrap:focus-within { z-index: 12; filter: brightness(1.08); }
+.duel-active .hand-card-wrap { width: 96px; min-width: 60px; flex: 0 1 96px; position: relative; overflow: visible; z-index: 1; }
+.duel-active .hand-card-wrap > .hand-card-button,
+.duel-active .hand-card-wrap > .card { width: 100%; transform: translateY(var(--fan-lift, 0)) rotate(var(--fan-angle, 0)); transform-origin: 50% 110%; transition: transform .18s ease, filter .18s ease; }
+.duel-active .opponent-hand .hand-card-wrap { width: 86px; min-width: 56px; flex-basis: 86px; position: relative; overflow: visible; }
+.duel-active .opponent-hand .hand-card-wrap > .hand-card-button,
+.duel-active .opponent-hand .hand-card-wrap > .card { width: 100%; transform: translateY(calc(var(--fan-lift, 0px) * -1)) rotate(var(--fan-angle, 0)); transform-origin: 50% -10%; transition: transform .18s ease, filter .18s ease; }
+.duel-active .hand-card-wrap:hover > .hand-card-button,
+.duel-active .hand-card-wrap:focus-within > .hand-card-button { filter: brightness(1.08); }
+.duel-active .hand-card-wrap.has-card-actions { z-index: 120; }
+.duel-active .hand-card-wrap.has-card-actions > .hand-card-button { transform: translateY(calc(var(--fan-lift, 0px) - 18px)) rotate(0deg) !important; filter: brightness(1.12); }
 .duel-active .field-zone-row .zone-slots,
 .duel-active .field-zone-row .zone-backrow { grid-template-columns: repeat(5, minmax(68px, 82px)); justify-content: center; gap: 3px; }
 .duel-active .monster-row .zone-slots,
