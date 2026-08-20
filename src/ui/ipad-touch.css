@@ -161,7 +161,8 @@ button:active,
 }
 
 .ipad-edition .table-frame {
-  padding: 6px 64px 6px 8px;
+  position: relative !important;
+  padding: 6px 12px !important;
   border-radius: 14px;
   border: 2px solid rgba(244, 189, 88, 0.6);
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.85), 0 16px 36px rgba(0, 0, 0, 0.7);
@@ -170,19 +171,28 @@ button:active,
 .ipad-edition .duel-pillar {
   display: block !important;
   position: absolute !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  height: 100% !important;
-  width: clamp(54px, 6vw, 90px) !important;
-  opacity: 0.92 !important;
+  top: 50% !important;
+  bottom: auto !important;
+  height: 94% !important;
+  width: clamp(52px, 5.5vw, 84px) !important;
+  opacity: 0.94 !important;
   pointer-events: none !important;
   object-fit: contain !important;
-  z-index: 1 !important;
-  filter: blur(0.3px) !important;
+  z-index: 2 !important;
+  filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.85)) !important;
 }
 
-.ipad-edition .pillar-left { left: 4px !important; }
-.ipad-edition .pillar-right { right: 4px !important; transform: scaleX(-1) !important; }
+.ipad-edition .pillar-left {
+  left: 6px !important;
+  right: auto !important;
+  transform: translateY(-50%) !important;
+}
+
+.ipad-edition .pillar-right {
+  right: 6px !important;
+  left: auto !important;
+  transform: translateY(-50%) scaleX(-1) !important;
+}
 
 /* --------------------------------------------------------------------------
    Hand Cards & Board Cards Touch Interactions
@@ -315,22 +325,104 @@ button:active,
 }
 
 /* --------------------------------------------------------------------------
-   Phase Rail & Duel Decision Bar Touch Targets
+   Phase Rail & Duel Decision Bar Touch Targets & Clear Indicators
    -------------------------------------------------------------------------- */
+.ipad-edition .duel-head-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.ipad-edition .duel-head-meta > span {
+  display: inline-flex !important;
+  padding: 4px 10px !important;
+  border: 1.5px solid rgba(244, 189, 88, 0.5) !important;
+  border-radius: 999px !important;
+  background: rgba(14, 25, 36, 0.95) !important;
+  color: #ffd16e !important;
+  font: 800 12px var(--mono) !important;
+  letter-spacing: 0.08em !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  white-space: nowrap !important;
+}
+
+.ipad-edition .duel-head-meta .priority-owner {
+  border-color: rgba(98, 232, 226, 0.6) !important;
+  color: #62e8e2 !important;
+}
+
 .ipad-edition .duel-phase-rail {
-  min-height: 48px;
+  min-height: 52px !important;
+  padding: 4px 10px !important;
+  border: 1.5px solid rgba(244, 189, 88, 0.4) !important;
+  border-radius: 10px !important;
+  background: linear-gradient(90deg, rgba(8, 16, 24, 0.98), rgba(18, 30, 42, 0.98), rgba(8, 16, 24, 0.98)) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+.ipad-edition .duel-phase-rail > strong {
+  display: inline-block !important;
+  font-size: 11px !important;
+  color: var(--ipad-gold) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.ipad-edition .duel-phase-rail ol {
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  gap: 6px !important;
+}
+
+.ipad-edition .duel-phase-rail li {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ipad-edition .duel-phase-rail li > span {
+  display: grid !important;
+  place-items: center !important;
+  width: 38px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  font-family: var(--mono) !important;
+  letter-spacing: 0.05em !important;
+}
+
+.ipad-edition .duel-phase-rail li.complete > span {
+  background: rgba(30, 60, 55, 0.6) !important;
+  color: #72aaa8 !important;
+  border: 1px solid rgba(100, 211, 148, 0.3) !important;
+}
+
+.ipad-edition .duel-phase-rail li.future > span {
+  background: rgba(12, 22, 30, 0.6) !important;
+  color: #60757d !important;
+  border: 1px solid rgba(142, 169, 175, 0.2) !important;
+}
+
+.ipad-edition .duel-phase-rail li.current > span {
+  color: #fff6d8 !important;
+  border: 2px solid #f5c563 !important;
+  background: linear-gradient(180deg, #965f1e, #4d3012) !important;
+  box-shadow: 0 0 16px rgba(244, 189, 88, 0.75) !important;
+  transform: scale(1.08) !important;
 }
 
 .ipad-edition .phase-command {
-  min-height: 48px;
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: 800;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #d7a94c, #9d6d1b);
-  color: #0c1118;
-  box-shadow: 0 4px 16px rgba(244, 189, 88, 0.4);
-  letter-spacing: 0.05em;
+  min-height: 44px !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, #e5b95c, #9d6d1b) !important;
+  color: #0c1118 !important;
+  box-shadow: 0 4px 14px rgba(244, 189, 88, 0.45) !important;
+  letter-spacing: 0.04em !important;
+  white-space: nowrap !important;
 }
 
 .ipad-edition .response-option {

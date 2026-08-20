@@ -1,6 +1,6 @@
 import { isPhaseAction, phaseStepId } from "./duel-presentation.js";
 
-export const AUTO_PHASE_DELAY_MS = 300;
+export const AUTO_PHASE_DELAY_MS = 700;
 
 const OPEN_PHASE_COMMANDS = new Set(["SELECT_IDLECMD", "SELECT_BATTLECMD"]);
 const ALWAYS_MANUAL_PHASES = new Set(["MAIN_1"]);

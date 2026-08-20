@@ -568,7 +568,7 @@ function scheduleOcgcoreBotStep() {
   const view = app.duel.view();
   if (!view.botPending || view.winner !== null) return;
   const session = app.duel;
-  const delay = view.phasePaused && !view.pendingType ? AUTO_PHASE_DELAY_MS : app.settings.motionLevel === "full" ? 720 : 240;
+  const delay = view.phasePaused && !view.pendingType ? AUTO_PHASE_DELAY_MS : 750;
   duelBotTimer = window.setTimeout(() => {
     duelBotTimer = null;
     if (app.duel !== session || app.mode !== "duel") return;
