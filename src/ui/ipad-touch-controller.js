@@ -47,6 +47,7 @@ export function initIpadTouchController(options = {}) {
   }, { passive: false });
 
   // 3. Long-press on cards to inspect details (420ms)
+  let holdVisualTimer = null;
   document.addEventListener("pointerdown", (event) => {
     const cardEl = event.target.closest?.("[data-card-uid], [data-card-id]");
     if (!cardEl) return;
@@ -55,9 +56,15 @@ export function initIpadTouchController(options = {}) {
     touchStartPos = { x: event.clientX, y: event.clientY };
     activeTouchCard = cardEl;
 
-    cardEl.classList.add("touch-holding");
-
     if (touchTimer) clearTimeout(touchTimer);
+    if (holdVisualTimer) clearTimeout(holdVisualTimer);
+
+    holdVisualTimer = setTimeout(() => {
+      if (activeTouchCard === cardEl) {
+        cardEl.classList.add("touch-holding");
+      }
+    }, 180);
+
     touchTimer = setTimeout(() => {
       if (activeTouchCard === cardEl) {
         cardEl.classList.remove("touch-holding");
@@ -75,6 +82,10 @@ export function initIpadTouchController(options = {}) {
     if (touchTimer) {
       clearTimeout(touchTimer);
       touchTimer = null;
+    }
+    if (holdVisualTimer) {
+      clearTimeout(holdVisualTimer);
+      holdVisualTimer = null;
     }
     if (activeTouchCard) {
       activeTouchCard.classList.remove("touch-holding");

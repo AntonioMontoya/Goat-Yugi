@@ -5,7 +5,7 @@ export function renderAppShell({ app, content, menu, rank, escapeHtml }) {
   
   return `<div class="app-shell section-${app.mode} ${isHome ? 'mode-home' : isDuel ? 'mode-duel' : 'mode-sub'}">
     ${!isDuel ? `<header class="topbar sprite-topbar">
-      <img src="./sprites/Sprite_Ornamentación6.png" class="sprite-img sprite-topbar-ornament" alt="" aria-hidden="true" />
+      <img src="./sprites/Sprite_Ornamentacion6.png" class="sprite-img sprite-topbar-ornament" alt="" aria-hidden="true" />
       <button class="brand sprite-brand" data-home aria-label="Ir al inicio">
         <img src="./sprites/Sprite_Ornamentacion.png" class="sprite-img brand-icon" alt="" />
         <span><strong>GOAT LOCAL LAB</strong><small>2005 TCG</small></span>

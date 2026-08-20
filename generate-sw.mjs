@@ -107,26 +107,35 @@ self.addEventListener("fetch", (event) => {
 
   // 2. Static assets (JS, CSS, wasm, images, sprites, webmanifest)
   event.respondWith(
-    caches.match(request, { ignoreSearch: true }).then(async (cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cachedResponse = await cache.match(request, { ignoreSearch: true });
+      if (cachedResponse) return cachedResponse;
+
+      // Try matching by relative URL or pathname
+      try {
+        const url = new URL(request.url);
+        const pathMatch = await cache.match("." + url.pathname, { ignoreSearch: true }) ||
+                          await cache.match(url.pathname, { ignoreSearch: true });
+        if (pathMatch) return pathMatch;
+      } catch (_) {}
+
       try {
         const networkResponse = await fetch(request);
         if (networkResponse && (networkResponse.status === 200 || networkResponse.type === "opaque")) {
           const clone = networkResponse.clone();
-          const cache = await caches.open(CACHE_NAME);
           await cache.put(request, clone);
         }
         return networkResponse;
       } catch (err) {
-        // Fallback search in cache by relative path
+        // Fallback search in cache by filename
         try {
-          const cache = await caches.open(CACHE_NAME);
           const url = new URL(request.url);
           const filename = url.pathname.split("/").pop();
           if (filename) {
-            const match = await cache.match(filename, { ignoreSearch: true });
+            const match = await cache.match(filename, { ignoreSearch: true }) ||
+                          await cache.match("./sprites/" + filename, { ignoreSearch: true }) ||
+                          await cache.match("./assets/" + filename, { ignoreSearch: true });
             if (match) return match;
           }
         } catch (_) {}
@@ -147,7 +156,7 @@ self.addEventListener("fetch", (event) => {
         }
         return new Response("", { status: 404, statusText: "Offline Resource Unavailable" });
       }
-    })
+    })()
   );
 });
 `;

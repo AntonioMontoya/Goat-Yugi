@@ -31,7 +31,7 @@ export default defineConfig({
   plugins: [copyPwaFilesPlugin()],
   build: {
     outDir: fileURLToPath(new URL("dist", import.meta.url)),
-    emptyOutDir: true,
+    emptyOutDir: false,
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL("index.html", import.meta.url)),

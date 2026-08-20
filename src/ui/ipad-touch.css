@@ -168,12 +168,21 @@ button:active,
 }
 
 .ipad-edition .duel-pillar {
-  width: 56px;
-  opacity: 0.9;
+  display: block !important;
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100% !important;
+  width: clamp(54px, 6vw, 90px) !important;
+  opacity: 0.92 !important;
+  pointer-events: none !important;
+  object-fit: contain !important;
+  z-index: 1 !important;
+  filter: blur(0.3px) !important;
 }
 
-.ipad-edition .pillar-left { left: 4px; }
-.ipad-edition .pillar-right { right: 4px; }
+.ipad-edition .pillar-left { left: 4px !important; }
+.ipad-edition .pillar-right { right: 4px !important; transform: scaleX(-1) !important; }
 
 /* --------------------------------------------------------------------------
    Hand Cards & Board Cards Touch Interactions
@@ -205,6 +214,23 @@ button:active,
   z-index: 100;
 }
 
+/* Disable opacity-0 flashes on card motions */
+.ipad-edition .card-place,
+.ipad-edition .card-place-defense {
+  animation: none !important;
+}
+
+/* Disable whole-board flashing animations on feedback cues */
+.ipad-edition .duel-board.feedback-phase .duel-mid,
+.ipad-edition .duel-board.feedback-turn .duel-mid,
+.ipad-edition .duel-board.feedback-resolve .duelist-field,
+.ipad-edition .duel-board.feedback-move .duelist-field,
+.ipad-edition .duel-board.feedback-damage .player-row,
+.ipad-edition .duel-board.feedback-attack .duel-mid {
+  animation: none !important;
+  box-shadow: none !important;
+}
+
 /* Card images rendering quality & GPU compositing stabilization for WebKit / iPadOS */
 .ipad-edition .card,
 .ipad-edition .card-image,
@@ -229,17 +255,17 @@ button:active,
 }
 
 /* --------------------------------------------------------------------------
-   Card Action Popover for Touch
+   Card Action Popover for Touch (Solid high-contrast background without blur thrashing)
    -------------------------------------------------------------------------- */
 .ipad-edition .card-action-popover {
   z-index: 160;
   min-width: 240px;
   border: 2px solid var(--ipad-gold);
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(8, 15, 23, 0.98), rgba(15, 28, 40, 0.98));
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 20px rgba(244, 189, 88, 0.3);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: linear-gradient(135deg, #0e1a25, #081119);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 20px rgba(244, 189, 88, 0.3);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .ipad-edition .card-action-popover header {

@@ -419,7 +419,7 @@ img[src*="/sprites/"] { object-fit: contain; object-position: center; }
   border-bottom: 1px solid rgba(224, 177, 76, .7);
   background:
     linear-gradient(180deg, rgba(5, 10, 16, .97), rgba(8, 14, 20, .94)),
-    url('../sprites/Sprite_Ornamentación6.png') center/ min(566px, 42vw) auto no-repeat,
+    url('../sprites/Sprite_Ornamentacion6.png') center/ min(566px, 42vw) auto no-repeat,
     url('../sprites/Sprite_Baldosa3.png') center/64px 92px repeat-x;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .48), inset 0 -1px rgba(255, 220, 132, .18);
 }
@@ -453,7 +453,7 @@ img[src*="/sprites/"] { object-fit: contain; object-position: center; }
   border-top: 1px solid rgba(224, 177, 76, .66);
   background:
     linear-gradient(90deg, rgba(6, 11, 16, .98), rgba(15, 22, 28, .96), rgba(6, 11, 16, .98)),
-    url('../sprites/Sprite_Ornamentación6.png') center/ min(566px, 58vw) auto no-repeat,
+    url('../sprites/Sprite_Ornamentacion6.png') center/ min(566px, 58vw) auto no-repeat,
     url('../sprites/Sprite_Baldosa3.png') center/62px 92px repeat-x;
   box-shadow: 0 -10px 28px rgba(0, 0, 0, .46), inset 0 1px rgba(255, 220, 132, .12);
 }
@@ -702,7 +702,7 @@ img[src*="/sprites/"] { object-fit: contain; object-position: center; }
   width: 18px !important;
   height: 22px !important;
   flex: 0 0 18px;
-  background: url('../sprites/Sprite_Ornamentación7.png') center/contain no-repeat !important;
+  background: url('../sprites/Sprite_Ornamentacion7.png') center/contain no-repeat !important;
   filter: drop-shadow(0 0 4px rgba(245, 190, 79, .35));
   content: "" !important;
 }
@@ -723,7 +723,7 @@ img[src*="/sprites/"] { object-fit: contain; object-position: center; }
   width: 13px;
   height: 15px;
   flex: 0 0 13px;
-  background: url('../sprites/Sprite_Ornamentación7.png') center/contain no-repeat;
+  background: url('../sprites/Sprite_Ornamentacion7.png') center/contain no-repeat;
   content: "";
   opacity: .9;
 }

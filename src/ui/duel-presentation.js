@@ -291,16 +291,16 @@ function deriveLegacyDuelPresentation({ action, before, after }) {
 }
 
 const FEEDBACK_DEFAULTS = Object.freeze({
-  turn:     { duration: 1100,  soundId: "turn",     blocking: true,  tier: "major" },
-  phase:    { duration: 1100,  soundId: "phase",    blocking: true,  tier: "major" },
-  activate: { duration: 850,   soundId: "activate", blocking: false, tier: "notable" },
-  chain:    { duration: 1200,  soundId: "chain",    blocking: true,  tier: "epic" },
-  flip:     { duration: 1000,  soundId: "flip",     blocking: false, tier: "notable" },
-  summon:   { duration: 950,   soundId: "summon",   blocking: false, tier: "notable" },
-  attack:   { duration: 800,   soundId: "attack",   blocking: false, tier: "notable" },
-  damage:   { duration: 750,   soundId: "damage",   blocking: false, tier: "notable" },
-  resolve:  { duration: 800,   soundId: "resolve",  blocking: false, tier: "notable" },
-  move:     { duration: 600,   soundId: "move",     blocking: false, tier: "subtle" },
+  turn:     { duration: 600, soundId: "turn",     blocking: false, tier: "subtle" },
+  phase:    { duration: 400, soundId: "phase",    blocking: false, tier: "subtle" },
+  activate: { duration: 500, soundId: "activate", blocking: false, tier: "notable" },
+  chain:    { duration: 750, soundId: "chain",    blocking: true,  tier: "epic" },
+  flip:     { duration: 550, soundId: "flip",     blocking: false, tier: "notable" },
+  summon:   { duration: 550, soundId: "summon",   blocking: false, tier: "notable" },
+  attack:   { duration: 500, soundId: "attack",   blocking: false, tier: "notable" },
+  damage:   { duration: 500, soundId: "damage",   blocking: false, tier: "notable" },
+  resolve:  { duration: 500, soundId: "resolve",  blocking: false, tier: "notable" },
+  move:     { duration: 400, soundId: "move",     blocking: false, tier: "subtle" },
 });
 
 function actorLabel(player) {
