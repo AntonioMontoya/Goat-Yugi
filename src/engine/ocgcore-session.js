@@ -1106,12 +1106,12 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
               guard += 1;
               continue;
             }
-            const isMainPhaseFreePriority = request.type === OcgMessageType.SELECT_CHAIN
+            const isPhaseFreePriority = request.type === OcgMessageType.SELECT_CHAIN
               && !request.forced
               && timingWindow?.kind === "phase-priority"
-              && ["MAIN_1", "MAIN_2"].includes(this.phase)
+              && ["MAIN_1", "MAIN_2", "BATTLE"].includes(this.phase)
               && player === this.turnPlayer;
-            if (isMainPhaseFreePriority) {
+            if (isPhaseFreePriority) {
               const decline = requestActions.find((action) => action.coreResponse?.index === null);
               if (decline) {
                 this.duel.respond(decline.coreResponse);
@@ -1136,12 +1136,12 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
             guard += 1;
             continue;
           }
-          const isMainPhaseFreePriority = request.type === OcgMessageType.SELECT_CHAIN
+          const isPhaseFreePriority = request.type === OcgMessageType.SELECT_CHAIN
             && !request.forced
             && timingWindow?.kind === "phase-priority"
-            && ["MAIN_1", "MAIN_2"].includes(this.phase)
+            && ["MAIN_1", "MAIN_2", "BATTLE"].includes(this.phase)
             && player === this.turnPlayer;
-          if (isMainPhaseFreePriority) {
+          if (isPhaseFreePriority) {
             const decline = requestActions.find((action) => action.coreResponse?.index === null);
             if (decline) {
               this.duel.respond(decline.coreResponse);

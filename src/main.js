@@ -502,22 +502,16 @@ function render() {
 }
 function positionCardPopovers() {
   window.requestAnimationFrame(() => {
+    const inspector = document.querySelector("[data-testid='card-inspector']")?.getBoundingClientRect();
     document.querySelectorAll("[data-testid='card-action-popover']").forEach((popover) => {
       popover.style.removeProperty("--popover-nudge-x");
       popover.classList.remove("is-below");
       let rect = popover.getBoundingClientRect();
-      if (rect.top < 54) {
-        popover.classList.add("is-below");
-        rect = popover.getBoundingClientRect();
-      }
-      const safeLeft = 10;
-      const safeRight = window.innerWidth - 10;
-      let nudge = 0;
-      if (rect.left < safeLeft) {
-        nudge = safeLeft - rect.left;
-      } else if (rect.right > safeRight) {
-        nudge = safeRight - rect.right;
-      }
+      if (rect.top < 54) { popover.classList.add("is-below"); rect = popover.getBoundingClientRect(); }
+      const safeLeft = 8;
+      const safeRight = window.innerWidth - 8;
+      let nudge = rect.left < safeLeft ? safeLeft - rect.left : rect.right > safeRight ? safeRight - rect.right : 0;
+      if (inspector && rect.right > inspector.left && rect.left < inspector.right) nudge -= rect.right - inspector.left + 8;
       popover.style.setProperty("--popover-nudge-x", `${Math.round(nudge)}px`);
     });
   });
@@ -851,8 +845,8 @@ function renderOcgcoreDuel(view = app.duel.view()) {
   return `<section class="page duel-page">
      ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, esc })}
      <div class="duel-layout"><div class="table-frame ${app.boardTilt ? "tilted" : ""} ${app.inspectedCard ? "has-inspector" : ""}">
-       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
-       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
+       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
+       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
        <div class="duel-board ${app.duelPresentation ? `feedback-${esc(app.duelPresentation.kind)} tier-${esc(app.duelPresentation.tier || "notable")}` : ""}">
          <div class="hand-strip opponent-hand">${playerHandMarkup(playerTwo, app.selectedCardUid, manual, userActions, affordanceInteraction)}</div>
          <div class="opponent-row player-row is-opponent"><div class="player-meta"><span class="avatar opponent-avatar">${manual ? "2" : esc(opponentName.slice(0, 1).toUpperCase())}</span><div><strong>${esc(playerName(playerTwo, manual))}</strong><small>${esc(playerTwoDeck.name)}</small></div>${lifePointMarkup(playerTwo)}</div><div class="hand-count">HAND <b>${playerTwo.handCount}</b><span class="deck-count">DECK ${playerTwo.deckCount}</span></div></div>

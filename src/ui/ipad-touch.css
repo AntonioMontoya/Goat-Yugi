@@ -205,7 +205,20 @@ button:active,
   z-index: 100;
 }
 
-/* Card images rendering quality */
+/* Card images rendering quality & GPU compositing stabilization for WebKit / iPadOS */
+.ipad-edition .card,
+.ipad-edition .card-image,
+.ipad-edition .card-back-image,
+.ipad-edition .hand-card-wrap,
+.ipad-edition .board-card-wrap,
+.ipad-edition .table-frame,
+.ipad-edition .duel-board {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
 .ipad-edition .card-image,
 .ipad-edition .card-back-image {
   width: 100%;

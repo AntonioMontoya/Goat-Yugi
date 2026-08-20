@@ -28,9 +28,14 @@ export function morphDom(targetNode, newHtmlString) {
 function getNodeKey(node) {
   if (!node || node.nodeType !== Node.ELEMENT_NODE) return null;
   return (
+    node.getAttribute("data-card-uid") ||
     node.getAttribute("data-card-inspect") ||
+    node.getAttribute("data-card-id") ||
     node.getAttribute("data-action-id") ||
+    node.getAttribute("data-action") ||
     node.getAttribute("data-testid") ||
+    node.getAttribute("data-slot") ||
+    node.getAttribute("data-pile") ||
     node.getAttribute("id") ||
     null
   );
