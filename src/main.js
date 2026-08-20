@@ -540,20 +540,44 @@ function playDuelCue(cue) {
   });
 }
 function cueDuration(cue) {
-  const duration = cue?.duration !== undefined ? Number(cue.duration) : 750;
-  if (app.settings.motionLevel === "reduced") return Math.min(420, duration);
-  if (app.settings.motionLevel === "off") return Math.min(150, duration);
+  const duration = cue?.duration !== undefined ? Number(cue.duration) : 950;
+  if (app.settings.motionLevel === "reduced") return Math.min(500, duration);
+  if (app.settings.motionLevel === "off") return Math.min(250, duration);
   return duration;
 }
 function setDuelPresentation(input) {
-  const cues = (Array.isArray(input) ? input : [input]).filter(Boolean);
-  if (!cues.length) return;
-  for (const cue of cues) {
-    playDuelCue(cue);
+  const resetRequested = input === null || input === undefined;
+  const occupiedIds = new Set([app.duelPresentation?.id, ...app.duelPresentationQueue.map((cue) => cue?.id), ...app.duelFeedbackSeen].filter(Boolean));
+  const cues = (Array.isArray(input) ? input : [input]).filter((cue) => {
+    if (!cue) return false;
+    if (cue.id && occupiedIds.has(cue.id)) return false;
+    if (cue.id) { occupiedIds.add(cue.id); app.duelFeedbackSeen.add(cue.id); }
+    if (app.duelFeedbackSeen.size > 256) app.duelFeedbackSeen.delete(app.duelFeedbackSeen.values().next().value);
+    return true;
+  });
+  if (!cues.length) {
+    if (!resetRequested) return;
+    if (duelPresentationTimer) window.clearTimeout(duelPresentationTimer);
+    duelPresentationTimer = null; app.duelPresentation = null;
+    app.duelPresentationQueue = []; app.duelPresentationStartedAt = 0;
+    return;
   }
+  if (app.duelPresentation) { app.duelPresentationQueue.push(...cues); return; }
+  app.duelPresentation = cues.shift(); app.duelPresentationStartedAt = Date.now();
+  app.duelPresentationQueue.push(...cues);
+  playDuelCue(app.duelPresentation);
+  const showNext = () => {
+    app.duelPresentation = app.duelPresentationQueue.shift() ?? null; app.duelPresentationStartedAt = app.duelPresentation ? Date.now() : 0;
+    duelPresentationTimer = null;
+    if (app.mode === "duel") refreshDuelPresentationSurface();
+    if (app.duelPresentation) { playDuelCue(app.duelPresentation); duelPresentationTimer = window.setTimeout(showNext, cueDuration(app.duelPresentation)); }
+  };
+  duelPresentationTimer = window.setTimeout(showNext, cueDuration(app.duelPresentation));
 }
 
 function refreshDuelPresentationSurface() {
+  const host = root.querySelector("[data-duel-presentation-host]");
+  if (host) host.innerHTML = presentationMarkup();
   scheduleOcgcoreBotStep();
   scheduleAutomaticPhaseAdvance();
 }
