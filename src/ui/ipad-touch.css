@@ -197,38 +197,46 @@ button:active,
   touch-action: manipulation;
   cursor: pointer;
   border-radius: 4px;
-  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.25, 1), box-shadow 0.15s ease;
+  transition: none !important;
+  animation: none !important;
 }
 
 .ipad-edition .hand-strip .card:active {
-  transform: translateY(-12px) scale(1.1);
-  box-shadow: 0 8px 24px rgba(244, 189, 88, 0.7);
-  z-index: 50;
+  transition: none !important;
 }
 
 /* Long-press holding visual cue */
 .ipad-edition .card.touch-holding {
   box-shadow: 0 0 20px 6px rgba(244, 189, 88, 0.95) !important;
-  transform: scale(1.12) translateY(-8px) !important;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transform: scale(1.08) translateY(-6px) !important;
+  transition: none !important;
   z-index: 100;
 }
 
-/* Disable opacity-0 flashes on card motions */
+/* Eradicate all card transitions and animations during duels */
+.ipad-edition .card,
+.ipad-edition .hand-card-wrap,
+.ipad-edition .hand-card-wrap > .card,
+.ipad-edition .opponent-hand .hand-card-wrap > .card,
+.ipad-edition .hand-card-button,
+.ipad-edition .board-card-button,
+.ipad-edition .zone-slots > .card,
+.ipad-edition .zone-slots > .field-slot,
+.ipad-edition .duelist-field,
+.ipad-edition .duel-mid,
+.ipad-edition .player-zones,
+.ipad-edition .opponent-zones,
 .ipad-edition .card-place,
 .ipad-edition .card-place-defense {
+  transition: none !important;
   animation: none !important;
 }
 
-/* Disable whole-board flashing animations on feedback cues */
-.ipad-edition .duel-board.feedback-phase .duel-mid,
-.ipad-edition .duel-board.feedback-turn .duel-mid,
-.ipad-edition .duel-board.feedback-resolve .duelist-field,
-.ipad-edition .duel-board.feedback-move .duelist-field,
-.ipad-edition .duel-board.feedback-damage .player-row,
-.ipad-edition .duel-board.feedback-attack .duel-mid {
-  animation: none !important;
-  box-shadow: none !important;
+/* Hide all intrusive cue popups that block the screen */
+.ipad-edition [data-duel-presentation-host],
+.ipad-edition .duel-event-cue,
+.ipad-edition .duel-cinematic {
+  display: none !important;
 }
 
 /* Card images rendering quality & GPU compositing stabilization for WebKit / iPadOS */

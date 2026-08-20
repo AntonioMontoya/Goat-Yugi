@@ -341,7 +341,7 @@ function statusPill(status) {
   const text = status === VALIDATION_STATUS.SUPPORTED ? "LISTO" : status === VALIDATION_STATUS.EXPERIMENTAL ? "EXPERIMENTAL" : status;
   return `<span class="status-pill status-${String(status).toLowerCase()}">${esc(text)}</span>`;
 }
-function cardMarkup(instance, { hidden = false, compact = false, motion = false, imageLoading = null } = {}) {
+function cardMarkup(instance, { hidden = false, compact = false, motion = false, imageLoading = "eager" } = {}) {
   if (!instance) return `<div class="field-slot empty"><span>—</span></div>`;
   const card = instance.cardId === null ? null : getCard(instance.cardId);
   const monsterLike = card
@@ -349,16 +349,16 @@ function cardMarkup(instance, { hidden = false, compact = false, motion = false,
     : Number(instance.location) === 4 || instance.zone === "MONSTER";
   const imageBacked = card?.kind !== CARD_KIND.TOKEN;
   const defense = monsterLike && (instance.defensePosition === true || instance.position === "DEFENSE");
-  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /></div>`;
-  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
+  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" loading="eager" decoding="sync" draggable="false" /></div>`;
+  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" loading="eager" decoding="sync" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
   const fallback = `<div class="card-fallback"${imageBacked ? " hidden" : ""}>
     <div class="card-top"><span>${esc(monsterLike ? card.kind === CARD_KIND.TOKEN ? "TOKEN" : "MONSTER" : card.kind)}</span><span>${card.level ? `★${card.level}` : ""}</span></div>
     <div class="card-name">${esc(card.name)}</div>
     ${monsterLike ? `<div class="card-stats">${card.atk} <span>/</span> ${card.def}</div>` : `<div class="card-type">${esc(card.spellType ?? card.trapType ?? card.kind)}</div>`}
     <div class="card-text">${esc(card.text)}</div>
   </div>`;
-  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="${esc(card.name)}">
-    ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card.name)}" loading="${esc(imageLoading ?? (compact ? "eager" : "lazy"))}" decoding="async" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false;" />` : ""}
+  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""}" title="${esc(card.name)}">
+    ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card.name)}" loading="eager" decoding="sync" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false;" />` : ""}
     ${fallback}
   </div>`;
 }
@@ -546,43 +546,14 @@ function cueDuration(cue) {
   return duration;
 }
 function setDuelPresentation(input) {
-  const resetRequested = input === null || input === undefined;
-  const occupiedIds = new Set([app.duelPresentation?.id, ...app.duelPresentationQueue.map((cue) => cue?.id), ...app.duelFeedbackSeen].filter(Boolean));
-  const cues = (Array.isArray(input) ? input : [input]).filter((cue) => {
-    if (!cue) return false;
-    if (cue.id && occupiedIds.has(cue.id)) return false;
-    if (cue.id) { occupiedIds.add(cue.id); app.duelFeedbackSeen.add(cue.id); }
-    if (app.duelFeedbackSeen.size > 256) app.duelFeedbackSeen.delete(app.duelFeedbackSeen.values().next().value);
-    return true;
-  });
-  if (!cues.length) {
-    if (!resetRequested) return;
-    if (duelPresentationTimer) window.clearTimeout(duelPresentationTimer);
-    duelPresentationTimer = null; app.duelPresentation = null;
-    app.duelPresentationQueue = []; app.duelPresentationStartedAt = 0;
-    return;
+  const cues = (Array.isArray(input) ? input : [input]).filter(Boolean);
+  if (!cues.length) return;
+  for (const cue of cues) {
+    playDuelCue(cue);
   }
-  if (app.duelPresentation) { app.duelPresentationQueue.push(...cues); return; }
-  app.duelPresentation = cues.shift(); app.duelPresentationStartedAt = Date.now();
-  app.duelPresentationQueue.push(...cues);
-  playDuelCue(app.duelPresentation);
-  const showNext = () => {
-    app.duelPresentation = app.duelPresentationQueue.shift() ?? null; app.duelPresentationStartedAt = app.duelPresentation ? Date.now() : 0;
-    duelPresentationTimer = null;
-    if (app.mode === "duel") refreshDuelPresentationSurface();
-    if (app.duelPresentation) { playDuelCue(app.duelPresentation); duelPresentationTimer = window.setTimeout(showNext, cueDuration(app.duelPresentation)); }
-  };
-  duelPresentationTimer = window.setTimeout(showNext, cueDuration(app.duelPresentation));
 }
 
 function refreshDuelPresentationSurface() {
-  const board = root.querySelector(".duel-board");
-  if (board) {
-    for (const name of [...board.classList]) if (name.startsWith("feedback-") || name.startsWith("tier-")) board.classList.remove(name);
-    if (app.duelPresentation) board.classList.add(`feedback-${app.duelPresentation.kind}`, `tier-${app.duelPresentation.tier || "notable"}`);
-  }
-  const host = root.querySelector("[data-duel-presentation-host]");
-  if (host) host.innerHTML = presentationMarkup();
   scheduleOcgcoreBotStep();
   scheduleAutomaticPhaseAdvance();
 }
