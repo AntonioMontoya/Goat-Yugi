@@ -42,11 +42,32 @@ function positionValue(knowledge, message, response, observation) {
   if (!card) return 0;
   const position = Number(response.position) || 0;
   const roles = new Set(card.roles ?? []);
-  const underPressure = Number(observation.opponentThreat) > Math.max(Number(card.atk) || 0, Number(observation.ownBoardPower) || 0);
+  const attack = Number(card.atk) || 0;
+  const defense = Number(card.def) || 0;
+  const isFlip = roles.has("flip");
+  const isWall = defense > attack || roles.has("defense") || roles.has("stall");
+  const isBeater = attack >= 1400 && attack > defense;
+  const canDefendAgainstThreat = defense >= Number(observation.opponentThreat);
+  const underPressure = Number(observation.opponentThreat) > Math.max(attack, Number(observation.ownBoardPower) || 0);
+
   let value = 0;
-  if ((position & OcgPosition.FACEDOWN_DEFENSE) !== 0) value += roles.has("flip") ? 8 : Number(card.def) > Number(card.atk) ? 2 : -1;
-  if ((position & OcgPosition.FACEUP_DEFENSE) !== 0) value += Number(card.def) > Number(card.atk) || underPressure ? 2.5 : -1.5;
-  if ((position & OcgPosition.FACEUP_ATTACK) !== 0) value += !underPressure || Number(observation.opponentMonsterCount) === 0 ? 3 : -3;
+  if ((position & OcgPosition.FACEDOWN_DEFENSE) !== 0) {
+    if (isFlip) value += 8;
+    else if (isWall) value += 2.5;
+    else if (isBeater) value -= 3;
+    else value -= 1;
+  }
+  if ((position & OcgPosition.FACEUP_DEFENSE) !== 0) {
+    if (isWall || (underPressure && canDefendAgainstThreat)) value += 2.5;
+    else if (isBeater) value -= 3.5;
+    else value -= 1.5;
+  }
+  if ((position & OcgPosition.FACEUP_ATTACK) !== 0) {
+    if (isBeater) value += 3.5;
+    else if (!isWall && (!underPressure || Number(observation.opponentMonsterCount) === 0)) value += 3;
+    else if (isWall) value -= 2;
+    else value -= 1;
+  }
   if ((position & OcgPosition.FACEDOWN_ATTACK) !== 0) value -= 6;
   return value;
 }

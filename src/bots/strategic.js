@@ -7,8 +7,9 @@ import { publicBeliefRollout } from "./public-belief-search.js";
 import { planStrategicResponses } from "./strategic-planner.js";
 import { reasonAboutResponses, rememberResponse } from "./state-evaluator.js";
 import { tacticalResponseAdjustment } from "./tactical-evaluator.js";
+import { GOAT_BASE_KNOWLEDGE_FINGERPRINT, GOAT_BASE_KNOWLEDGE_SCHEMA, baseKnowledgeFeatures, decisionTrainingSignal, normalizeGoatObservation, normalizeReasonCodes } from "./goat-base-knowledge.js";
 
-export const STRATEGIC_DECISION_SCHEMA = 7;
+export const STRATEGIC_DECISION_SCHEMA = 8;
 export const NEXO2_ALGORITHM = "ocgcore-public-belief-policy-value-v1";
 
 function configuredNumber(value, fallback, minimum, maximum) {
@@ -32,7 +33,7 @@ export class StrategicBot {
     this.seed = Number(seed) || 1;
     this.randomState = this.seed >>> 0 || 1;
     this.policyWeights = { ...policyWeights };
-    this.nexo2Enabled = algorithm === NEXO2_ALGORITHM || neuralModel?.schema === 1;
+    this.nexo2Enabled = algorithm === NEXO2_ALGORITHM || neuralModel?.schema === 1 || neuralModel?.type === "public-action-mlp-policy-value";
     this.decisionConfig = {
       deckWeight: configuredNumber(decisionConfig.deckWeight, 1, 0, 3),
       stateWeight: configuredNumber(decisionConfig.stateWeight, 1.8, 0, 4),
@@ -63,7 +64,7 @@ export class StrategicBot {
   chooseResponse(message, context = {}) {
     this.decisions += 1;
     this.lastReasoning = null;
-    const observation = { ...(context.observation ?? {}), decisions: Number(context.observation?.decisions) || this.decisions };
+    const observation = normalizeGoatObservation({ ...(context.observation ?? {}), decisions: Number(context.observation?.decisions) || this.decisions }, message);
     this.opponentEvidence = updateOpponentEvidence(this.opponentEvidence, observation);
     this.opponentModel = inferOpponentDeck({ ...observation, opponentSeenCards: opponentEvidenceCards(this.opponentEvidence) });
     const baseline = chooseCoreBotResponse(message, { ...context, profile: "generic", weights: {}, brave: false });
@@ -76,8 +77,9 @@ export class StrategicBot {
         promptForced: message?.forced === true,
         playstyle: this.style,
         opponentModel: structuredClone(this.opponentModel),
+        baseKnowledge: { schema: GOAT_BASE_KNOWLEDGE_SCHEMA, fingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT, state: observation.goatState, window: observation.goatWindow },
         baseline: { role: strategyActionRole(message, baseline), cards: actionCardNames(this.deckKnowledge, message, baseline) },
-        selected: { role: strategyActionRole(message, onlyLegal), cards: actionCardNames(this.deckKnowledge, message, onlyLegal), semanticRoles: [], score: null, plannedScore: null, projectedValue: null, policyValue: 0, reasons: ["ONLY_LEGAL_RESPONSE"], components: {}, evaluationComponents: {} },
+        selected: { role: strategyActionRole(message, onlyLegal), cards: actionCardNames(this.deckKnowledge, message, onlyLegal), semanticRoles: [], score: null, plannedScore: null, projectedValue: null, policyValue: 0, reasons: ["ONLY_LEGAL_RESPONSE"], reasonCodes: normalizeReasonCodes(["ONLY_LEGAL_RESPONSE"], { actionRole: strategyActionRole(message, onlyLegal), observation }), components: {}, evaluationComponents: {} },
         alternatives: [],
         rejected: [],
       };
@@ -100,6 +102,7 @@ export class StrategicBot {
     const turnOwner = observation.isOwnTurn === true ? "own" : observation.isOwnTurn === false ? "opponent" : "unknown";
     const prepared = planned.map((entry, networkIndex) => {
       const semanticRoles = entry.roles ?? [];
+      const plan = this.deckKnowledge.plan ?? {};
       const features = [
         `action:${entry.role}`,
         `style:${entry.playstyle}:action:${entry.role}`,
@@ -109,6 +112,17 @@ export class StrategicBot {
         `opponent-backrow:${backrowBin}:action:${entry.role}`,
         `hand:${handBin}:action:${entry.role}`,
         `turn-owner:${turnOwner}:action:${entry.role}`,
+        ...baseKnowledgeFeatures(this.deckKnowledge, observation, entry),
+        `plan:${plan.id ?? "generic"}`,
+        `playstyle:${plan.playstyle ?? plan.archetype ?? "adaptive"}`,
+        ...(plan.priorityRoles ?? []).map((role) => `plan-priority:${role}`),
+        ...(plan.openingRoles ?? []).map((role) => `plan-opening:${role}`),
+        ...(plan.keepRoles ?? []).map((role) => `plan-keep:${role}`),
+        ...(plan.counterplayRoles ?? []).map((role) => `plan-counterplay:${role}`),
+        ...(plan.strengths ?? []).map((strength) => `plan-strength:${strength}`),
+        ...(plan.lossConditions ?? []).map((condition) => `plan-loss-condition:${condition}`),
+        ...(plan.goals ?? []).map((goal) => `plan-goal:${goal}`),
+        ...(plan.keyCards ?? []).map((card) => `plan-key-card:${card}`),
         ...semanticRoles.map((role) => `semantic:${role}`),
         ...semanticRoles.map((role) => `style:${entry.playstyle}:semantic:${role}`),
         ...semanticRoles.map((role) => `board:${boardRelation}:semantic:${role}`),
@@ -176,6 +190,11 @@ export class StrategicBot {
         alternativeScore: Number(counterfactual?.score) || 0,
         alternativePlannedScore: Number(counterfactual?.plannedScore) || 0,
         alternativeProjectedValue: Number(counterfactual?.analysis?.value) || 0,
+        goatState: observation.goatState,
+        goatWindow: observation.goatWindow,
+        baseKnowledgeFingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT,
+        selectedReasonCodes: normalizeReasonCodes(selected.analysis?.reasons ?? [], { actionRole: selected.role, observation }),
+        localRewardSignal: decisionTrainingSignal({ actionRole: selected.role, projectedValue: selected.analysis?.value, reasons: selected.analysis?.reasons ?? [], observation }),
         nexo2Inputs: this.neuralPolicy ? learningPool.map((entry) => entry.nexo2Input) : null,
         nexo2Chosen: this.neuralPolicy ? learningPool.indexOf(selected) : null,
         nexo2Teacher: this.neuralPolicy ? learningPool.indexOf(legacyBest) : null,
@@ -186,12 +205,13 @@ export class StrategicBot {
       promptForced: message?.forced === true,
       playstyle: selected?.playstyle ?? this.style,
       opponentModel: structuredClone(this.opponentModel),
+      baseKnowledge: { schema: GOAT_BASE_KNOWLEDGE_SCHEMA, fingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT, state: observation.goatState, window: observation.goatWindow, damageStep: observation.goatDamageStep === true },
       baseline: { role: strategyActionRole(message, baseline), cards: actionCardNames(this.deckKnowledge, message, baseline) },
       forced: false,
-      selected: selected ? { role: selected.role, cards: (selected.analysis?.cards ?? []).map((card) => card.name), semanticRoles: [...(selected.roles ?? [])], score: selected.score, plannedScore: selected.plannedScore, projectedValue: selected.analysis?.value, policyValue: selected.policyValue, linearPolicyValue: selected.linearPolicyValue, neuralPolicyValue: selected.neuralPolicyValue, neuralStateValue: selected.neuralStateValue, beliefValue: selected.beliefValue, reasons: [...(selected.analysis?.reasons ?? [])], components: { ...selected.components, belief: selected.beliefValue }, beliefComponents: { ...(selected.belief?.components ?? {}) }, evaluationComponents: { ...(selected.analysis?.components ?? {}) } } : null,
-      alternatives: ranked.filter((entry) => entry !== selected).slice(0, 8).map((entry) => ({ role: entry.role, cards: (entry.analysis?.cards ?? []).map((card) => card.name), semanticRoles: [...(entry.roles ?? [])], score: entry.score, plannedScore: entry.plannedScore, projectedValue: entry.analysis?.value, policyValue: entry.policyValue, linearPolicyValue: entry.linearPolicyValue, neuralPolicyValue: entry.neuralPolicyValue, neuralStateValue: entry.neuralStateValue, beliefValue: entry.beliefValue, reasons: [...(entry.analysis?.reasons ?? [])], components: { ...entry.components, belief: entry.beliefValue }, beliefComponents: { ...(entry.belief?.components ?? {}) }, evaluationComponents: { ...(entry.analysis?.components ?? {}) } })),
+      selected: selected ? { role: selected.role, cards: (selected.analysis?.cards ?? []).map((card) => card.name), semanticRoles: [...(selected.roles ?? [])], score: selected.score, plannedScore: selected.plannedScore, projectedValue: selected.analysis?.value, policyValue: selected.policyValue, linearPolicyValue: selected.linearPolicyValue, neuralPolicyValue: selected.neuralPolicyValue, neuralStateValue: selected.neuralStateValue, beliefValue: selected.beliefValue, reasons: [...(selected.analysis?.reasons ?? [])], reasonCodes: normalizeReasonCodes(selected.analysis?.reasons ?? [], { actionRole: selected.role, observation }), localRewardSignal: decisionTrainingSignal({ actionRole: selected.role, projectedValue: selected.analysis?.value, reasons: selected.analysis?.reasons ?? [], observation }), components: { ...selected.components, belief: selected.beliefValue }, beliefComponents: { ...(selected.belief?.components ?? {}) }, evaluationComponents: { ...(selected.analysis?.components ?? {}) } } : null,
+      alternatives: ranked.filter((entry) => entry !== selected).slice(0, 8).map((entry) => ({ role: entry.role, cards: (entry.analysis?.cards ?? []).map((card) => card.name), semanticRoles: [...(entry.roles ?? [])], score: entry.score, plannedScore: entry.plannedScore, projectedValue: entry.analysis?.value, policyValue: entry.policyValue, linearPolicyValue: entry.linearPolicyValue, neuralPolicyValue: entry.neuralPolicyValue, neuralStateValue: entry.neuralStateValue, beliefValue: entry.beliefValue, reasons: [...(entry.analysis?.reasons ?? [])], reasonCodes: normalizeReasonCodes(entry.analysis?.reasons ?? [], { actionRole: entry.role, observation }), localRewardSignal: decisionTrainingSignal({ actionRole: entry.role, projectedValue: entry.analysis?.value, reasons: entry.analysis?.reasons ?? [], observation }), components: { ...entry.components, belief: entry.beliefValue }, beliefComponents: { ...(entry.belief?.components ?? {}) }, evaluationComponents: { ...(entry.analysis?.components ?? {}) } })),
       rejected: [
-        ...rejectedByGuardrails.slice(0, 8).map((entry) => ({ role: entry.analysis?.role, cards: (entry.analysis?.cards ?? []).map((card) => card.name), guardrail: entry.guardrail })),
+        ...rejectedByGuardrails.slice(0, 8).map((entry) => ({ role: entry.analysis?.role, cards: (entry.analysis?.cards ?? []).map((card) => card.name), guardrail: entry.guardrail, reasonCodes: normalizeReasonCodes([entry.guardrail], { actionRole: entry.analysis?.role, observation }) })),
         ...(rejectedPolicyOverride ? [{ role: rejectedPolicyOverride.role, cards: (rejectedPolicyOverride.analysis?.cards ?? []).map((card) => card.name), guardrail: "LEARNED_OVERRIDE_WORSE_PUBLIC_ROUTE" }] : []),
       ],
     };
@@ -233,11 +253,12 @@ export class StrategicBot {
       const projectedMargin = (Number(trace.selectedProjectedValue) || 0) - (Number(trace.alternativeProjectedValue) || 0);
       const avoidableRegret = Math.max(0, -plannedMargin);
       const localEvidence = Math.max(-0.35, Math.min(0.35, projectedMargin * 0.08));
+      const localRewardSignal = Math.max(-0.35, Math.min(0.35, Number(trace.localRewardSignal) || 0));
       // The final result remains authoritative, but logs now attribute extra
       // blame to an explored decision that had a clearly better public route.
       // This avoids punishing every sound action equally after a long loss.
       const lossCorrection = result < 0 ? -Math.min(0.5, avoidableRegret * 0.18) : 0;
-      const credit = advantage * temporal + localProgress * 0.35 + localEvidence + lossCorrection;
+      const credit = advantage * temporal + localProgress * 0.35 + localEvidence + localRewardSignal * 0.5 + lossCorrection;
       const delta = this.learningRate * credit / Math.sqrt(total) / Math.sqrt(Math.max(1, chosen.length));
       for (const feature of chosen) this.policyWeights[feature] = Math.max(-2.5, Math.min(2.5, Number(this.policyWeights[feature] ?? 0) * 0.9998 + delta));
       const alternatives = trace.alternatives ?? [];
@@ -269,6 +290,8 @@ export class StrategicBot {
       decisionConfig: { ...this.decisionConfig },
       decisionSchema: STRATEGIC_DECISION_SCHEMA,
       policySchema: this.nexo2Enabled ? 3 : 2,
+      baseKnowledgeSchema: GOAT_BASE_KNOWLEDGE_SCHEMA,
+      baseKnowledgeFingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT,
       ...(this.neuralPolicy ? { neuralModel: this.neuralPolicy.manifest() } : {}),
       freezeLinearPolicy: this.freezeLinearPolicy,
       trainingState: { ...this.trainingState },

@@ -1,7 +1,7 @@
 import { OcgLocation, OcgMessageType, OcgPosition, SelectBattleCMDAction, SelectIdleCMDAction } from "../../node_modules/@jsr/n1xx1__ocgcore-wasm/dist/index.js";
 import { actionCardEntries, strategyActionRole } from "./deck-strategy.js";
 import { publicCardSemantics } from "./card-semantics.js";
-import { enforceDecisionGuardrails, publicProgressSignature } from "./decision-guardrails.js";
+import { enforceDecisionGuardrails, matchesPublicChainCard, publicChainTargetContext, publicProgressSignature } from "./decision-guardrails.js";
 import { publicMonsterTargetPlan } from "./target-feasibility.js";
 
 function codeOf(entry) { return Number(entry?.code ?? entry?.card ?? entry?.runtimeCode ?? entry?.id ?? 0); }
@@ -116,6 +116,8 @@ function intrinsicCardValue(card, observation = {}) {
   if (hasAny(roles, ["draw", "search", "advantage"])) value += 2.8;
   if (hasAny(roles, ["interaction", "negate", "removal"])) value += Number(observation.opponentMonsterCount ?? observation.opponentMonsters?.length) + Number(observation.opponentBackrowCount ?? observation.opponentBackrow?.length) > 0 ? 1.8 : 0.7;
   if (hasAny(roles, ["flip", "engine", "recovery"])) value += 1.5;
+  if (roles.has("persistent-effect")) value += 2.2;
+  if (roles.has("one-shot-effect")) value += 0.2;
   if (roles.has("boss")) value += observation.chaosReady ? 2.5 : 0.5;
   if (roles.has("lethal") && Number(observation.opponentLp) <= Number(card.atk)) value += 4;
   if (roles.has("cost-half-lp")) value -= Number(observation.ownLp) <= 2500 ? 1.5 : 0.5;
@@ -165,14 +167,25 @@ export function projectResponseValue(knowledge, message, response, { observation
 
   if (role === "monster-set") {
     for (const card of cards) {
+      const attack = Number(card.atk) || 0;
       const defense = Number(card.def) || 0;
+      const isFlip = card.roles?.includes("flip");
+      const isWall = defense > attack || hasAny(new Set(card.roles ?? []), ["defense", "stall"]);
+      const isBeater = attack >= 1400 && attack > defense;
+
       components.board += bounded((defense - 700) / 800, -0.5, 2.2);
-      components.safety += 1;
-      if (card.roles?.includes("flip")) {
+      if (isFlip) {
         components.future += 4.5;
         components.coherence += 2;
         reasons.push("SET_ENABLES_FUTURE_FLIP_VALUE");
+      } else if (isBeater) {
+        components.future -= 2.5;
+        components.coherence -= 2;
+        components.tempo -= 1.5;
+        reasons.push("SETTING_BEATER_LOSES_PROACTIVE_PRESSURE");
       }
+      if (isWall || defense >= 1400) components.safety += 1;
+      else if (defense < 1000 && !isFlip) components.safety -= 1;
       if (hasAny(new Set(card.roles ?? []), ["defense", "stall"])) components.safety += 1.2;
       if (board.ownMonsters.length >= 3) components.coherence -= (board.ownMonsters.length - 2) * 1.4;
       if (board.ownFaceDown.length >= 2) components.future -= (board.ownFaceDown.length - 1) * 0.8;
@@ -214,6 +227,23 @@ export function projectResponseValue(knowledge, message, response, { observation
       const relevantOpposingState = replyingToOwnChain && !independentValue ? 0 : monsterRelevant + backrowRelevant + generalRelevant + independentValue;
       components.tempo += relevantOpposingState ? 2.5 : -3;
       if (!relevantOpposingState) reasons.push(role === "chain" && hasPublicChain ? "CHAIN_NEEDS_IMMEDIATE_PUBLIC_JUSTIFICATION" : "INTERACTION_HAS_NO_VISIBLE_OPPOSING_VALUE");
+      if (role === "chain" && !roles.has("negate")) {
+        const activeChain = publicChainTargetContext(knowledge, observation, {
+          owner: observation.player,
+          sourceCode: Number(cards[0]?.runtimeCode) || 0,
+          sourceAlreadyChained: false,
+        });
+        const removalLike = ["backrow-removal", "backrow-sweeper", "monster-removal", "swing", "destroy-removal"]
+          .some((value) => roles.has(value));
+        if (removalLike && activeChain.card?.roles?.includes("one-shot-effect")
+          && activeChain.otherTargetCount === 0 && !independentValue) {
+          // The card already has a resolving effect. Removing a Normal
+          // Spell/Trap here does not negate it and only burns our resource.
+          components.tempo -= 8;
+          components.coherence -= 5;
+          reasons.push("REMOVAL_DOES_NOT_NEGATE_ACTIVE_ONE_SHOT");
+        }
+      }
     }
     if (roles.has("swing")) {
       const opposingTargets = roles.has("backrow-removal") ? board.opponentBackrow : board.opponentMonsters.length;
@@ -270,16 +300,26 @@ export function projectResponseValue(knowledge, message, response, { observation
     const currentPosition = Number(instance?.position) || 0;
     const attack = Number(cards[0]?.atk) || Number(instance?.attack) || 0;
     const defense = Number(cards[0]?.def) || Number(instance?.defense) || 0;
+    const isBeater = attack >= 1400 && attack > defense;
+    const isWall = defense > attack || roles.has("defense") || roles.has("stall");
+
     if ((currentPosition & OcgPosition.FACEDOWN) !== 0) {
       components.future += roles.has("flip") ? 3.5 : 0.3;
-      components.tempo += roles.has("flip") ? 1 : 0;
+      components.tempo += roles.has("flip") || isBeater ? 1.5 : 0;
     } else if ((currentPosition & OcgPosition.ATTACK) !== 0) {
-      components.board += bounded((defense - attack) / 700, -2.5, 2.5);
-      components.safety += board.opponentPower > attack ? 1.2 : -0.5;
-      if (!board.opponentMonsters.length && attack > 0) components.tempo -= 3;
+      if (isBeater && defense < 1400) {
+        components.board -= bounded((attack - defense) / 600, 1.5, 3.5);
+        components.tempo -= 2.5;
+        components.safety -= 1.0;
+        reasons.push("BEATER_DEFENSE_CHANGE_EXPOSES_WEAK_DEFENSE");
+      } else {
+        components.board += bounded((defense - attack) / 700, -2.5, 2.5);
+        components.safety += (board.opponentPower > attack && (isWall || defense >= board.opponentPower)) ? 1.2 : -0.8;
+        if (!board.opponentMonsters.length && attack > 0) components.tempo -= 3;
+      }
     } else if ((currentPosition & OcgPosition.DEFENSE) !== 0) {
       components.board += bounded((attack - defense) / 700, -2.5, 2.5);
-      components.tempo += !board.opponentMonsters.length || attack >= board.opponentPower ? 2 : -1;
+      components.tempo += !board.opponentMonsters.length || attack >= board.opponentPower || isBeater ? 2.5 : -1;
     } else components.future += 0.1;
     components.safety += cards.reduce((sum, card) => sum + deckSafetyAdjustment(new Set(card.roles ?? []), card, observation, board), 0);
   }
@@ -308,6 +348,13 @@ export function projectResponseValue(knowledge, message, response, { observation
   if (message?.type === OcgMessageType.SELECT_CARD) {
     const owner = Number(observation.player ?? message.player ?? 0);
     const selections = message.selects ?? message.select_cards ?? [];
+    const activeChain = causalRoles.has("removal") && !causalRoles.has("negate")
+      ? publicChainTargetContext(knowledge, observation, {
+        owner,
+        sourceCode: Number(causalCard?.runtimeCode) || 0,
+        sourceAlreadyChained: true,
+      })
+      : null;
     for (const index of response.indicies ?? []) {
       const entry = selections[Number(index)];
       const card = cardForCode(knowledge, entry);
@@ -321,6 +368,11 @@ export function projectResponseValue(knowledge, message, response, { observation
         components.future += intrinsic;
       } else if ((location === OcgLocation.MZONE || location === OcgLocation.SZONE) && causalRoles.has("removal")) {
         components.tempo += controller !== null && controller !== owner ? intrinsic + 1 : -intrinsic - 2;
+        if (activeChain?.card?.roles?.includes("one-shot-effect") && matchesPublicChainCard(entry, activeChain.entry)) {
+          components.tempo -= 8;
+          components.coherence -= 5;
+          reasons.push("REMOVAL_DOES_NOT_NEGATE_ACTIVE_ONE_SHOT");
+        }
         if (controller === owner && wasJustDeployedOrExposed(memory, observation, codeOf(entry))) {
           components.coherence -= 6;
           reasons.push("REMOVING_A_RESOURCE_JUST_DEPLOYED_OR_EXPOSED");

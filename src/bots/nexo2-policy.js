@@ -1,3 +1,5 @@
+import { GOAT_BASE_KNOWLEDGE_FINGERPRINT, GOAT_BASE_KNOWLEDGE_SCHEMA, baseKnowledgeFeatures } from "./goat-base-knowledge.js";
+
 export const NEXO2_POLICY_SCHEMA = 1;
 export const NEXO2_INPUT_SIZE = 128;
 export const NEXO2_HIDDEN_SIZE = 32;
@@ -65,6 +67,7 @@ export function nexo2FeatureVector(knowledge, entry, { observation = {}, memory 
   if (Number(observation.ownLp) <= 3000) add(vector, "state:own-low-lp", 1);
   if (Number(observation.opponentLp) <= 3000) add(vector, "state:opponent-low-lp", 1);
   if (observation.chaosReady) add(vector, "state:chaos-ready", 1);
+  for (const feature of baseKnowledgeFeatures(knowledge, observation, entry)) add(vector, feature, 0.38);
 
   add(vector, `action:${role}`, 1.2);
   add(vector, `cross:${boardRelation}:${role}`, 0.8);
@@ -88,6 +91,18 @@ export function nexo2FeatureVector(knowledge, entry, { observation = {}, memory 
 
   const deckSize = Math.max(1, Number(knowledge?.mainSize) || 40);
   for (const [deckRole, count] of Object.entries(knowledge?.roles ?? {})) add(vector, `deck-role:${deckRole}`, Number(count) / deckSize);
+  const plan = knowledge?.plan ?? {};
+  add(vector, `deck-plan:${plan.id ?? "generic"}`, 0.5);
+  add(vector, `deck-playstyle:${plan.playstyle ?? plan.archetype ?? "adaptive"}`, 0.45);
+  for (const planRole of plan.priorityRoles ?? []) add(vector, `plan-priority:${planRole}`, 0.18);
+  for (const planRole of plan.openingRoles ?? []) add(vector, `plan-opening:${planRole}`, 0.24);
+  for (const planRole of plan.keepRoles ?? []) add(vector, `plan-keep:${planRole}`, 0.2);
+  for (const planRole of plan.counterplayRoles ?? []) add(vector, `plan-counterplay:${planRole}`, 0.22);
+  for (const strength of plan.strengths ?? []) add(vector, `plan-strength:${strength}`, 0.14);
+  for (const condition of plan.lossConditions ?? []) add(vector, `plan-loss-condition:${condition}`, 0.18);
+  for (const goal of plan.goals ?? []) add(vector, `plan-goal:${goal}`, 0.16);
+  for (const scenario of plan.scenarios ?? []) add(vector, `plan-scenario:${scenario}`, 0.14);
+  for (const cardName of plan.keyCards ?? []) add(vector, `plan-key-card:${cardName}`, 0.2);
   addZoneRoles(vector, knowledge, "hand", observation.ownHand ?? []);
   addZoneRoles(vector, knowledge, "board", observation.ownMonsters ?? []);
   addZoneRoles(vector, knowledge, "grave", observation.graveyard ?? []);
@@ -204,8 +219,9 @@ export class Nexo2PolicyNetwork {
       const discount = Math.pow(0.997, Math.min(300, distance));
       const nextSignal = Number(traces[Math.min(traces.length - 1, traceIndex + 1)]?.stateSignal) || 0;
       const localProgress = clamp(nextSignal - (Number(trace.stateSignal) || 0), -0.5, 0.5);
-      const valueTarget = clamp(result * discount + localProgress * 0.12, -1, 1);
-      const advantage = clamp((result - baselineBefore) * discount + localProgress * 0.18 - forwards[chosen].value * 0.35, -2, 2);
+      const localRewardSignal = clamp(Number(trace.localRewardSignal) || 0, -0.35, 0.35);
+      const valueTarget = clamp(result * discount + localProgress * 0.12 + localRewardSignal * 0.16, -1, 1);
+      const advantage = clamp((result - baselineBefore) * discount + localProgress * 0.18 + localRewardSignal * 0.3 - forwards[chosen].value * 0.35, -2, 2);
       const rate = this.learningRate / Math.sqrt(Math.max(1, traces.length / 24));
       const oldWp = [...this.wp];
       const oldWv = [...this.wv];
@@ -254,6 +270,8 @@ export class Nexo2PolicyNetwork {
     return {
       schema: NEXO2_POLICY_SCHEMA,
       type: "public-action-mlp-policy-value",
+      baseKnowledgeSchema: GOAT_BASE_KNOWLEDGE_SCHEMA,
+      baseKnowledgeFingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT,
       inputSize: this.inputSize,
       hiddenSize: this.hiddenSize,
       seed: this.seed,

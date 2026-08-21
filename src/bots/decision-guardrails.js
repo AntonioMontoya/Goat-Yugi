@@ -1,4 +1,5 @@
-import { OcgLocation, OcgMessageType, OcgPhase } from "../../node_modules/@jsr/n1xx1__ocgcore-wasm/dist/index.js";
+import { OcgLocation, OcgMessageType, OcgPhase, OcgPosition } from "../../node_modules/@jsr/n1xx1__ocgcore-wasm/dist/index.js";
+import { publicCardSemantics } from "./card-semantics.js";
 import { publicMonsterTargetPlan } from "./target-feasibility.js";
 
 function codeOf(entry) {
@@ -35,6 +36,56 @@ function sourceRoles(knowledge, message, memory = {}, observation = {}) {
     && Number(entry.cardCode)
     && (!decision || !Number(entry.decision) || decision - Number(entry.decision) <= 4));
   return new Set(recent?.roles ?? []);
+}
+
+function sourceCode(knowledge, message, memory = {}, observation = {}) {
+  const directCode = Number(message?.code ?? message?.card?.code ?? message?.triggering_card?.code ?? 0);
+  if (directCode) return directCode;
+  const turn = Number(observation.turn) || 0;
+  const decision = Number(observation.decisions) || 0;
+  const recent = [...(memory?.recent ?? [])].reverse().find((entry) => Number(entry.turn) === turn
+    && Number(entry.cardCode)
+    && (!decision || !Number(entry.decision) || decision - Number(entry.decision) <= 4));
+  return Number(recent?.cardCode) || 0;
+}
+
+function cardSemantics(knowledge, entry) {
+  const code = codeOf(entry);
+  return knowledge?.byRuntimeCode?.[String(code)] ?? publicCardSemantics(code) ?? null;
+}
+
+/**
+ * Public chain context for timing-sensitive decisions. The active opposing
+ * link is intentionally derived only from the visible chain and board; no
+ * hidden hand or deck information is consulted.
+ */
+export function publicChainTargetContext(knowledge, observation = {}, { owner = observation.player, sourceCode: source = 0, sourceAlreadyChained = false } = {}) {
+  const normalizedOwner = Number(owner);
+  const entries = observation.publicChain ?? [];
+  let eligible = entries;
+  if (sourceAlreadyChained && Number(source)) {
+    const sourceIndex = [...entries].map((entry, index) => ({ entry, index }))
+      .reverse()
+      .find(({ entry }) => controllerOf(entry) === normalizedOwner && codeOf(entry) === Number(source))?.index;
+    if (sourceIndex !== undefined) eligible = entries.slice(0, sourceIndex);
+  }
+  const entry = [...eligible].reverse().find((candidate) => controllerOf(candidate) !== null && controllerOf(candidate) !== normalizedOwner) ?? null;
+  const card = entry ? cardSemantics(knowledge, entry) : null;
+  const opponentBoard = [...(observation.opponentMonsters ?? []), ...(observation.opponentBackrow ?? [])].filter(Boolean);
+  const onBoard = Boolean(entry && opponentBoard.some((candidate) => matchesPublicChainCard(candidate, entry)));
+  return {
+    entry,
+    card,
+    onBoard,
+    otherTargetCount: Math.max(0, opponentBoard.length - (onBoard ? 1 : 0)),
+  };
+}
+
+export function matchesPublicChainCard(card, entry) {
+  if (!card || !entry || codeOf(card) !== codeOf(entry)) return false;
+  if (controllerOf(card) !== null && controllerOf(entry) !== null && controllerOf(card) !== controllerOf(entry)) return false;
+  if (entry.sequence !== undefined && card.sequence !== undefined && Number(entry.sequence) !== Number(card.sequence)) return false;
+  return true;
 }
 
 function selectionStats(message, candidate, owner) {
@@ -120,6 +171,28 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
     return "FLIP_VALUE_REQUIRES_SET";
   }
 
+  if (role === "monster-set" && !roles.has("flip")) {
+    const card = entry.analysis?.cards?.[0];
+    const attack = Number(card?.atk) || 0;
+    const defense = Number(card?.def) || 0;
+    if (attack >= 1600 && attack > defense && defense < 1400
+      && sameCardAlternatives.some((other) => other.analysis?.role === "summon")) {
+      return "BEATER_SHOULD_BE_SUMMONED_IN_ATTACK";
+    }
+  }
+
+  if (role === "position-change" && message?.type === OcgMessageType.SELECT_IDLECMD) {
+    const instance = selectedActionInstance(message, entry, observation);
+    const pos = Number(instance?.position) || 0;
+    const card = entry.analysis?.cards?.[0];
+    const attack = Number(card?.atk) || Number(instance?.attack) || 0;
+    const defense = Number(card?.def) || Number(instance?.defense) || 0;
+    if ((pos & OcgPosition.ATTACK) !== 0 && attack >= 1400 && attack > defense && defense < 1400
+      && !roles.has("defense") && !roles.has("stall") && !roles.has("flip")) {
+      return "AVOID_SWITCHING_BEATER_TO_DEFENSE";
+    }
+  }
+
   if (role === "spell-set" && !roles.has("reactive")) {
     const handSize = Number(observation.handSize ?? observation.ownHand?.length) || 0;
     if (handSize <= 6 || roles.has("swing") || roles.has("recycle-board")) return "NON_REACTIVE_SET_LOSES_OPTIONALITY";
@@ -162,6 +235,30 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
       && codeOf(chain) === primaryCode(entry));
     const canPass = evaluated.some((other) => other !== entry && other.analysis?.role === "pass-chain");
     if (duplicateInChain && canPass) return "DUPLICATE_NON_STACKING_CHAIN_EFFECT";
+  }
+
+  if ([OcgMessageType.SELECT_CHAIN, OcgMessageType.SELECT_BATTLECMD].includes(message?.type)
+    && role === "chain" && roles.has("removal") && !roles.has("negate")) {
+    const owner = Number(observation.player ?? message.player ?? 0);
+    const canDecline = evaluated.some((other) => other !== entry
+      && ["pass-chain", "attack", "main-two", "end-phase"].includes(other.analysis?.role));
+    const context = publicChainTargetContext(knowledge, observation, {
+      owner,
+      sourceCode: primaryCode(entry),
+      sourceAlreadyChained: false,
+    });
+    const removalLike = ["backrow-removal", "backrow-sweeper", "monster-removal", "swing", "destroy-removal"]
+      .some((value) => roles.has(value));
+    const independentValue = ["draw", "search", "advantage", "draw-denial", "burn", "alternate-win"]
+      .some((value) => roles.has(value));
+    // Destroying a Normal Spell/Trap that is already on the chain does not
+    // negate its effect. If it is the only public target, passing preserves
+    // the discard/activation resource for a real threat.
+    if (canDecline && removalLike && !independentValue
+      && context.card?.roles?.includes("one-shot-effect")
+      && context.otherTargetCount === 0) {
+      return "REMOVAL_DOES_NOT_NEGATE_ACTIVE_ONE_SHOT";
+    }
   }
 
   if ([OcgMessageType.SELECT_CHAIN, OcgMessageType.SELECT_BATTLECMD].includes(message?.type)
@@ -220,6 +317,25 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
 
   if (message?.type === OcgMessageType.SELECT_CARD) {
     const causal = sourceRoles(knowledge, message, memory, observation);
+    if (causal.has("removal") && !causal.has("negate")) {
+      const owner = Number(observation.player ?? message.player ?? 0);
+      const context = publicChainTargetContext(knowledge, observation, {
+        owner,
+        sourceCode: sourceCode(knowledge, message, memory, observation),
+        sourceAlreadyChained: true,
+      });
+      const selections = message.selects ?? message.select_cards ?? [];
+      const selectedActiveOneShot = context.card?.roles?.includes("one-shot-effect")
+        && (entry.candidate?.indicies ?? []).some((index) => matchesPublicChainCard(selections[Number(index)], context.entry));
+      const hasAlternativeOpponentTarget = evaluated.some((other) => other !== entry
+        && (other.candidate?.indicies ?? []).some((index) => {
+          const target = selections[Number(index)];
+          return controllerOf(target) !== null
+            && controllerOf(target) !== owner
+            && !matchesPublicChainCard(target, context.entry);
+        }));
+      if (selectedActiveOneShot && hasAlternativeOpponentTarget) return "REMOVAL_TARGET_DOES_NOT_NEGATE_ACTIVE_ONE_SHOT";
+    }
     if (["removal", "position"].some((value) => causal.has(value))) {
       const owner = Number(observation.player ?? message.player ?? 0);
       const current = selectionStats(message, entry.candidate, owner);
@@ -258,4 +374,4 @@ export function enforceDecisionGuardrails(knowledge, message, evaluated, context
   };
 }
 
-export const DECISION_GUARDRAIL_SCHEMA = 4;
+export const DECISION_GUARDRAIL_SCHEMA = 5;

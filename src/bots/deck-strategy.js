@@ -2,6 +2,8 @@ import { OcgMessageType, SelectBattleCMDAction, SelectIdleCMDAction } from "../.
 import { getCard, getCardByName } from "../engine/cards.js";
 import { getDeck } from "../decks/decks.js";
 import { hashString } from "../engine/rng.js";
+import { NEXO2_DECK_PROFILES } from "./nexo2-deck-profiles.js";
+import { GOAT_BASE_KNOWLEDGE_FINGERPRINT, GOAT_BASE_KNOWLEDGE_SCHEMA, GOAT_BASE_RULES, baseKnowledgeFeatures, classifyGoatState } from "./goat-base-knowledge.js";
 
 const NORMALIZE_RE = /\s+/g;
 
@@ -13,6 +15,12 @@ const PLAN_DEFAULT = Object.freeze({
   id: "generic-value",
   archetype: "Midrange",
   identity: "Genera ventaja, protege recursos y convierte la mesa en daño.",
+  objective: "Genera ventaja, protege recursos y convierte la mesa en daño.",
+  playstyle: "Midrange adaptable",
+  keyCards: [],
+  counterplay: "Identifica el motor del mazo, intercambia recursos sólo cuando haya valor y no regales cartas clave.",
+  counterplayRoles: ["interaction", "resource-denial"],
+  weaknesses: ["La estrategia se debilita si pierde su motor antes de convertir la ventaja."],
   priorityRoles: ["draw", "search", "engine", "interaction", "threat", "boss", "defense"],
   roleWeights: { draw: 1.1, search: 1, engine: 0.8, interaction: 0.9, threat: 0.7, boss: 0.5, defense: 0.5, lethal: 0.8, combo: 0.7 },
   openingRoles: ["draw", "search", "engine"],
@@ -25,6 +33,12 @@ const PLAN_DEFAULT = Object.freeze({
 const DECK_PLANS = Object.freeze({
   "chaos-turbo": {
     id: "chaos-turbo-v1", archetype: "Chaos / Midrange", identity: "Llena el Cementerio con LIGHT/DARK, conserva tempo y convierte el umbral en BLS.",
+    objective: "Llena el Cementerio con LIGHT/DARK, conserva tempo y convierte el umbral en BLS o Chaos Sorcerer.",
+    playstyle: "Midrange explosivo con cierre de Chaos",
+    keyCards: ["Black Luster Soldier - Envoy of the Beginning", "Chaos Sorcerer", "Thunder Dragon", "Graceful Charity", "D.D. Warrior Lady", "Pot of Greed"],
+    counterplay: "Corta el acceso al Cementerio, fuerza los jefes antes de tiempo y no le entregues intercambios gratuitos para alcanzar el umbral de Chaos.",
+    counterplayRoles: ["graveyard-denial", "deny-boss", "monster-removal", "interaction", "backrow-removal"],
+    weaknesses: ["Depende de LIGHT/DARK en el Cementerio.", "Pierde explosividad si se le niega el primer motor o se le obliga a gastar el jefe sin ventaja."],
     priorityRoles: ["draw", "grave-setup", "search", "engine", "interaction", "threat", "boss", "lethal"],
     roleWeights: { draw: 1.4, "grave-setup": 1.3, search: 1.1, engine: 1, interaction: 1.1, threat: 1, boss: 1.8, lethal: 1.5, defense: 0.6 },
     openingRoles: ["draw", "grave-setup", "search", "engine"], keepRoles: ["boss", "interaction", "defense"],
@@ -33,6 +47,12 @@ const DECK_PLANS = Object.freeze({
   },
   "goat-control": {
     id: "goat-control-v1", archetype: "Control", identity: "Intercambia recursos, conserva Scapegoat y fuerza el combate favorable.",
+    objective: "Intercambia recursos, conserva Scapegoat y fuerza el combate favorable hasta ganar la guerra de recursos.",
+    playstyle: "Control reactivo y ventaja incremental",
+    keyCards: ["Scapegoat", "Metamorphosis", "Book of Moon", "Magician of Faith", "Tsukuyomi", "Nobleman of Crossout"],
+    counterplay: "No ataques a ciegas contra sus volteos, elimina sus cartas continuas antes de que generen valor y obliga a gastar Scapegoat fuera de la ventana ideal.",
+    counterplayRoles: ["avoid-blind-attacks", "backrow-removal", "target-face-down-monster", "interaction", "tempo"],
+    weaknesses: ["Necesita tiempo para convertir sus intercambios en ventaja.", "Sufre si se le niegan los volteos o se le fuerza a usar Scapegoat defensivamente."],
     priorityRoles: ["draw", "interaction", "defense", "engine", "flip", "threat", "lethal"],
     roleWeights: { draw: 1.1, interaction: 1.4, defense: 1.3, engine: 1, flip: 1.1, threat: 0.8, lethal: 0.8, stall: 1 },
     openingRoles: ["draw", "defense", "engine"], keepRoles: ["interaction", "defense", "stall"],
@@ -41,6 +61,12 @@ const DECK_PLANS = Object.freeze({
   },
   "chaos-control": {
     id: "chaos-control-v1", archetype: "Chaos / Control", identity: "Controla la mesa y guarda LIGHT/DARK para el cierre explosivo.",
+    objective: "Controla la mesa y guarda LIGHT/DARK para un cierre explosivo cuando el rival ya no pueda responder.",
+    playstyle: "Control de recursos con cierre de Chaos",
+    keyCards: ["Black Luster Soldier - Envoy of the Beginning", "Chaos Sorcerer", "D.D. Warrior Lady", "Book of Moon", "Graceful Charity"],
+    counterplay: "Ataca el equilibrio de LIGHT/DARK, presiona sus recursos de interacción y no permitas que llegue al cierre con mesa estable.",
+    counterplayRoles: ["graveyard-denial", "deny-boss", "interaction", "backrow-removal"],
+    weaknesses: ["Su cierre depende de conservar recursos hasta el umbral de Chaos."],
     priorityRoles: ["draw", "interaction", "grave-setup", "engine", "threat", "boss", "lethal"],
     roleWeights: { draw: 1.2, interaction: 1.3, "grave-setup": 1.1, engine: 1, threat: 0.9, boss: 1.5, lethal: 1.2, defense: 0.8 },
     openingRoles: ["draw", "interaction", "grave-setup"], keepRoles: ["boss", "interaction"],
@@ -49,6 +75,12 @@ const DECK_PLANS = Object.freeze({
   },
   warrior: {
     id: "warrior-v1", archetype: "Aggro / Anti-meta", identity: "Busca la herramienta correcta con ROTA y convierte cada turno en presión eficiente.",
+    objective: "Busca la herramienta correcta con ROTA y convierte cada turno en presión eficiente.",
+    playstyle: "Aggro de tempo y presión constante",
+    keyCards: ["Reinforcement of the Army", "D.D. Warrior Lady", "Breaker the Magical Warrior"],
+    counterplay: "Sobrevive al primer empuje, corta ROTA o sus amenazas buscadas y gana los intercambios antes de que convierta presión en daño letal.",
+    counterplayRoles: ["interaction", "monster-removal", "backrow-removal", "defense"],
+    weaknesses: ["Pierde valor si no puede mantener un atacante en mesa."],
     priorityRoles: ["search", "threat", "interaction", "tempo", "draw", "lethal", "defense"],
     roleWeights: { search: 1.7, threat: 1.4, interaction: 1.2, tempo: 1.2, draw: 0.7, lethal: 1.5, defense: 0.6 },
     openingRoles: ["search", "threat", "tempo"], keepRoles: ["interaction", "lethal"],
@@ -57,6 +89,12 @@ const DECK_PLANS = Object.freeze({
   },
   "panda-burn": {
     id: "panda-burn-v1", archetype: "Burn", identity: "Convierte permanentes y daño directo en un reloj; no intercambia recursos sin necesidad.",
+    objective: "Convierte permanentes y daño directo en un reloj y protege la última secuencia de burn.",
+    playstyle: "Burn defensivo y control del reloj",
+    keyCards: ["Stealth Bird", "Wave-Motion Cannon", "Just Desserts", "Scapegoat"],
+    counterplay: "Presiona sus cartas continuas, conserva removal para el motor de daño y no le des turnos gratis para montar el reloj.",
+    counterplayRoles: ["backrow-removal", "interaction", "life-preservation", "tempo"],
+    weaknesses: ["Depende de permanentes y de mantener la partida bajo control de ritmo."],
     priorityRoles: ["draw", "burn", "engine", "defense", "interaction", "stall", "lethal"],
     roleWeights: { draw: 1.3, burn: 1.8, engine: 1.2, defense: 1.2, interaction: 0.8, stall: 1.4, lethal: 1.7 },
     openingRoles: ["draw", "engine", "defense"], keepRoles: ["burn", "defense", "stall"],
@@ -65,6 +103,12 @@ const DECK_PLANS = Object.freeze({
   },
   "reasoning-gate": {
     id: "reasoning-gate-v1", archetype: "Combo", identity: "Monta una secuencia de invocación y evita gastar piezas de combo fuera de ventana.",
+    objective: "Monta una secuencia de invocación y conserva las piezas de combo hasta la ventana decisiva.",
+    playstyle: "Combo de preparación y explosión",
+    keyCards: ["Reasoning", "Monster Gate", "Black Luster Soldier - Envoy of the Beginning"],
+    counterplay: "Interrumpe el primer buscador o la pieza que conecta la secuencia; no malgastes removal en cartas que no son el motor.",
+    counterplayRoles: ["negate", "interaction", "remove-engine", "graveyard-denial"],
+    weaknesses: ["Una interrupción temprana puede dejar cartas muertas y cortar toda la secuencia."],
     priorityRoles: ["combo", "draw", "engine", "grave-setup", "interaction", "boss", "lethal"],
     roleWeights: { combo: 1.8, draw: 1.3, engine: 1.3, "grave-setup": 1.1, interaction: 0.7, boss: 1.2, lethal: 1.6 },
     openingRoles: ["draw", "combo", "engine"], keepRoles: ["combo", "boss", "interaction"],
@@ -73,6 +117,12 @@ const DECK_PLANS = Object.freeze({
   },
   "earth-aggro": {
     id: "earth-aggro-v1", archetype: "Aggro", identity: "Mantiene presión de ATK, usa removal para abrir ataques y no se queda esperando.",
+    objective: "Mantiene presión de ATK, abre el campo con removal y cierra antes de que el rival estabilice.",
+    playstyle: "Aggro de combate y tempo",
+    keyCards: ["Gigantes", "Gemini Elf", "Breaker the Magical Warrior", "D.D. Warrior Lady"],
+    counterplay: "Conserva una respuesta para el atacante principal, intercambia removal por amenazas reales y gana tiempo hasta que su presión pierda densidad.",
+    counterplayRoles: ["monster-removal", "defense", "interaction", "tempo"],
+    weaknesses: ["Sufre cuando el rival estabiliza una defensa que no puede atravesar eficientemente."],
     priorityRoles: ["threat", "search", "interaction", "tempo", "lethal", "defense"],
     roleWeights: { threat: 1.5, search: 1.2, interaction: 1.2, tempo: 1.4, lethal: 1.6, defense: 0.5 },
     openingRoles: ["threat", "search", "tempo"], keepRoles: ["interaction", "lethal"],
@@ -81,6 +131,12 @@ const DECK_PLANS = Object.freeze({
   },
   "empty-jar": {
     id: "empty-jar-v1", archetype: "Deck-out / Combo", identity: "Protege los resets y administra el tamaño de ambos decks para ganar por agotamiento.",
+    objective: "Protege los resets y administra el tamaño de ambos Decks para ganar por agotamiento.",
+    playstyle: "Combo de deck-out y resets",
+    keyCards: ["Morphing Jar", "Cyber Jar", "Book of Moon", "Tsukuyomi"],
+    counterplay: "No llenes su Cementerio ni su mano sin necesidad, conserva una respuesta para el reset y controla el conteo de Decks.",
+    counterplayRoles: ["negate", "interaction", "deck-count", "avoid-reset"],
+    weaknesses: ["Pierde si se le corta el reset o se le obliga a jugar un duelo normal de combate."],
     priorityRoles: ["combo", "deck-out", "draw", "reset", "flip", "defense", "interaction"],
     roleWeights: { combo: 1.7, "deck-out": 1.8, draw: 1.4, reset: 1.5, flip: 1.1, defense: 1.1, interaction: 0.6 },
     openingRoles: ["draw", "combo", "flip"], keepRoles: ["reset", "combo", "defense"],
@@ -89,6 +145,12 @@ const DECK_PLANS = Object.freeze({
   },
   "chaos-recruiter": {
     id: "chaos-recruiter-v1", archetype: "Chaos / Recruiter", identity: "Usa recruiters para convertir combate en acceso a LIGHT/DARK y mantiene el flujo de recursos.",
+    objective: "Usa recruiters para convertir combate en acceso a LIGHT/DARK y mantener el flujo hasta el jefe de Chaos.",
+    playstyle: "Midrange de recruiters y ventaja por combate",
+    keyCards: ["Mystic Tomato", "Shining Angel", "Black Luster Soldier - Envoy of the Beginning", "Chaos Sorcerer"],
+    counterplay: "No permitas que sus recruiters conviertan cada combate en búsqueda; elimina el objetivo correcto y controla su Cementerio.",
+    counterplayRoles: ["monster-removal", "graveyard-denial", "interaction", "deny-boss"],
+    weaknesses: ["Necesita que sus recruiters sobrevivan o intercambien favorablemente para generar acceso."],
     priorityRoles: ["search", "engine", "grave-setup", "threat", "interaction", "boss", "lethal"],
     roleWeights: { search: 1.5, engine: 1.3, "grave-setup": 1.2, threat: 1, interaction: 1, boss: 1.4, lethal: 1.3, defense: 0.7 },
     openingRoles: ["search", "engine", "grave-setup"], keepRoles: ["boss", "interaction"],
@@ -97,6 +159,12 @@ const DECK_PLANS = Object.freeze({
   },
   "flip-control": {
     id: "flip-control-v1", archetype: "Control / Flip", identity: "Prepara volteos, protege cartas de valor y gana por ventaja incremental.",
+    objective: "Prepara volteos, protege cartas de valor y gana por ventaja incremental sin exponer el monstruo antes de tiempo.",
+    playstyle: "Control de volteos y ventaja incremental",
+    keyCards: ["Magician of Faith", "Dekoichi the Battlechanted Locomotive", "Mask of Darkness", "Tsukuyomi", "Book of Moon", "Solemn Judgment"],
+    counterplay: "No ataques ni uses removal a ciegas sobre sus monstruos seteados; limpia la retaguardia y niega el momento en que el volteo genera ventaja.",
+    counterplayRoles: ["avoid-blind-attacks", "backrow-removal", "target-face-down-monster", "negate", "battle-interaction"],
+    weaknesses: ["Necesita que sus monstruos sobrevivan boca abajo hasta la ventana de volteo.", "Sufre ante removal de retaguardia y respuestas que no le dan tiempo."],
     priorityRoles: ["draw", "flip", "interaction", "defense", "engine", "tempo", "lethal"],
     roleWeights: { draw: 1.1, flip: 1.6, interaction: 1.3, defense: 1.2, engine: 1.1, tempo: 0.9, lethal: 0.8 },
     openingRoles: ["draw", "flip", "defense"], keepRoles: ["flip", "interaction", "defense"],
@@ -141,6 +209,15 @@ export function semanticRolesForCard(card) {
   if (/(?:monster|card)s? your opponent controls|your opponent(?:'s|s') (?:face-up |face-down )?(?:monster|card)|on your opponent(?:'s|s') side of the field/.test(text)) roles.add("target-opponent-board");
   if (/\bdestroy\b/.test(text) && roles.has("removal")) roles.add("destroy-removal");
   if (/\bbanish\b|remove from play/.test(text) && roles.has("removal")) roles.add("banish-removal");
+  // A card that is already resolving on the chain cannot be stopped merely
+  // by destroying it. This semantic distinction lets the common decision
+  // layer handle Raigeki Break, Mystical Space Typhoon, Heavy Storm and
+  // equivalent effects without naming individual cards.
+  const spellTrap = kind === "SPELL" || kind === "TRAP";
+  const persistentSubtype = /continuous|equip|field/.test(speed);
+  const persistentText = /as long as|while .* remains|each time|during each|once per turn|cannot be activated|cannot be destroyed/.test(text);
+  if (spellTrap) roles.add(persistentSubtype || persistentText ? "persistent-effect" : "one-shot-effect");
+  if (/\bnegate\s+(?:the\s+)?(?:activation|effect)|\bnegate\b.*\bactivation\b/.test(text)) roles.add("negate-activation");
   if (/negate/.test(text)) { roles.add("interaction"); roles.add("negate"); roles.add("defense"); }
   if (/cannot attack|end the battle phase|battle damage .* 0|not destroyed by battle/.test(text)) { roles.add("defense"); roles.add("stall"); }
   if (/cannot declare an attack|cannot attack|skip (?:their|your|the) .*battle phase|level .* monsters? cannot attack/.test(text)) { roles.add("defense"); roles.add("stall"); }
@@ -195,7 +272,7 @@ function inferredPlan(deck, cards = []) {
   const selected = candidates[0];
   const base = selected?.score > 0 ? DECK_PLANS[selected.key] : PLAN_DEFAULT;
   const evidence = Object.entries(counts).sort((left, right) => right[1] - left[1]).slice(0, 6).map(([role, amount]) => ({ role, count: amount }));
-  return { ...base, id: `derived-${base.id}`, derived: true, evidence };
+  return { ...base, id: `derived-${base.id}`, derived: true, evidence, keyCards: inferredKeyCards(cards) };
 }
 
 function roleCount(cards) {
@@ -218,19 +295,91 @@ function resolveDeck(deckId = "generic", deck = null) {
   }
 }
 
+function inferredCounterplayRoles(plan, cards = []) {
+  const roles = new Set(cards.flatMap((card) => card.roles ?? []));
+  if (roles.has("flip")) return ["avoid-blind-attacks", "backrow-removal", "target-face-down-monster"];
+  if (roles.has("burn") || roles.has("stall")) return ["backrow-removal", "life-preservation", "tempo"];
+  if (roles.has("deck-out") || roles.has("reset")) return ["negate", "avoid-reset", "deck-count"];
+  if (roles.has("combo")) return ["negate", "remove-engine", "interaction"];
+  if (roles.has("grave-setup")) return ["graveyard-denial", "deny-boss", "interaction"];
+  if (roles.has("interaction")) return ["interaction", "resource-denial", "tempo"];
+  return [...(plan.counterplayRoles ?? PLAN_DEFAULT.counterplayRoles)];
+}
+
+function inferredWeaknesses(plan, cards = []) {
+  const roles = new Set(cards.flatMap((card) => card.roles ?? []));
+  if (roles.has("flip")) return ["Necesita tiempo y una carta boca abajo que sobreviva hasta su ventana de valor."];
+  if (roles.has("combo")) return ["Una interrupción temprana sobre el motor puede cortar la secuencia completa."];
+  if (roles.has("burn") || roles.has("stall")) return ["Pierde presión si se le retiran los permanentes que sostienen su reloj."];
+  if (roles.has("grave-setup")) return ["Pierde consistencia si no puede llenar o proteger el Cementerio."];
+  return [...(plan.weaknesses ?? PLAN_DEFAULT.weaknesses)];
+}
+
+function inferredKeyCards(cards = []) {
+  return cards
+    .filter((card) => card.name)
+    .sort((left, right) => {
+      const score = (card) => (card.roles ?? []).reduce((sum, role) => sum + (role === "boss" ? 5 : ["engine", "draw", "search", "flip", "interaction", "lethal"].includes(role) ? 2 : 0), 0) + Number(card.count || 0) * 0.05;
+      return score(right) - score(left);
+    })
+    .slice(0, 6)
+    .map((card) => card.name);
+}
+
 export function strategyPlanForDeck(deckId, deck = null, cards = []) {
   const source = resolveDeck(deckId, deck);
   const explicit = DECK_PLANS[deckId];
-  const plan = explicit ?? inferredPlan(source, cards);
-  return {
+  const document = NEXO2_DECK_PROFILES[deckId] ?? {};
+  const inferred = explicit ?? inferredPlan(source, cards);
+  const plan = {
+    ...inferred,
+    ...document,
+    roleWeights: { ...(inferred.roleWeights ?? {}), ...(document.roleWeights ?? {}) },
+  };
+  const merged = {
     ...PLAN_DEFAULT,
     ...plan,
+    objective: plan.objective ?? plan.identity ?? PLAN_DEFAULT.objective,
+    playstyle: plan.playstyle ?? plan.archetype ?? PLAN_DEFAULT.playstyle,
+    keyCards: [...(plan.keyCards ?? inferredKeyCards(cards))],
+    counterplay: plan.counterplay ?? PLAN_DEFAULT.counterplay,
+    counterplayRoles: [...(plan.counterplayRoles ?? inferredCounterplayRoles(plan, cards))],
+    weaknesses: [...(plan.weaknesses ?? inferredWeaknesses(plan, cards))],
+    strengths: [...(plan.strengths ?? [])],
+    lossConditions: [...(plan.lossConditions ?? [])],
     roleWeights: { ...PLAN_DEFAULT.roleWeights, ...(plan.roleWeights ?? {}) },
     openingRoles: [...(plan.openingRoles ?? PLAN_DEFAULT.openingRoles)],
     keepRoles: [...(plan.keepRoles ?? PLAN_DEFAULT.keepRoles)],
     goals: [...(plan.goals ?? PLAN_DEFAULT.goals)],
     scenarios: [...(plan.scenarios ?? PLAN_DEFAULT.scenarios)],
   };
+  if (!merged.keyCards.length) merged.keyCards = inferredKeyCards(cards);
+  if (!merged.counterplayRoles.length) merged.counterplayRoles = inferredCounterplayRoles(merged, cards);
+  if (!merged.weaknesses.length) merged.weaknesses = inferredWeaknesses(merged, cards);
+  if (!merged.strengths.length) merged.strengths = inferredStrengths(merged, cards);
+  if (!merged.lossConditions.length) merged.lossConditions = inferredLossConditions(merged, cards);
+  merged.strategySource = document && Object.keys(document).length ? "explicit" : "derived";
+  return merged;
+}
+
+function inferredStrengths(plan, cards = []) {
+  const roles = new Set(cards.flatMap((card) => card.roles ?? []));
+  const strengths = [];
+  if (roles.has("draw") || roles.has("search") || roles.has("advantage")) strengths.push("Genera acceso y ventaja de cartas a partir de sus cartas de motor.");
+  if (roles.has("interaction") || roles.has("removal")) strengths.push("Puede intercambiar recursos y adaptar la respuesta a la mesa pública.");
+  if (roles.has("boss") || roles.has("lethal")) strengths.push("Tiene una amenaza de cierre capaz de convertir una ventana favorable en daño.");
+  if (roles.has("defense") || roles.has("stall")) strengths.push("Puede comprar turnos y proteger sus puntos de vida mientras prepara el plan.");
+  return strengths.length ? strengths.slice(0, 3) : ["Su lista mantiene un plan midrange flexible basado en cartas legales y valor público."];
+}
+
+function inferredLossConditions(plan, cards = []) {
+  const roles = new Set(cards.flatMap((card) => card.roles ?? []));
+  const losses = [];
+  if (roles.has("combo") || roles.has("engine")) losses.push("Si se interrumpe el primer motor, las cartas de seguimiento pierden consistencia.");
+  if (roles.has("interaction") || roles.has("removal")) losses.push("Si gasta la interacción en objetivos sin valor, el rival conserva la amenaza real.");
+  if (roles.has("boss") || roles.has("lethal")) losses.push("Si llega al cierre sin ventaja o sin proteger la amenaza, el intercambio resulta negativo.");
+  if (roles.has("defense") || roles.has("stall")) losses.push("Si pierde la defensa antes de estabilizar, queda expuesto a una carrera de daño.");
+  return losses.length ? losses.slice(0, 3) : ["Pierde cuando no puede convertir su ventaja de cartas en una posición de mesa estable."];
 }
 
 export function buildDeckKnowledge(deckId = "generic", deck = null) {
@@ -247,6 +396,9 @@ export function buildDeckKnowledge(deckId = "generic", deck = null) {
   const roles = roleCount(cards);
   return {
     schema: 1,
+    baseKnowledgeSchema: GOAT_BASE_KNOWLEDGE_SCHEMA,
+    baseKnowledgeFingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT,
+    baseRules: GOAT_BASE_RULES,
     deckId,
     deckHash: source.hash ?? hashString(JSON.stringify({ main: source.main ?? [], fusion: source.fusion ?? [], side: source.side ?? [] })),
     resolved: source.unresolved !== true,
@@ -335,7 +487,18 @@ export function strategyActionRole(message, response) {
 }
 
 export function strategyObservationFeatures(knowledge, observation = {}) {
-  const features = [`deck:plan:${knowledge.plan.id}`, `deck:archetype:${normalize(knowledge.archetype)}`, `deck:size:${knowledge.mainSize}`];
+  const normalizedObservation = { ...observation, goatState: observation.goatState ?? classifyGoatState(observation) };
+  const features = [`deck:plan:${knowledge.plan.id}`, `deck:archetype:${normalize(knowledge.archetype)}`, `deck:size:${knowledge.mainSize}`,
+    ...baseKnowledgeFeatures(knowledge, normalizedObservation)];
+  for (const role of knowledge.plan.priorityRoles ?? []) features.push(`plan:priority:${role}`);
+  for (const role of knowledge.plan.openingRoles ?? []) features.push(`plan:opening-role:${role}`);
+  for (const role of knowledge.plan.keepRoles ?? []) features.push(`plan:keep-role:${role}`);
+  for (const role of knowledge.plan.counterplayRoles ?? []) features.push(`plan:counterplay:${role}`);
+  for (const strength of knowledge.plan.strengths ?? []) features.push(`plan:strength:${normalize(strength)}`);
+  for (const lossCondition of knowledge.plan.lossConditions ?? []) features.push(`plan:loss-condition:${normalize(lossCondition)}`);
+  for (const goal of knowledge.plan.goals ?? []) features.push(`plan:goal:${normalize(goal)}`);
+  for (const scenario of knowledge.plan.scenarios ?? []) features.push(`plan:scenario:${normalize(scenario)}`);
+  for (const cardName of knowledge.plan.keyCards ?? []) features.push(`plan:key-card:${normalize(cardName)}`);
   for (const role of knowledge.plan.openingRoles ?? []) features.push(`plan:opening-role:${role}`);
   const handRoles = new Set((observation.ownHand ?? observation.hand)?.flatMap((card) => knowledge.byRuntimeCode[String(card.runtimeCode)]?.roles ?? []) ?? []);
   const graveRoles = new Set(observation.graveyard?.flatMap((card) => knowledge.byRuntimeCode[String(card.runtimeCode)]?.roles ?? []) ?? []);
@@ -394,6 +557,7 @@ export function strategyObservationFeatures(knowledge, observation = {}) {
 export function scoreDeckStrategy(knowledge, message, response, { actionRole = "unknown", observation = {}, baseline = false } = {}) {
   const roles = roleSet(knowledge, message, response);
   const plan = knowledge.plan;
+  const goatState = observation.goatState ?? classifyGoatState(observation);
   let score = baseline ? 0.25 : 0;
   for (const role of roles) score += Number(plan.roleWeights?.[role] ?? 0) * 0.35;
   const turn = Number(observation.turn) || 1;
@@ -412,9 +576,23 @@ export function scoreDeckStrategy(knowledge, message, response, { actionRole = "
   if (actionRole === "no") score -= roles.has("engine") || roles.has("combo") || roles.has("interaction") ? 0.4 : 0;
   if (actionRole === "pass-chain" && threat > 0) score -= 0.35;
   if (actionRole === "end-phase") score -= message?.forced ? 0 : 0.3;
+  // The manuals' state machine is a bounded prior, never an unconditional
+  // command.  OCGCore still supplies the legal action mask and the detailed
+  // card evaluator decides between the remaining options.
+  if (goatState === "LETHAL") {
+    if (["attack", "battle-phase", "summon", "special-summon"].includes(actionRole)) score += 0.45;
+    if (["end-phase", "pass-chain"].includes(actionRole)) score -= 0.25;
+  } else if (goatState === "AHEAD") {
+    if (["end-phase", "pass-chain", "spell-set", "monster-set"].includes(actionRole)) score += 0.2;
+    if (["activate", "attack"].includes(actionRole) && !roles.has("interaction") && !roles.has("lethal")) score -= 0.12;
+  } else if (goatState === "BEHIND" || goatState === "SURVIVAL") {
+    if (["activate", "summon", "special-summon", "attack", "battle-phase"].includes(actionRole)) score += 0.16;
+    if (["end-phase", "pass-chain"].includes(actionRole)) score -= 0.28;
+    if (roles.has("defense") || roles.has("interaction") || roles.has("removal")) score += 0.18;
+  }
   for (const card of actionCardEntries(knowledge, message, response)) {
     if (["summon", "special-summon", "attack"].includes(actionRole)) score += bounded((Number(card.atk) - 1200) / 1800, -0.45, 0.65);
-    if (actionRole === "monster-set") score += card.roles.includes("defense") || card.roles.includes("flip") || Number(card.def) > Number(card.atk) ? 0.55 : -0.15;
+    if (actionRole === "monster-set") score += card.roles.includes("defense") || card.roles.includes("flip") || Number(card.def) > Number(card.atk) ? 0.55 : (Number(card.atk) >= 1500 ? -0.75 : -0.15);
     if (actionRole === "spell-set") score += roles.has("defense") || roles.has("interaction") || roles.has("stall") ? 0.45 : 0.05;
     if (["summon", "special-summon"].includes(actionRole) && card.roles.includes("flip") && turn <= 2 && !roles.has("threat")) score -= 0.2;
   }
@@ -429,7 +607,29 @@ export function scoreDeckStrategy(knowledge, message, response, { actionRole = "
 }
 
 export function describeDeckKnowledge(knowledge) {
-  return { schema: knowledge.schema, deckId: knowledge.deckId, deckHash: knowledge.deckHash, resolved: knowledge.resolved !== false, name: knowledge.name, archetype: knowledge.archetype, mainSize: knowledge.mainSize, roleCounts: { ...knowledge.roles }, goals: [...knowledge.plan.goals], scenarios: [...knowledge.plan.scenarios] };
+  return {
+    schema: knowledge.schema,
+    baseKnowledgeSchema: knowledge.baseKnowledgeSchema,
+    baseKnowledgeFingerprint: knowledge.baseKnowledgeFingerprint,
+    deckId: knowledge.deckId,
+    deckHash: knowledge.deckHash,
+    resolved: knowledge.resolved !== false,
+    name: knowledge.name,
+    archetype: knowledge.archetype,
+    mainSize: knowledge.mainSize,
+    roleCounts: { ...knowledge.roles },
+    objective: knowledge.plan.objective,
+    playstyle: knowledge.plan.playstyle,
+    keyCards: [...knowledge.plan.keyCards],
+    counterplay: knowledge.plan.counterplay,
+    strategySource: knowledge.plan.strategySource ?? "derived",
+    counterplayRoles: [...knowledge.plan.counterplayRoles],
+    weaknesses: [...knowledge.plan.weaknesses],
+    strengths: [...(knowledge.plan.strengths ?? [])],
+    lossConditions: [...(knowledge.plan.lossConditions ?? [])],
+    goals: [...knowledge.plan.goals],
+    scenarios: [...knowledge.plan.scenarios],
+  };
 }
 
 export function describeDeckPlan(knowledge) {
@@ -438,6 +638,15 @@ export function describeDeckPlan(knowledge) {
     id: knowledge?.plan?.id ?? "generic-value",
     title: knowledge?.plan?.archetype ?? knowledge?.archetype ?? "Adaptativo",
     identity: knowledge?.plan?.identity ?? PLAN_DEFAULT.identity,
+    objective: knowledge?.plan?.objective ?? knowledge?.plan?.identity ?? PLAN_DEFAULT.objective,
+    playstyle: knowledge?.plan?.playstyle ?? knowledge?.plan?.archetype ?? PLAN_DEFAULT.playstyle,
+    keyCards: [...(knowledge?.plan?.keyCards ?? [])],
+    counterplay: knowledge?.plan?.counterplay ?? PLAN_DEFAULT.counterplay,
+    counterplayRoles: [...(knowledge?.plan?.counterplayRoles ?? PLAN_DEFAULT.counterplayRoles)],
+    weaknesses: [...(knowledge?.plan?.weaknesses ?? PLAN_DEFAULT.weaknesses)],
+    strengths: [...(knowledge?.plan?.strengths ?? [])],
+    lossConditions: [...(knowledge?.plan?.lossConditions ?? [])],
+    strategySource: knowledge?.plan?.strategySource ?? "derived",
     priorities: priorityRoles,
     goals: [...(knowledge?.plan?.goals ?? PLAN_DEFAULT.goals)],
     derived: knowledge?.plan?.derived === true,

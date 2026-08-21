@@ -9,5 +9,13 @@
 .experienced-bot-card em { grid-column: 1 / -1; color: var(--green); font: normal 8px var(--mono); letter-spacing: .08em; }
 .bots-catalog-label { display: flex; justify-content: space-between; gap: 16px; margin: 0 2px 10px; color: var(--muted); font: 9px var(--mono); }
 .bots-catalog-label span { color: var(--amber); letter-spacing: .12em; }
+.strategy-copy { display: grid; gap: 7px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.09); color: var(--muted); font-size: 11px; line-height: 1.45; }
+.strategy-copy strong { color: var(--text); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.strategy-copy p { margin: 0; }
+.strategy-copy ul { margin: 0; padding-left: 18px; }
+.strategy-key-cards { display: flex; flex-wrap: wrap; gap: 5px; }
+.strategy-key-cards span { padding: 4px 6px; border: 1px solid rgba(121,213,155,.18); border-radius: 4px; color: var(--green); background: rgba(8,21,24,.65); font: 9px var(--mono); }
+.nexo2-persona-card { border-color: rgba(220,173,78,.35); }
+.nexo2-persona-card .bot-mmr { color: var(--amber); }
 @media (max-width: 1200px) { .experienced-bots-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .experienced-bots-grid { grid-template-columns: 1fr; }.bots-catalog-label { display: grid; } }

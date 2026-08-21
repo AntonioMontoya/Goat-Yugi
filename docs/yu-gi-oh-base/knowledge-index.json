@@ -1,0 +1,125 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-08-21",
+  "status": "BASE_DOCUMENTAL_LISTA_PARA_CONSUMO",
+  "format": {
+    "name": "TCG GOAT",
+    "banlist_cutoff": "2005-04",
+    "card_pool_cutoff": "The Lost Millennium (TLM)",
+    "rules_authority": "OCGCore MODE_GOAT",
+    "historical_first_player_draw": true
+  },
+  "allowed_mechanics": [
+    "normal_summon",
+    "tribute_summon",
+    "flip_summon",
+    "fusion_summon",
+    "ritual_summon",
+    "chain_links",
+    "spell_speed_1_2_3",
+    "historical_ignition_priority",
+    "trigger_and_optional_trigger_order",
+    "damage_step_six_substeps",
+    "battle_replay",
+    "goat_card_rulings"
+  ],
+  "excluded_mechanics": [
+    "synchro_summon",
+    "xyz_summon",
+    "pendulum_summon",
+    "link_summon",
+    "modern_extra_monster_zones",
+    "modern_priority_removed",
+    "post_cutoff_errata_as_historical_truth"
+  ],
+  "principles": [
+    {
+      "id": "P001",
+      "rule": "ocgcore_is_legal_authority",
+      "summary": "Ejecutar sólo acciones expuestas por OCGCore y responder mediante el contrato del motor.",
+      "confidence": "CONFIRMED",
+      "source_docs": ["00-alcance-y-fuentes.md", "07-contrato-para-bots.md"]
+    },
+    {
+      "id": "P002",
+      "rule": "priority_is_window_not_card_property",
+      "summary": "La prioridad histórica permite al jugador activo usar un efecto de Velocidad de Hechizo 2+ o un efecto de Ignición en su ventana legal; no convierte la carta en prioritaria.",
+      "confidence": "CONFIRMED",
+      "source_docs": ["03-cadenas-prioridad-y-velocidades.md"]
+    },
+    {
+      "id": "P003",
+      "rule": "destroying_does_not_negate",
+      "summary": "Destruir una carta después de su activación no niega automáticamente su efecto; comprobar el ruling de la carta.",
+      "confidence": "CONFIRMED",
+      "source_docs": ["04-rulings-de-resolucion.md", "06-casos-goat-y-checklists.md"]
+    },
+    {
+      "id": "P004",
+      "rule": "flip_requires_purpose_and_window",
+      "summary": "No voltear un monstruo por reflejo: comprobar ventana, beneficio, ataque, efecto de Volteo y respuestas.",
+      "confidence": "ADAPTED",
+      "source_docs": ["01-pensamiento-y-flujo-de-duelo.md", "07-contrato-para-bots.md"]
+    },
+    {
+      "id": "P005",
+      "rule": "damage_step_is_restricted",
+      "summary": "Aplicar las seis subfases históricas y la máscara de efectos permitidos antes de activar o encadenar.",
+      "confidence": "CONFIRMED",
+      "source_docs": ["05-damage-step-goat.md"]
+    },
+    {
+      "id": "P006",
+      "rule": "evaluate_resources_not_raw_card_count",
+      "summary": "Comparar cartas reales, calidad, tempo, LP, información, inevitabilidad y coste de oportunidad.",
+      "confidence": "ADAPTED",
+      "source_docs": ["02-economia-riesgo-y-plan.md"]
+    },
+    {
+      "id": "P007",
+      "rule": "unknown_information_stays_unknown",
+      "summary": "No usar cartas ocultas ni inventar objetivos; reducir confianza y conservar opciones cuando el dato falte.",
+      "confidence": "CONFIRMED",
+      "source_docs": ["01-pensamiento-y-flujo-de-duelo.md", "07-contrato-para-bots.md"]
+    },
+    {
+      "id": "P008",
+      "rule": "segoc_order_is_historical",
+      "summary": "Ordenar efectos simultáneos como turn mandatory, opponent mandatory, turn optional, opponent optional; comprobar carta concreta.",
+      "confidence": "CONFIRMED",
+      "source_docs": ["04-rulings-de-resolucion.md", "06-casos-goat-y-checklists.md"]
+    }
+  ],
+  "action_intents": ["VALUE", "TEMPO", "DEFENSE", "DISRUPTION", "INFORMATION", "LETHAL", "RECOVERY"],
+  "decision_states": ["LETHAL", "AHEAD", "EVEN", "BEHIND", "SURVIVAL", "UNCERTAIN"],
+  "ruling_statuses": ["CONFIRMED", "ADAPTED", "CARD_SPECIFIC", "REQUIRES_REVIEW"],
+  "result_statuses": ["LEGAL_RESOLVED", "LEGAL_NEGATED", "LEGAL_MISSED", "ILLEGAL_FILTERED", "CARD_SPECIFIC", "REQUIRES_REVIEW"],
+  "reason_codes": [
+    "OPEN_STATE",
+    "MANDATORY_EFFECT",
+    "PRESERVE_ADVANTAGE",
+    "DENY_LETHAL",
+    "SAFE_TEMPO",
+    "TARGET_RELEVANT",
+    "DO_NOT_NEGATE_BY_DESTROYING",
+    "FLIP_FOR_VALUE",
+    "SET_TO_PROTECT",
+    "DAMAGE_STEP_FILTER",
+    "SEGOC_ORDER",
+    "REPLAY_CHECK",
+    "HIDDEN_INFO_LIMIT",
+    "CARD_SPECIFIC_RULING",
+    "UNCERTAIN_PASS"
+  ],
+  "documents": [
+    "00-alcance-y-fuentes.md",
+    "01-pensamiento-y-flujo-de-duelo.md",
+    "02-economia-riesgo-y-plan.md",
+    "03-cadenas-prioridad-y-velocidades.md",
+    "04-rulings-de-resolucion.md",
+    "05-damage-step-goat.md",
+    "06-casos-goat-y-checklists.md",
+    "07-contrato-para-bots.md"
+  ],
+  "source_registry": "sources.json"
+}

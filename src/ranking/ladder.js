@@ -1,5 +1,5 @@
 import { hashString } from "../engine/rng.js";
-import { listActiveBotSpecs } from "../bots/bot-system.js";
+import { NEXO2_BOT_ID, listActiveBotSpecs } from "../bots/bot-system.js";
 
 export const LEAGUES = Object.freeze([
   { name: "Hierro", minRating: 0, divisions: true },
@@ -36,7 +36,7 @@ export function initialLadder() {
     season: { id: "local-season-01", name: "Temporada local 01", startedAt: new Date().toISOString(), active: true, matches: 0, bestOf: 1, promotion: null },
     player: { id: "local-player", name: "Duelista", rating: 1200, technicalRating: 1200, uncertainty: 350, lp: 0, wins: 0, losses: 0, draws: 0, streak: 0, games: 0, lastOpponents: [], deckRatings: {} },
     history: [],
-    bots: listActiveBotSpecs().map((bot) => ({ id: bot.id, name: bot.name, deckId: bot.deckId, style: bot.style, rating: bot.rating ?? 1200, technicalRating: bot.rating ?? 1200, uncertainty: 250, difficulty: bot.difficulty, intelligence: bot.intelligence ?? 0 }))
+    bots: listActiveBotSpecs().filter((bot) => bot.id !== NEXO2_BOT_ID).map((bot) => ({ id: bot.id, name: bot.name, deckId: bot.deckId, style: bot.style, rating: bot.rating ?? 1200, technicalRating: bot.rating ?? 1200, uncertainty: 250, difficulty: bot.difficulty, intelligence: bot.intelligence ?? 0 }))
   };
 }
 

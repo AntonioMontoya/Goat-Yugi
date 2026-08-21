@@ -5,7 +5,7 @@ import { CARDS, getCard } from "./engine/cards.js";
 import { copyLimit, listStatus } from "./format/banlist.js";
 import { createDuel, legalActions, observe, step } from "./engine/game.js";
 import { DECK_PRESETS, applySideDeckSwap, createCustomDeck, deckFromYdk, deckToYdk, getDeck, validateDeck } from "./decks/decks.js";
-import { NEXO_CANDIDATE_BOT_ID, UNIVERSAL_BOT_ID, botDescriptor, createBotForDeck, createBotRegistry, ensureBotDeckProfile, listActiveBotSpecs, hydrateBot, recordBotGame, recordBotModel, upsertBotIdentity } from "./bots/bot-system.js";
+import { NEXO2_ALL_DECK_IDS, NEXO2_ALL_OPPONENT_DECK_IDS, NEXO2_BOT_ID, NEXO2_DECK_IDS, NEXO2_OPPONENT_DECK_IDS, NEXO_CANDIDATE_BOT_ID, UNIVERSAL_BOT_ID, botDescriptor, createBotForDeck, createBotRegistry, ensureBotDeckProfile, isNexo2Deck, isNexo2OpponentDeck, isNexo2MatchupAllowed, listActiveBotSpecs, hydrateBot, recordBotGame, recordBotModel, upsertBotIdentity } from "./bots/bot-system.js";
 import { DEFAULT_CORE_OPPONENT_DECKS, evaluateUniversalPolicy, universalQualityGate } from "./training/training.js";
 import { applyLadderResult, chooseLocalMatch, createLocalMatch, initialLadder, ladderView, recordMatchGame, upsertLadderBot } from "./ranking/ladder.js";
 import { hasReasoningCertification } from "./bots/intelligence.js";
@@ -18,10 +18,7 @@ import { bindMenuKeyboard, hashForMode, menuMarkup, modeFromHash } from "./ui/na
 import { initSpriteMenu, destroySpriteMenu } from "./ui/sprite-menu.js"; import { renderHomePage } from "./ui/home-page.js"; import { installMenuScrollNavigation } from "./ui/menu-scroll.js";
 import { initSubmenuAtmosphere } from "./ui/submenu-atmosphere.js";
 import { initDuelAtmosphere } from "./ui/duel-atmosphere.js";
-import { createActionRegistry, registerAction } from "./ui/action-registry.js";
-import { builderCardTileMarkup, builderInspectorMarkup, builderDetailModalMarkup } from "./ui/deck-builder-cards.js";
-import { decorateDeckLibrary } from "./ui/deck-library.js";
-import { decorateDuelPiles } from "./ui/duel-piles.js";
+import { createActionRegistry, registerAction } from "./ui/action-registry.js"; import { builderCardTileMarkup } from "./ui/deck-builder-cards.js"; import { decorateDeckLibrary } from "./ui/deck-library.js"; import { decorateDuelPiles } from "./ui/duel-piles.js";
 import { createDefaultScenarioState, loadSavedScenarios, persistSavedScenarios, renderSandboxPage } from "./ui/sandbox.js";
 import { startSandboxDuel as startSandboxDuelDriver, bindSandboxEvents } from "./ui/sandbox-driver.js";
 import { bindCardViewerEvents, createDefaultCardViewerState, renderCardViewerPage } from "./ui/lazy-card-viewer.js";
@@ -170,9 +167,6 @@ const app = {
   builderZone: "main",
   builderCatalogLimit: 200,
   builderMotion: null,
-  builderSelectedCardId: null,
-  builderDetailModalCardId: null,
-  builderGroupDuplicates: true,
   duelMotion: null,
   lifeMotion: [],
   duelPresentation: null,
@@ -240,6 +234,7 @@ if (!availableDeckIds.has(app.playDeckId)) app.playDeckId = "chaos-turbo";
 if (!availableDeckIds.has(app.playOpponentDeckId)) app.playOpponentDeckId = "goat-control";
 for (const bot of initialLadder().bots) if (activeBotIds.has(bot.id) && !app.ladder.bots.some((candidate) => candidate.id === bot.id)) app.ladder = upsertLadderBot(app.ladder, bot);
 if (!activeBotIds.has(app.playBotId)) app.playBotId = UNIVERSAL_BOT_ID;
+if (app.playBotId === NEXO2_BOT_ID && !isNexo2MatchupAllowed(app.playDeckId, app.playOpponentDeckId)) forceNexo2PilotDecks();
 app.duelDeckId = app.playDeckId;
 app.opponentDeckId = app.playOpponentDeckId;
 persistPlaySelection();
@@ -347,7 +342,7 @@ function statusPill(status) {
   const text = status === VALIDATION_STATUS.SUPPORTED ? "LISTO" : status === VALIDATION_STATUS.EXPERIMENTAL ? "EXPERIMENTAL" : status;
   return `<span class="status-pill status-${String(status).toLowerCase()}">${esc(text)}</span>`;
 }
-function cardMarkup(instance, { hidden = false, compact = false, motion = false, imageLoading = "eager" } = {}) {
+function cardMarkup(instance, { hidden = false, compact = false, motion = false, imageLoading = null } = {}) {
   if (!instance) return `<div class="field-slot empty"><span>—</span></div>`;
   const card = instance.cardId === null ? null : getCard(instance.cardId);
   const monsterLike = card
@@ -355,16 +350,16 @@ function cardMarkup(instance, { hidden = false, compact = false, motion = false,
     : Number(instance.location) === 4 || instance.zone === "MONSTER";
   const imageBacked = card?.kind !== CARD_KIND.TOKEN;
   const defense = monsterLike && (instance.defensePosition === true || instance.position === "DEFENSE");
-  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" loading="eager" decoding="sync" draggable="false" /></div>`;
-  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" loading="eager" decoding="sync" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
+  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /></div>`;
+  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
   const fallback = `<div class="card-fallback"${imageBacked ? " hidden" : ""}>
     <div class="card-top"><span>${esc(monsterLike ? card.kind === CARD_KIND.TOKEN ? "TOKEN" : "MONSTER" : card.kind)}</span><span>${card.level ? `★${card.level}` : ""}</span></div>
     <div class="card-name">${esc(card.name)}</div>
     ${monsterLike ? `<div class="card-stats">${card.atk} <span>/</span> ${card.def}</div>` : `<div class="card-type">${esc(card.spellType ?? card.trapType ?? card.kind)}</div>`}
     <div class="card-text">${esc(card.text)}</div>
   </div>`;
-  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""}" title="${esc(card.name)}">
-    ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card.name)}" loading="eager" decoding="sync" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false;" />` : ""}
+  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="${esc(card.name)}">
+    ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card.name)}" loading="${esc(imageLoading ?? (compact ? "eager" : "lazy"))}" decoding="async" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false;" />` : ""}
     ${fallback}
   </div>`;
 }
@@ -409,11 +404,31 @@ function rankMarkup() {
 function playableDecks() {
   return [...DECK_PRESETS, ...app.savedDecks];
 }
-function deckSelectMarkup(selected) {
-  return playableDecks().map((deck) => `<option value="${esc(deck.id)}" ${deck.id === selected ? "selected" : ""}>${esc(deck.name)} · ${deck.main.length} cartas</option>`).join("");
+function deckSelectMarkup(selected, { pilotOnly = false, opponentOnly = false } = {}) {
+  const allDecks = playableDecks();
+  const decks = pilotOnly ? allDecks.filter((deck) => isNexo2Deck(deck.id)) : opponentOnly ? allDecks.filter((deck) => isNexo2OpponentDeck(deck.id)) : allDecks;
+  const visibleDecks = decks.length ? decks : allDecks;
+  const resolvedSelected = visibleDecks.some((deck) => deck.id === selected) ? selected : visibleDecks[0]?.id;
+  return visibleDecks.map((deck) => `<option value="${esc(deck.id)}" ${deck.id === resolvedSelected ? "selected" : ""}>${esc(deck.name)} · ${deck.main.length} cartas</option>`).join("");
 }
 function availableBotSpecs() {
   return listActiveBotSpecs();
+}
+function nexo2SelectionAllowed(playerDeckId = app.playDeckId, opponentDeckId = app.playOpponentDeckId) {
+  return isNexo2MatchupAllowed(playerDeckId, opponentDeckId);
+}
+function nexo2RestrictionCopy() {
+  return `Bot: ${NEXO2_ALL_DECK_IDS.length} mazos propios · rival: ${NEXO2_ALL_OPPONENT_DECK_IDS.length} mazos del catálogo.`;
+}
+function forceNexo2PilotDecks() {
+  const botFallback = NEXO2_ALL_DECK_IDS[0];
+  const opponentFallback = NEXO2_ALL_OPPONENT_DECK_IDS[0];
+  let changed = false;
+  if (!isNexo2OpponentDeck(app.playDeckId)) { app.playDeckId = opponentFallback; changed = true; }
+  if (!isNexo2Deck(app.playOpponentDeckId)) { app.playOpponentDeckId = botFallback; changed = true; }
+  app.duelDeckId = app.playDeckId;
+  app.opponentDeckId = app.playOpponentDeckId;
+  return changed;
 }
 function selectedBotSpec(botId = app.playBotId) {
   return availableBotSpecs().find((bot) => bot.id === botId) ?? availableBotSpecs()[0];
@@ -421,7 +436,8 @@ function selectedBotSpec(botId = app.playBotId) {
 function botSelectMarkup(selected) {
   return availableBotSpecs().map((bot) => {
     const profile = app.botRegistry.bots.find((candidate) => candidate.id === bot.id)?.profiles?.[bot.deckId];
-    return `<option value="${esc(bot.id)}" ${bot.id === selected ? "selected" : ""}>${esc(bot.name)} · IA ${Number(profile?.intelligence ?? bot.intelligence) || 0} · MMR ${Number(profile?.technicalRating ?? bot.rating) || 1200} · ${esc(bot.style)}</option>`;
+    const suffix = bot.id === NEXO2_BOT_ID ? (nexo2SelectionAllowed() ? ` · universal ${NEXO2_ALL_DECK_IDS.length}/${NEXO2_ALL_OPPONENT_DECK_IDS.length} mazos` : ` · ${nexo2RestrictionCopy()}`) : "";
+    return `<option value="${esc(bot.id)}" ${bot.id === selected ? "selected" : ""}>${esc(bot.name)} · IA ${Number(profile?.intelligence ?? bot.intelligence) || 0} · MMR ${Number(profile?.technicalRating ?? bot.rating) || 1200} · ${esc(bot.style)}${esc(suffix)}</option>`;
   }).join("");
 }
 function renderPlayLobby() {
@@ -438,10 +454,12 @@ function renderPlayLobby() {
   const startTitle = app.playMode === "local" ? "Controla ambos jugadores" : app.playMode === "ranked" ? "Busca un rival local" : "Entra en la mesa";
   const startCopy = app.playMode === "local" ? "Modo manual estilo EDOPRO: ambas manos se muestran y cada jugador responde a su propia prioridad." : "Las acciones de carta y los botones de fase aparecerán según la ventana legal del motor.";
   const startLabel = app.playMode === "ranked" ? "Buscar rival ranked" : "Comenzar duelo";
+  const pilotOnly = app.playMode === "bot" && app.playBotId === NEXO2_BOT_ID;
+  const nexo2OpponentOnly = pilotOnly;
   const opponentCard = app.playMode === "local"
     ? `<div class="side-card deck-pick"><div class="side-title"><span>MAZO JUGADOR 2</span><span class="tiny-label">MANUAL</span></div><select id="play-opponent-deck" aria-label="Seleccionar mazo del jugador dos">${deckSelectMarkup(app.playOpponentDeckId)}</select><p>En modo local ambos jugadores se controlan desde la misma mesa.</p><span class="readiness-mark">Preparado</span></div>`
-    : `<div class="side-card deck-pick"><div class="side-title"><span>BOT RIVAL</span><span class="tiny-label">2 VERSIONES NEXO</span></div><select id="play-bot" aria-label="Seleccionar inteligencia rival">${botSelectMarkup(app.playBotId)}</select><select id="play-opponent-deck" aria-label="Seleccionar mazo rival">${deckSelectMarkup(app.playOpponentDeckId)}</select><p>${esc(opponentPlan.identity)}</p><span class="readiness-mark">${selectedBot.id === NEXO_CANDIDATE_BOT_ID ? "Parche candidato · aún no promovido" : selectedProfile?.model?.algorithm ? "Refinamiento del mazo cargado" : "Base estable preparada"}</span></div>`;
-  return `<section class="page menu-page play-page"><div class="page-head"><div><span class="eyebrow">PLAY / MATCHMAKING LOCAL</span><h1>Preparar partida</h1><p>Elige Nexo o su candidato y cualquier mazo rival; ambos vuelven a interpretar el deck en cada duelo.</p></div><div class="head-actions"><button class="ghost-button" data-action="open-sandbox">Modo Prueba (Escenarios) →</button><span class="resource-chip">OFFLINE</span><span class="resource-chip">OCGCORE GOAT</span></div></div><div class="mode-grid">${modeMarkup}</div><div class="play-config"><div class="side-card deck-pick"><div class="side-title"><span>MAZO JUGADOR 1</span><span class="tiny-label">${selectedDeck.main.length} CARTAS</span></div><select id="play-deck" aria-label="Seleccionar mazo del jugador uno">${deckSelectMarkup(app.playDeckId)}</select><p>${esc(selectedDeck.archetype ?? "Lista local editable")} - validacion de formato activa</p><button class="text-button" data-action="open-decks">Editar mazos -&gt;</button></div>${opponentCard}<div class="side-card start-card"><span class="eyebrow">TODO LISTO</span><h2>${startTitle}</h2><p>${startCopy}</p><button class="primary-button wide" data-action="start-play">${app.playMode === "local" ? "Abrir mesa 1vs1" : startLabel}</button></div></div></section>`;
+    : `<div class="side-card deck-pick"><div class="side-title"><span>BOT RIVAL</span><span class="tiny-label">${NEXO2_ALL_DECK_IDS.length} VERSIONES NEXO</span></div><select id="play-bot" aria-label="Seleccionar inteligencia rival">${botSelectMarkup(app.playBotId)}</select><select id="play-opponent-deck" aria-label="Seleccionar mazo rival">${deckSelectMarkup(app.playOpponentDeckId, { pilotOnly })}</select><p>${esc(opponentPlan.identity)}</p><span class="readiness-mark">${selectedBot.id === NEXO2_BOT_ID ? `Nexo 2 · ${NEXO2_ALL_DECK_IDS.length} mazos propios / ${NEXO2_ALL_OPPONENT_DECK_IDS.length} rivales` : selectedBot.id === NEXO_CANDIDATE_BOT_ID ? "Parche candidato · aún no promovido" : selectedProfile?.model?.algorithm ? "Refinamiento del mazo cargado" : "Base estable preparada"}</span></div>`;
+  return `<section class="page menu-page play-page"><div class="page-head"><div><span class="eyebrow">PLAY / MATCHMAKING LOCAL</span><h1>Preparar partida</h1><p>Elige Nexo, su candidato o Nexo 2. Con Nexo 2, cualquier mazo del catálogo puede pilotarse y enfrentarse a cualquier otro.</p></div><div class="head-actions"><button class="ghost-button" data-action="open-sandbox">Modo Prueba (Escenarios) →</button><span class="resource-chip">OFFLINE</span><span class="resource-chip">OCGCORE GOAT</span></div></div><div class="mode-grid">${modeMarkup}</div><div class="play-config"><div class="side-card deck-pick"><div class="side-title"><span>MAZO JUGADOR 1</span><span class="tiny-label">${nexo2OpponentOnly ? `${NEXO2_ALL_OPPONENT_DECK_IDS.length} MAZOS DEL CATÁLOGO` : `${selectedDeck.main.length} CARTAS`}</span></div><select id="play-deck" aria-label="Seleccionar mazo del jugador uno">${deckSelectMarkup(app.playDeckId, { opponentOnly: nexo2OpponentOnly })}</select><p>${esc(selectedDeck.archetype ?? "Lista local editable")} - validacion de formato activa</p><button class="text-button" data-action="open-decks">Editar mazos -&gt;</button></div>${opponentCard}<div class="side-card start-card"><span class="eyebrow">TODO LISTO</span><h2>${startTitle}</h2><p>${startCopy}</p><button class="primary-button wide" data-action="start-play">${app.playMode === "local" ? "Abrir mesa 1vs1" : startLabel}</button></div></div></section>`;
 }
 function renderSettings() {
   const settings = app.settings;
@@ -478,8 +496,10 @@ function render() {
     destroySpriteMenu();
   }
 
-  const inspector = document.querySelector('[data-testid="card-inspector"]');
-  if (inspector) inspector.classList.add('visible');
+  requestAnimationFrame(() => {
+    const inspector = document.querySelector('[data-testid="card-inspector"]');
+    if (inspector) inspector.classList.add('visible');
+  });
   if (app.mode === "deck-builder") {
     const builderFilter = document.querySelector("#builder-filter");
     if (builderFilter && !builderFilter.querySelector('option[value="favorites"]')) {
@@ -505,17 +525,19 @@ function render() {
   if (app.duelMotion || app.builderMotion) window.setTimeout(() => { app.duelMotion = false; app.builderMotion = null; }, 360);
 }
 function positionCardPopovers() {
-  const inspector = document.querySelector("[data-testid='card-inspector']")?.getBoundingClientRect();
-  document.querySelectorAll("[data-testid='card-action-popover']").forEach((popover) => {
-    popover.style.removeProperty("--popover-nudge-x");
-    popover.classList.remove("is-below");
-    let rect = popover.getBoundingClientRect();
-    if (rect.top < 54) { popover.classList.add("is-below"); rect = popover.getBoundingClientRect(); }
-    const safeLeft = 8;
-    const safeRight = window.innerWidth - 8;
-    let nudge = rect.left < safeLeft ? safeLeft - rect.left : rect.right > safeRight ? safeRight - rect.right : 0;
-    if (inspector && rect.right > inspector.left && rect.left < inspector.right) nudge -= rect.right - inspector.left + 8;
-    if (nudge !== 0) popover.style.setProperty("--popover-nudge-x", `${Math.round(nudge)}px`);
+  window.requestAnimationFrame(() => {
+    const inspector = document.querySelector("[data-testid='card-inspector']")?.getBoundingClientRect();
+    document.querySelectorAll("[data-testid='card-action-popover']").forEach((popover) => {
+      popover.style.removeProperty("--popover-nudge-x");
+      popover.classList.remove("is-below");
+      let rect = popover.getBoundingClientRect();
+      if (rect.top < 54) { popover.classList.add("is-below"); rect = popover.getBoundingClientRect(); }
+      const safeLeft = 8;
+      const safeRight = window.innerWidth - 8;
+      let nudge = rect.left < safeLeft ? safeLeft - rect.left : rect.right > safeRight ? safeRight - rect.right : 0;
+      if (inspector && rect.right > inspector.left && rect.left < inspector.right) nudge -= rect.right - inspector.left + 8;
+      popover.style.setProperty("--popover-nudge-x", `${Math.round(nudge)}px`);
+    });
   });
 }
 function currentDuelView() {
@@ -546,9 +568,9 @@ function playDuelCue(cue) {
   });
 }
 function cueDuration(cue) {
-  const duration = cue?.duration !== undefined ? Number(cue.duration) : 950;
-  if (app.settings.motionLevel === "reduced") return Math.min(500, duration);
-  if (app.settings.motionLevel === "off") return Math.min(250, duration);
+  const duration = cue?.duration !== undefined ? Number(cue.duration) : 750;
+  if (app.settings.motionLevel === "reduced") return Math.min(420, duration);
+  if (app.settings.motionLevel === "off") return Math.min(150, duration);
   return duration;
 }
 function setDuelPresentation(input) {
@@ -582,6 +604,11 @@ function setDuelPresentation(input) {
 }
 
 function refreshDuelPresentationSurface() {
+  const board = root.querySelector(".duel-board");
+  if (board) {
+    for (const name of [...board.classList]) if (name.startsWith("feedback-") || name.startsWith("tier-")) board.classList.remove(name);
+    if (app.duelPresentation) board.classList.add(`feedback-${app.duelPresentation.kind}`, `tier-${app.duelPresentation.tier || "notable"}`);
+  }
   const host = root.querySelector("[data-duel-presentation-host]");
   if (host) host.innerHTML = presentationMarkup();
   scheduleOcgcoreBotStep();
@@ -598,7 +625,7 @@ function scheduleOcgcoreBotStep() {
   const view = app.duel.view();
   if (!view.botPending || view.winner !== null) return;
   const session = app.duel;
-  const delay = view.phasePaused && !view.pendingType ? AUTO_PHASE_DELAY_MS : 750;
+  const delay = view.phasePaused && !view.pendingType ? AUTO_PHASE_DELAY_MS : app.settings.motionLevel === "full" ? 720 : 240;
   duelBotTimer = window.setTimeout(() => {
     duelBotTimer = null;
     if (app.duel !== session || app.mode !== "duel") return;
@@ -842,8 +869,8 @@ function renderOcgcoreDuel(view = app.duel.view()) {
   return `<section class="page duel-page">
      ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, esc })}
      <div class="duel-layout"><div class="table-frame ${app.boardTilt ? "tilted" : ""} ${app.inspectedCard ? "has-inspector" : ""}">
-       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
-       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
+       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
+       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
        <div class="duel-board ${app.duelPresentation ? `feedback-${esc(app.duelPresentation.kind)} tier-${esc(app.duelPresentation.tier || "notable")}` : ""}">
          <div class="hand-strip opponent-hand">${playerHandMarkup(playerTwo, app.selectedCardUid, manual, userActions, affordanceInteraction)}</div>
          <div class="opponent-row player-row is-opponent"><div class="player-meta"><span class="avatar opponent-avatar">${manual ? "2" : esc(opponentName.slice(0, 1).toUpperCase())}</span><div><strong>${esc(playerName(playerTwo, manual))}</strong><small>${esc(playerTwoDeck.name)}</small></div>${lifePointMarkup(playerTwo)}</div><div class="hand-count">HAND <b>${playerTwo.handCount}</b><span class="deck-count">DECK ${playerTwo.deckCount}</span></div></div>
@@ -860,131 +887,45 @@ function renderDeckBuilder() {
   const validation = validateDeck(app.builderDeck);
   const query = app.builderSearch.trim().toLowerCase();
   const filter = app.builderFilter;
-  const counts = validation.counts;
-  const summary = validation.summary;
-
-  const zoneCounts = {
-    main: new Map(),
-    fusion: new Map(),
-    side: new Map(),
-  };
-  for (const cardId of app.builderDeck.main) zoneCounts.main.set(cardId, (zoneCounts.main.get(cardId) ?? 0) + 1);
-  for (const cardId of app.builderDeck.fusion) zoneCounts.fusion.set(cardId, (zoneCounts.fusion.get(cardId) ?? 0) + 1);
-  for (const cardId of app.builderDeck.side) zoneCounts.side.set(cardId, (zoneCounts.side.get(cardId) ?? 0) + 1);
-
-  const activeZone = app.builderZone;
-
-  // Deck cards for the active zone: unique cards with clean ordering
-  const uniqueZoneCardIds = [...(zoneCounts[activeZone]?.keys() ?? [])].sort((aId, bId) => {
-    const a = getCard(aId);
-    const b = getCard(bId);
-    if (!a || !b) return 0;
-    const kindOrder = { [CARD_KIND.MONSTER]: 1, [CARD_KIND.SPELL]: 2, [CARD_KIND.TRAP]: 3 };
-    const aOrder = kindOrder[a.kind] ?? 4;
-    const bOrder = kindOrder[b.kind] ?? 4;
-    if (aOrder !== bOrder) return aOrder - bOrder;
-    if (a.kind === CARD_KIND.MONSTER) {
-      if ((b.level ?? 0) !== (a.level ?? 0)) return (b.level ?? 0) - (a.level ?? 0);
-      if ((b.atk ?? 0) !== (a.atk ?? 0)) return (b.atk ?? 0) - (a.atk ?? 0);
-    }
-    return a.name.localeCompare(b.name);
-  });
-
-  const zoneCardsMarkup = uniqueZoneCardIds.length > 0
-    ? uniqueZoneCardIds.map((cardId, index) => {
-        const card = getCard(cardId);
-        const zCount = zoneCounts[activeZone].get(cardId) ?? 0;
-        const totCount = counts.get(cardId) ?? 0;
-        const limit = copyLimit(cardId);
-        const isSelected = app.builderSelectedCardId === cardId;
-        const animated = app.builderMotion?.cardId === cardId && app.builderMotion?.zone === activeZone;
-        return builderCardTileMarkup(card, {
-          count: zCount,
-          zoneCount: zCount,
-          totalCount: totCount,
-          limit,
-          index,
-          zone: activeZone,
-          selected: isSelected,
-          draggable: true,
-        }, { cardMarkup, esc, zoneLabel: builderZoneLabel(activeZone) }).replace("builder-card-tile ", `builder-card-tile ${animated ? "card-enter " : ""}`);
-      }).join("")
-    : `<div class="drop-empty"><span>Arrastra cartas aquí o pulsa <b>+</b> en el catálogo.</span></div>`;
-
-  // Catalog filtered and sorted cards
   const visibleCards = CARDS
     .filter((card) => {
       const engineStatus = card.authoritativeStatus ?? card.status;
-      const searchable = `${card.name} ${card.kind} ${card.race ?? ""} ${card.attribute ?? ""} ${card.spellType ?? ""} ${card.trapType ?? ""} ${card.visibleText ?? card.text ?? ""} ${card.effectFamily ?? ""} ${card.status} ${engineStatus}`.toLowerCase();
+      const searchable = `${card.name} ${card.kind} ${card.race ?? ""} ${card.effectFamily ?? ""} ${card.status} ${engineStatus}`.toLowerCase();
       if (query && !searchable.includes(query)) return false;
       if (filter === "favorites" && !app.favoriteCardIds.has(card.id)) return false;
       if (filter === "monster" && card.kind !== CARD_KIND.MONSTER) return false;
       if (filter === "spell" && card.kind !== CARD_KIND.SPELL) return false;
       if (filter === "trap" && card.kind !== CARD_KIND.TRAP) return false;
-      if (filter === "fusion" && (card.subtype !== "Fusion" && card.kind !== "FUSION")) return false;
       if (filter === "supported" && engineStatus !== VALIDATION_STATUS.SUPPORTED) return false;
       if (filter === "incomplete" && engineStatus === VALIDATION_STATUS.SUPPORTED) return false;
       if (filter === "limited" && copyLimit(card.id) >= 3) return false;
       if (app.builderWorkFilter !== "all" && app.cardWorkStatuses.get(card.id) !== app.builderWorkFilter) return false;
       return true;
     })
-    .sort((a, b) => {
-      if (app.builderSort === "id") return a.id - b.id;
-      if (app.builderSort === "atk") return (b.atk ?? 0) - (a.atk ?? 0) || a.name.localeCompare(b.name);
-      if (app.builderSort === "level") return (b.level ?? 0) - (a.level ?? 0) || a.name.localeCompare(b.name);
-      if (app.builderSort === "kind") return `${a.kind}-${a.name}`.localeCompare(`${b.kind}-${b.name}`);
-      return a.name.localeCompare(b.name);
-    });
-
+    .sort((a, b) => app.builderSort === "id" ? a.id - b.id : app.builderSort === "kind" ? `${a.kind}-${a.name}`.localeCompare(`${b.kind}-${b.name}`) : a.name.localeCompare(b.name));
+  const counts = validation.counts;
+  const zoneMarkup = (zone) => app.builderDeck[zone].map((cardId, index) => {
+    const card = getCard(cardId);
+    const animated = app.builderMotion?.cardId === cardId && app.builderMotion?.zone === zone && app.builderMotion?.index === index;
+    const tile = builderCardTileMarkup(card, { count: counts.get(cardId) ?? 0, limit: copyLimit(cardId), index, zone, draggable: true }, { cardMarkup, esc, zoneLabel: builderZoneLabel(app.builderZone) });
+    return tile.replace("builder-card-tile ", `builder-card-tile ${animated ? "card-enter " : ""}`);
+  }).join("");
   let cardRows = visibleCards.slice(0, app.builderCatalogLimit).map((card) => {
     const limit = copyLimit(card.id);
-    const totCount = counts.get(card.id) ?? 0;
-    const zCount = zoneCounts[activeZone]?.get(card.id) ?? 0;
-    const isSelected = app.builderSelectedCardId === card.id;
-    return builderCardTileMarkup(card, {
-      count: totCount,
-      zoneCount: zCount,
-      totalCount: totCount,
-      limit,
-      catalog: true,
-      selected: isSelected,
-      disabled: limit === 0,
-      zone: activeZone,
-    }, { cardMarkup, esc, zoneLabel: builderZoneLabel(activeZone) });
+    const count = counts.get(card.id) ?? 0;
+    const blocked = limit === 0 || count >= limit;
+    const details = card.kind === CARD_KIND.MONSTER ? `${card.atk ?? "?"}/${card.def ?? "?"} · ${card.race ?? ""}` : card.spellType ?? card.trapType ?? card.effectFamily;
+    const engineStatus = card.authoritativeStatus ?? card.status;
+    const statusLabel = engineStatus === VALIDATION_STATUS.SUPPORTED ? "OCGCORE LISTA" : engineStatus;
+    return builderCardTileMarkup(card, { count, limit, catalog: true, disabled: blocked, meta: `${details} · ${statusLabel} · ${listStatus(card.id)}` }, { cardMarkup, esc, zoneLabel: builderZoneLabel(app.builderZone) }).replace("builder-card-tile ", `builder-card-tile ${statusLabel === "OCGCORE LISTA" ? "supported " : ""}`);
   }).join("");
-
   if (visibleCards.length > app.builderCatalogLimit) {
     const remaining = visibleCards.length - app.builderCatalogLimit;
-    cardRows += `<div class="catalog-more"><button class="ghost-button wide" data-action="show-more-cards">Mostrar más cartas (${remaining} restantes)</button></div>`;
+    cardRows += `<div class="catalog-more"><span>Mostrando ${app.builderCatalogLimit} de ${visibleCards.length}</span><button class="ghost-button" data-action="show-more-cards">Mostrar ${Math.min(200, remaining)} más</button></div>`;
   }
-
   const allDecks = [...DECK_PRESETS, ...app.savedDecks];
-
-  const selectedCard = app.builderSelectedCardId ? getCard(app.builderSelectedCardId) : null;
-  const selectedZoneCount = selectedCard ? (zoneCounts[activeZone]?.get(selectedCard.id) ?? 0) : 0;
-  const selectedTotalCount = selectedCard ? (counts.get(selectedCard.id) ?? 0) : 0;
-  const inspectorHtml = builderInspectorMarkup(selectedCard, {
-    currentZone: activeZone,
-    zoneCount: selectedZoneCount,
-    totalCount: selectedTotalCount,
-    limit: selectedCard ? copyLimit(selectedCard.id) : 3,
-    isFavorite: selectedCard ? app.favoriteCardIds.has(selectedCard.id) : false,
-    esc,
-    cardMarkup,
-  });
-
-  const detailCard = app.builderDetailModalCardId ? getCard(app.builderDetailModalCardId) : null;
-  const modalHtml = detailCard ? builderDetailModalMarkup(detailCard, {
-    currentZone: activeZone,
-    zoneCount: detailCard ? (zoneCounts[activeZone]?.get(detailCard.id) ?? 0) : 0,
-    totalCount: detailCard ? (counts.get(detailCard.id) ?? 0) : 0,
-    limit: detailCard ? copyLimit(detailCard.id) : 3,
-    isFavorite: detailCard ? app.favoriteCardIds.has(detailCard.id) : false,
-    esc,
-    cardMarkup,
-  }) : "";
-
-  return `<section class="page builder-page-layout"><div class="page-head builder-page-head"><div><span class="eyebrow">DECK LAB / CONSTRUCTOR TÁCTIL</span><h1>${esc(app.builderDeck.name ?? "Custom Deck")}</h1><p>Selecciona cartas del catálogo o mazo para ajustar copias (+ / -) con validación Goat Format April 2005.</p></div><div class="head-actions"><button class="ghost-button" data-action="copy-ydk">Copiar YDK</button><button class="ghost-button" data-action="duplicate-builder">Duplicar</button><button class="primary-button" data-action="save-preset">${app.savedDecks.some((deck) => deck.id === app.builderDeckId) ? "Guardar cambios" : "Guardar como preset"}</button></div></div><div class="builder-zone-tabs-bar"><div class="builder-zone-tabs"><button type="button" class="builder-zone-tab ${activeZone === "main" ? "active" : ""}" data-builder-zone="main"><span class="tab-zone-title">MAIN DECK</span><span class="tab-zone-count ${summary.main >= 40 && summary.main <= 60 ? "valid" : "warning"}">${summary.main}/40–60</span><span class="tab-zone-breakdown"><b>${summary.monsterCount}</b>M <b>${summary.spellCount}</b>S <b>${summary.trapCount}</b>T</span></button><button type="button" class="builder-zone-tab ${activeZone === "fusion" ? "active" : ""}" data-builder-zone="fusion"><span class="tab-zone-title">FUSION DECK</span><span class="tab-zone-count ${summary.fusion <= 15 ? "valid" : "warning"}">${summary.fusion}/15</span><span class="tab-zone-breakdown">Extra Deck</span></button><button type="button" class="builder-zone-tab ${activeZone === "side" ? "active" : ""}" data-builder-zone="side"><span class="tab-zone-title">SIDE DECK</span><span class="tab-zone-count ${summary.side === 0 || summary.side === 15 ? "valid" : "warning"}">${summary.side}/15</span><span class="tab-zone-breakdown">Banquillo</span></button></div><div class="builder-deck-status-pill ${validation.valid ? "ok" : "bad"}"><span class="status-icon">${validation.valid ? "✓" : "!"}</span><span>${validation.valid ? "Formato válido" : `${validation.errors.length} errores`}</span></div></div><div class="builder-layout"><aside class="deck-library side-card"><div class="side-title"><span>MIS MAZOS</span><span class="tiny-label">${allDecks.length} DISPONIBLES</span></div>${allDecks.map((deck) => `<button class="deck-preset ${deck.id === app.builderDeckId ? "active" : ""}" data-deck-id="${esc(deck.id)}"><span><strong>${esc(deck.name)}</strong><small>${esc(deck.archetype ?? "Custom")} · ${deck.main.length} Main</small></span>${statusPill(deck.readiness ?? "EXPERIMENTAL")}</button>`).join("")}<div class="library-note"><span class="eyebrow">PERSISTENCIA LOCAL</span><p>Tus mazos se guardan en el almacenamiento local del navegador y no requieren conexión.</p></div></aside><div class="builder-main"><div class="builder-columns"><div class="deck-stack"><div class="stack-header"><div class="stack-header-title"><strong>${builderZoneLabel(activeZone)} DECK</strong><span class="stack-card-total">(${app.builderDeck[activeZone].length} cartas)</span></div><div class="stack-quick-stats">${activeZone === "main" ? `<span><b>${summary.monsterCount}</b> Monstruos</span><span><b>${summary.spellCount}</b> Magias</span><span><b>${summary.trapCount}</b> Trampas</span>` : `<span><b>${app.builderDeck[activeZone].length}</b> cartas en ${builderZoneLabel(activeZone)}</span>`}</div></div><div class="deck-card-list ${activeZone}-deck-list" data-drop-zone="${activeZone}">${zoneCardsMarkup}</div><div class="deck-stack-footer"><label class="notes-field">Notas del mazo<textarea id="builder-notes" rows="2" placeholder="Estrategia, notas de torneo o combo...">${esc(app.builderDeck.notes ?? "")}</textarea></label><div class="import-box"><div class="stack-header"><span>IMPORTAR / EXPORTAR YDK</span><button class="text-button" data-action="import-ydk">Cargar YDK</button></div><textarea id="ydk-import" rows="2" placeholder="Pega el contenido .ydk aquí para importar"></textarea></div></div></div><div class="catalog-stack"><div class="catalog-search-row"><div class="search-input-wrap"><span class="search-icon">🔍</span><input id="card-search" value="${esc(app.builderSearch)}" placeholder="Buscar por nombre, efecto, tipo..." autocomplete="off" />${app.builderSearch ? `<button type="button" class="clear-search-btn" data-builder-clear-search aria-label="Limpiar búsqueda">✕</button>` : ""}</div><select id="builder-sort" aria-label="Ordenar catálogo"><option value="name" ${app.builderSort === "name" ? "selected" : ""}>Nombre A–Z</option><option value="atk" ${app.builderSort === "atk" ? "selected" : ""}>ATK más alto</option><option value="level" ${app.builderSort === "level" ? "selected" : ""}>Nivel ★</option><option value="kind" ${app.builderSort === "kind" ? "selected" : ""}>Tipo de carta</option><option value="id" ${app.builderSort === "id" ? "selected" : ""}>ID</option></select></div><div class="builder-filter-chips"><button type="button" class="builder-chip ${filter === "all" ? "active" : ""}" data-builder-filter-chip="all">Todas (${CARDS.length})</button><button type="button" class="builder-chip ${filter === "monster" ? "active" : ""}" data-builder-filter-chip="monster">Monstruos</button><button type="button" class="builder-chip ${filter === "spell" ? "active" : ""}" data-builder-filter-chip="spell">Magias</button><button type="button" class="builder-chip ${filter === "trap" ? "active" : ""}" data-builder-filter-chip="trap">Trampas</button><button type="button" class="builder-chip ${filter === "fusion" ? "active" : ""}" data-builder-filter-chip="fusion">Fusión</button><button type="button" class="builder-chip ${filter === "limited" ? "active" : ""}" data-builder-filter-chip="limited">Limitadas</button><button type="button" class="builder-chip ${filter === "favorites" ? "active" : ""}" data-builder-filter-chip="favorites">★ Favoritas (${app.favoriteCardIds.size})</button></div><div class="catalog-list" data-drop-zone="${activeZone}">${cardRows}</div></div></div>${inspectorHtml}</div></div>${modalHtml}</section>`;
+  const summary = validation.summary;
+  return `<section class="page"><div class="page-head"><div><span class="eyebrow">DECK LAB / COMPLETE BUILDER</span><h1>Constructor de mazos</h1><p>Busca, filtra, ordena y mueve cartas entre Main, Fusion y Side con validación TCG April 2005 en tiempo real.</p></div><div class="head-actions"><button class="ghost-button" data-action="copy-ydk">Copiar YDK</button><button class="ghost-button" data-action="duplicate-builder">Duplicar</button><button class="primary-button" data-action="save-preset">${app.savedDecks.some((deck) => deck.id === app.builderDeckId) ? "Guardar cambios" : "Guardar como preset"}</button></div></div><div class="builder-layout"><aside class="deck-library side-card"><div class="side-title"><span>MAZOS</span><span class="tiny-label">${allDecks.length} DISPONIBLES</span></div>${allDecks.map((deck) => `<button class="deck-preset ${deck.id === app.builderDeckId ? "active" : ""}" data-deck-id="${esc(deck.id)}"><span><strong>${esc(deck.name)}</strong><small>${esc(deck.archetype ?? "Custom")} · ${deck.main.length} Main</small></span>${statusPill(deck.readiness ?? "EXPERIMENTAL")}</button>`).join("")}<div class="library-note"><span class="eyebrow">PROCEDENCIA</span><p>Los presets de referencia conservan su procedencia; los decks guardados localmente se pueden editar y exportar sin servidor.</p></div></aside><div class="builder-main"><div class="builder-top"><div><span class="eyebrow">${esc(app.builderDeck.name ?? "CUSTOM")}</span><h2>${summary.main}/40–60 <small>MAIN</small></h2><div class="builder-tags">${(app.builderDeck.tags ?? []).map((tag) => `<span>${esc(tag)}</span>`).join("")}</div></div><div class="deck-counts"><span><b>${summary.monsterCount}</b> MON</span><span><b>${summary.spellCount}</b> SPELL</span><span><b>${summary.trapCount}</b> TRAP</span><span><b>${summary.fusion}</b> FUSION</span><span><b>${summary.side}</b> SIDE</span></div><div class="validation-state ${validation.valid ? "ok" : "bad"}"><span>${validation.valid ? "✓" : "!"}</span><div><strong>${validation.valid ? "Formato válido" : "Revisión necesaria"}</strong><small>${validation.errors.length} errores · ${validation.warnings.length} avisos</small></div></div></div><div class="builder-toolbar"><input id="builder-name" value="${esc(app.builderDeck.name ?? "Custom Deck")}" placeholder="Nombre del deck"/><input id="builder-tag" placeholder="Añadir etiqueta"/><button class="ghost-button" data-action="add-tag">Añadir etiqueta</button><select id="builder-filter"><option value="all" ${filter === "all" ? "selected" : ""}>Todas</option><option value="monster" ${filter === "monster" ? "selected" : ""}>Monstruos</option><option value="spell" ${filter === "spell" ? "selected" : ""}>Magias</option><option value="trap" ${filter === "trap" ? "selected" : ""}>Trampas</option><option value="supported" ${filter === "supported" ? "selected" : ""}>Ejecutables</option><option value="incomplete" ${filter === "incomplete" ? "selected" : ""}>Incompletas</option><option value="limited" ${filter === "limited" ? "selected" : ""}>Limitadas</option></select><select id="builder-sort"><option value="name" ${app.builderSort === "name" ? "selected" : ""}>Orden: nombre</option><option value="kind" ${app.builderSort === "kind" ? "selected" : ""}>Orden: tipo</option><option value="id" ${app.builderSort === "id" ? "selected" : ""}>Orden: ID</option></select></div><div class="builder-columns"><div class="deck-stack"><div class="zone-tabs">${["main", "fusion", "side"].map((zone) => `<button class="zone-tab ${app.builderZone === zone ? "active" : ""}" data-builder-zone="${zone}">${builderZoneLabel(zone)} <b>${app.builderDeck[zone].length}</b></button>`).join("")}</div>${["main", "fusion", "side"].map((zone) => `<div class="deck-zone ${app.builderZone === zone ? "active" : ""}" data-drop-zone="${zone}"><div class="stack-header"><span>${builderZoneLabel(zone)} DECK</span><span>${app.builderDeck[zone].length} cartas</span></div><div class="deck-card-list">${zoneMarkup(zone) || `<div class="drop-empty">Arrastra cartas aquí o añádelas desde el catálogo.</div>`}</div></div>`).join("")}<label class="notes-field">Notas<textarea id="builder-notes" rows="4" placeholder="Procedencia, plan de juego o notas de prueba...">${esc(app.builderDeck.notes ?? "")}</textarea></label><div class="import-box"><div class="stack-header"><span>IMPORTAR YDK</span><button class="text-button" data-action="import-ydk">Importar texto</button></div><textarea id="ydk-import" rows="3" placeholder="#main&#10;30&#10;...\n#extra\n!side"></textarea></div></div><div class="catalog-stack"><div class="stack-header"><span>CATÁLOGO GOATFORMAT (${CARDS.length})</span><input id="card-search" value="${esc(app.builderSearch)}" placeholder="Buscar nombre, familia o estado..." /></div><div class="catalog-list" data-drop-zone="${app.builderZone}">${cardRows}</div></div></div><div class="builder-diagnostics"><span>${summary.limited.length} limitadas</span><span>${summary.forbidden.length} prohibidas</span><span>${summary.exceeded.length} excedidas</span><span>${summary.outOfFormat.length} fuera de formato</span><span>${summary.incomplete.length} incompletas</span><strong class="${summary.botCompatible ? "good-text" : "danger-text"}">${summary.botCompatible ? "BOT COMPATIBLE" : "BOT NO COMPATIBLE"}</strong></div>${validation.errors.length || validation.warnings.length ? `<div class="validation-list">${validation.errors.slice(0, 8).map((error) => `<div class="validation-error">× ${esc(error)}</div>`).join("")}${validation.warnings.slice(0, 8).map((warning) => `<div class="validation-warning">△ ${esc(warning)}</div>`).join("")}</div>` : ""}</div></div></section>`;
 }
 
 function trainingMetric(label, value, note = "") { return `<div class="metric"><span>${esc(label)}</span><strong>${esc(value)}</strong>${note ? `<small>${esc(note)}</small>` : ""}</div>`; }
@@ -1100,6 +1041,14 @@ function flipCoinStartingPlayer() {
 }
 
 function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckId, botId = null, ladder = null, deckOverride = null, opponentDeckOverride = null, fresh = false } = {}) {
+  const requestedBotId = ladder?.botId ?? botId ?? app.playBotId;
+  if (requestedBotId === NEXO2_BOT_ID && !isNexo2MatchupAllowed(deckId, opponentDeckId)) {
+    app.playBotId = UNIVERSAL_BOT_ID;
+    persistPlaySelection();
+    app.toast = `Nexo 2 necesita dos mazos del catálogo universal (${NEXO2_ALL_DECK_IDS.length} disponibles).`;
+    if (app.mode === "play") render();
+    return;
+  }
   if (fresh) clearActiveDuelState();
   app.duelEventLog = { open: false, search: "", filter: "all", scrollTop: 0 };
   const loadEpoch = beginDuelLoad(app);
@@ -1126,7 +1075,7 @@ function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckI
   }
   app.duelManual = app.playMode === "local";
   const seed = Math.floor(Math.random() * 0xffffffff);
-  const selectedBotId = ladder?.botId ?? botId ?? app.playBotId;
+  const selectedBotId = requestedBotId;
   const storedBot = app.botRegistry?.bots?.find((bot) => bot.id === selectedBotId);
   const storedModel = storedBot?.profiles?.[opponentDeckId]?.model;
   const trainedModel = storedModel?.policyWeights || storedModel?.featureWeights || storedModel?.parameters ? storedModel : null;
@@ -1332,10 +1281,35 @@ function bindEvents() {
   document.querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => navigate(button.dataset.mode)));
   bindMenuKeyboard(document);
   document.querySelectorAll("[data-play-mode]").forEach((button) => button.addEventListener("click", () => { app.playMode = button.dataset.playMode; persistPlaySelection(); render(); }));
-  document.querySelector("#play-deck")?.addEventListener("change", (event) => { app.playDeckId = event.target.value; app.duelDeckId = app.playDeckId; persistPlaySelection(); render(); });
-  document.querySelector("#play-opponent-deck")?.addEventListener("change", (event) => { app.playOpponentDeckId = event.target.value; app.opponentDeckId = app.playOpponentDeckId; persistPlaySelection(); render(); });
+  document.querySelector("#play-deck")?.addEventListener("change", (event) => {
+    const nextDeckId = event.target.value;
+    if (app.playBotId === NEXO2_BOT_ID && !isNexo2OpponentDeck(nextDeckId)) {
+      forceNexo2PilotDecks();
+      app.toast = `Nexo 2 permite ${NEXO2_ALL_OPPONENT_DECK_IDS.length} mazos rivales del catálogo.`;
+    } else app.playDeckId = nextDeckId;
+    app.duelDeckId = app.playDeckId;
+    persistPlaySelection();
+    render();
+  });
+  document.querySelector("#play-opponent-deck")?.addEventListener("change", (event) => {
+    const nextDeckId = event.target.value;
+    if (app.playBotId === NEXO2_BOT_ID && !isNexo2Deck(nextDeckId)) {
+      forceNexo2PilotDecks();
+      app.toast = `Nexo 2 puede utilizar los ${NEXO2_ALL_DECK_IDS.length} mazos del catálogo.`;
+    } else app.playOpponentDeckId = nextDeckId;
+    app.opponentDeckId = app.playOpponentDeckId;
+    persistPlaySelection();
+    render();
+  });
   document.querySelector("#play-bot")?.addEventListener("change", (event) => {
-    app.playBotId = activeBotIds.has(event.target.value) ? event.target.value : UNIVERSAL_BOT_ID;
+    const requested = activeBotIds.has(event.target.value) ? event.target.value : UNIVERSAL_BOT_ID;
+    if (requested === NEXO2_BOT_ID) {
+      const changed = forceNexo2PilotDecks();
+      app.playBotId = requested;
+      app.toast = changed
+        ? `Nexo 2 seleccionado: puedes usar cualquiera de los ${NEXO2_ALL_DECK_IDS.length} mazos contra cualquiera del catálogo.`
+        : `Nexo 2 seleccionado. Elige dos mazos del catálogo universal (${NEXO2_ALL_DECK_IDS.length}).`;
+    } else app.playBotId = requested;
     persistPlaySelection();
     render();
   });
@@ -1411,131 +1385,24 @@ function bindEvents() {
   document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => handleAction(button.dataset.action)));
   document.querySelectorAll("[data-deck-id]").forEach((button) => button.addEventListener("click", () => { app.builderDeckId = button.dataset.deckId; app.builderDeck = builderDeckById(app.builderDeckId); app.builderZone = "main"; app.builderDeckLibraryOpen = false; render(); }));
   document.querySelectorAll("[data-builder-zone]").forEach((button) => button.addEventListener("click", () => { app.builderZone = button.dataset.builderZone; render(); }));
-
-  document.querySelectorAll("[data-builder-select-card]").forEach((element) => {
-    element.addEventListener("click", (event) => {
-      if (event.target.closest(".builder-card-quick-btn")) return;
-      const cardId = Number(element.dataset.builderSelectCard || element.dataset.cardId);
-      if (!cardId) return;
-      app.builderSelectedCardId = cardId;
-      render();
-    });
-  });
-
-  document.querySelectorAll("[data-builder-add-copy], [data-builder-quick-add], [data-add-card]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const cardId = Number(button.dataset.builderAddCopy ?? button.dataset.builderQuickAdd ?? button.dataset.addCard);
-      if (!cardId) return;
-      const zone = button.dataset.builderZone ?? app.builderZone;
-      const counts = validateDeck(app.builderDeck).counts;
-      const limit = copyLimit(cardId);
-      const currentTotal = counts.get(cardId) ?? 0;
-      if (currentTotal >= limit) {
-        app.toast = `Límite de ${limit} copia(s) alcanzado para ${cardLabel(cardId)}.`;
-        render();
-        return;
-      }
-      app.builderDeck[zone].push(cardId);
-      app.builderSelectedCardId = cardId;
-      app.builderMotion = { cardId, zone, index: app.builderDeck[zone].length - 1 };
-      persistBuilderDraft();
-      app.toast = `+1 ${cardLabel(cardId)} añadida al ${builderZoneLabel(zone)} Deck (${currentTotal + 1}/${limit}).`;
-      render();
-    });
-  });
-
-  document.querySelectorAll("[data-builder-remove-copy], [data-builder-quick-remove], [data-remove-index]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const zone = button.dataset.builderZone ?? button.dataset.removeZone ?? app.builderZone;
-      const removeIndex = button.dataset.removeIndex;
-      let cardId = Number(button.dataset.builderRemoveCopy ?? button.dataset.builderQuickRemove);
-
-      if (removeIndex !== undefined && removeIndex !== null && removeIndex !== "") {
-        const idx = Number(removeIndex);
-        cardId = app.builderDeck[zone][idx] ?? cardId;
-        app.builderDeck[zone].splice(idx, 1);
-      } else if (cardId) {
-        const idx = app.builderDeck[zone].lastIndexOf(cardId);
-        if (idx !== -1) {
-          app.builderDeck[zone].splice(idx, 1);
-        }
-      }
-
-      if (cardId) {
-        app.builderSelectedCardId = cardId;
-        app.builderMotion = null;
-        persistBuilderDraft();
-        const counts = validateDeck(app.builderDeck).counts;
-        app.toast = `-1 ${cardLabel(cardId)} retirada del ${builderZoneLabel(zone)} Deck (${counts.get(cardId) ?? 0} restantes).`;
-        render();
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-builder-remove-all]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const cardId = Number(button.dataset.builderRemoveAll);
-      if (!cardId) return;
-      let removedCount = 0;
-      for (const zone of ["main", "fusion", "side"]) {
-        const initialLen = app.builderDeck[zone].length;
-        app.builderDeck[zone] = app.builderDeck[zone].filter((id) => id !== cardId);
-        removedCount += initialLen - app.builderDeck[zone].length;
-      }
-      if (removedCount > 0) {
-        persistBuilderDraft();
-        app.toast = `Se han retirado todas las copias (${removedCount}) de ${cardLabel(cardId)}.`;
-        render();
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-builder-inspect-detail]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const cardId = Number(button.dataset.builderInspectDetail);
-      if (cardId) {
-        app.builderDetailModalCardId = cardId;
-        app.builderSelectedCardId = cardId;
-        render();
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-builder-close-detail]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      if (event.target === button || button.classList.contains("card-viewer-modal-close")) {
-        app.builderDetailModalCardId = null;
-        render();
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-builder-clear-selection]").forEach((button) => {
-    button.addEventListener("click", () => {
-      app.builderSelectedCardId = null;
-      render();
-    });
-  });
-
-  document.querySelectorAll("[data-builder-filter-chip]").forEach((button) => {
-    button.addEventListener("click", () => {
-      app.builderFilter = button.dataset.builderFilterChip;
-      app.builderCatalogLimit = 200;
-      render();
-    });
-  });
-
-  document.querySelectorAll("[data-builder-clear-search]").forEach((button) => {
-    button.addEventListener("click", () => {
-      app.builderSearch = "";
-      app.builderCatalogLimit = 200;
-      render();
-    });
-  });
+  document.querySelectorAll("[data-add-card]").forEach((button) => button.addEventListener("click", () => {
+    const cardId = Number(button.dataset.addCard);
+    const zone = app.builderZone;
+    const counts = validateDeck(app.builderDeck).counts;
+    if (copyLimit(cardId) <= (counts.get(cardId) ?? 0)) { app.toast = "Se ha alcanzado el límite de copias de esa carta."; render(); return; }
+    app.builderDeck[zone].push(cardId);
+    app.builderMotion = { cardId, zone, index: app.builderDeck[zone].length - 1 };
+    persistBuilderDraft();
+    app.toast = `${cardLabel(cardId)} añadida al ${builderZoneLabel(zone)} Deck.`;
+    render();
+  }));
+  document.querySelectorAll("[data-remove-index]").forEach((button) => button.addEventListener("click", () => {
+    const zone = button.dataset.removeZone ?? app.builderZone;
+    app.builderDeck[zone].splice(Number(button.dataset.removeIndex), 1);
+    app.builderMotion = null;
+    persistBuilderDraft();
+    render();
+  }));
   document.querySelector("#card-search")?.addEventListener("input", (event) => { app.builderSearch = event.target.value; app.builderCatalogLimit = 200; render(); const input = document.querySelector("#card-search"); input?.focus(); input?.setSelectionRange(app.builderSearch.length, app.builderSearch.length); });
   document.querySelector("#builder-filter")?.addEventListener("change", (event) => { app.builderFilter = event.target.value; app.builderCatalogLimit = 200; render(); });
   document.querySelector("#builder-work-filter")?.addEventListener("change", (event) => { app.builderWorkFilter = event.target.value; app.builderCatalogLimit = 200; render(); });

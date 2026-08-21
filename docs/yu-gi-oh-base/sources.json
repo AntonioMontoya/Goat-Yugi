@@ -1,0 +1,185 @@
+{
+  "schema": 1,
+  "library": "yu-gi-oh-base-goat",
+  "generatedAt": "2026-08-21",
+  "accessedAt": "2026-08-21",
+  "sourcePolicy": "Prefer historical primary evidence; use current official rules only for unchanged general mechanics; mark community adaptations explicitly.",
+  "sources": [
+    {
+      "id": "konami-rulebook",
+      "authority": "official",
+      "title": "Yu-Gi-Oh! TCG Rulebook",
+      "url": "https://www.yugioh-card.com/en/rulebook/",
+      "published": null,
+      "accessed": "2026-08-21",
+      "use": ["turn structure", "summons", "chains", "Spell Speed", "battle basics"],
+      "goatTreatment": "Use general mechanics only; exclude modern mechanics and modern rule changes from the GOAT layer.",
+      "confidence": "high"
+    },
+    {
+      "id": "konami-fast-effect-timing",
+      "authority": "official",
+      "title": "Fast Effect Timing",
+      "url": "https://www.yugioh-card.com/en/play/fast-effect-timing/",
+      "published": null,
+      "accessed": "2026-08-21",
+      "use": ["open game state", "who acts next", "passing", "chain windows"],
+      "goatTreatment": "Use the chart as the baseline and add GOAT Ignition Effect priority after a successful Summon or Chain resolution.",
+      "confidence": "high-with-goat-adaptation"
+    },
+    {
+      "id": "konami-damage-step",
+      "authority": "official",
+      "title": "Damage Step Rules",
+      "url": "https://www.yugioh-card.com/eu/play/damage-step-rules/",
+      "published": null,
+      "accessed": "2026-08-21",
+      "use": ["damage-step sequence", "flip timing", "battle destruction timing"],
+      "goatTreatment": "Use the sequence as a general scaffold; GOAT-specific activation restrictions and six substeps come from GoatFormat.com.",
+      "confidence": "high-with-goat-adaptation"
+    },
+    {
+      "id": "konami-psct",
+      "authority": "official",
+      "title": "Problem-Solving Card Text",
+      "url": "https://www.yugioh-card.com/en/play/psct/",
+      "published": "2011-2012",
+      "accessed": "2026-08-21",
+      "use": ["conditions", "activation costs", "targets", "resolution", "conjunctions"],
+      "goatTreatment": "Diagnostic vocabulary only. GOAT cards did not use PSCT, so old text and card-specific rulings remain authoritative.",
+      "confidence": "high-as-diagnostic"
+    },
+    {
+      "id": "konami-neuron-rules",
+      "authority": "official",
+      "title": "Yu-Gi-Oh! Neuron TCG Card Database and Rule Search",
+      "url": "https://www.db.yugioh-card.com/yugiohdb/rule_search.action",
+      "published": null,
+      "accessed": "2026-08-21",
+      "use": ["current card text", "current card FAQs", "current legality"],
+      "goatTreatment": "Lookup aid only; do not overwrite the historical text, banlist or ruling snapshot.",
+      "confidence": "high-current-not-historical"
+    },
+    {
+      "id": "goat-rules-policy",
+      "authority": "specialized-community",
+      "title": "GoatFormat.com — Rules & Policies",
+      "url": "https://www.goatformat.com/rules.html",
+      "published": "2015 (site footer; continuously maintained)",
+      "accessed": "2026-08-21",
+      "use": ["historical policy", "source precedence", "individual rulings workflow"],
+      "goatTreatment": "Primary community reference for the project's GOAT rules layer, while preserving its distinction from Konami's current rules.",
+      "confidence": "high-community"
+    },
+    {
+      "id": "goat-basic-mechanics",
+      "authority": "specialized-community",
+      "title": "GoatFormat.com — Basic Mechanics",
+      "url": "https://www.goatformat.com/basics.html",
+      "published": null,
+      "accessed": "2026-08-21",
+      "use": ["first-turn draw", "Field Spell rule", "Ignition priority", "replays", "failure to find", "SEGOC", "Damage Step", "historical exceptions"],
+      "goatTreatment": "Canonical GOAT adaptation for the listed differences; card-specific pages still win over a broad summary.",
+      "confidence": "high-community"
+    },
+    {
+      "id": "goat-priority-facts",
+      "authority": "specialized-community",
+      "title": "GoatFormat.com — 6 Facts That You Should Know About Priority",
+      "url": "https://www.goatformat.com/home/6-facts-that-you-should-know-about-priority",
+      "published": "2019-07-11",
+      "accessed": "2026-08-21",
+      "use": ["priority terminology", "established shortcuts", "summon response window", "trigger versus ignition"],
+      "goatTreatment": "Use as the player-facing explanation of the historical priority layer; never let the bot use priority as a card property.",
+      "confidence": "high-community"
+    },
+    {
+      "id": "goat-individual-rulings",
+      "authority": "historical-community-curation",
+      "title": "GoatFormat.com — Individual Card Rulings",
+      "url": "https://www.goatformat.com/indivrulings.html",
+      "published": "2005 evidence curated by the Judge Corps; site footer 2015",
+      "accessed": "2026-08-21",
+      "use": ["card-specific rulings", "historical UDE documents", "precedence by source"],
+      "goatTreatment": "Required lookup for a named card interaction. Never replace a CARD_SPECIFIC ruling with a generic modern rule.",
+      "confidence": "high-card-specific"
+    },
+    {
+      "id": "goat-ruling-notices",
+      "authority": "specialized-community",
+      "title": "GoatFormat.com — Ruling Notices",
+      "url": "https://www.goatformat.com/rulingnotices",
+      "published": "2021 series and later maintenance",
+      "accessed": "2026-08-21",
+      "use": ["reversed rulings", "gaps in historical evidence", "consistent community adjudication"],
+      "goatTreatment": "Use only after checking historical evidence; record the notice as a community adjudication, not as a 2005 primary document.",
+      "confidence": "medium-high-community"
+    },
+    {
+      "id": "goat-whos-winning",
+      "authority": "strategy-community",
+      "title": "GoatFormat.com — Who's Winning? Goat Format Fundamentals",
+      "url": "https://www.goatformat.com/home/whos-winning-goat-format-fundamentals",
+      "published": "2018-12-15",
+      "accessed": "2026-08-21",
+      "use": ["card advantage", "Life Point pressure", "tempo", "matchup state"],
+      "goatTreatment": "Adapted into decision features; it is strategic theory, not a legal ruling.",
+      "confidence": "high-strategy"
+    },
+    {
+      "id": "goat-risk",
+      "authority": "strategy-community",
+      "title": "GoatFormat.com — Risk in Goat Format",
+      "url": "https://www.goatformat.com/home/risk-in-goat-format",
+      "published": null,
+      "accessed": "2026-08-21",
+      "use": ["risk/reward", "inevitability", "playing from ahead or behind", "LP as a resource"],
+      "goatTreatment": "Adapted into context-sensitive risk tolerance; never hard-code 'always be conservative'.",
+      "confidence": "high-strategy"
+    },
+    {
+      "id": "goat-philosophy-of-greed",
+      "authority": "strategy-community",
+      "title": "GoatFormat.com — The Philosophy of Greed",
+      "url": "https://www.goatformat.com/home/the-philosophy-of-greed",
+      "published": "2021-02-19",
+      "accessed": "2026-08-21",
+      "use": ["real versus raw card advantage", "trade up/equalize/trade down", "positional value"],
+      "goatTreatment": "Adapted as a valuation model, not a deterministic rule.",
+      "confidence": "high-strategy"
+    },
+    {
+      "id": "goat-sideboarding",
+      "authority": "strategy-community",
+      "title": "GoatFormat.com — The Science of Sideboarding Part 1",
+      "url": "https://www.goatformat.com/home/the-science-of-sideboarding-part-1-the-fundamentals",
+      "published": "2025-02-13",
+      "accessed": "2026-08-21",
+      "use": ["side deck objectives", "matchup-specific answers", "going-first/going-second planning"],
+      "goatTreatment": "Use for the optional match/side-deck layer; it does not change single-duel rules.",
+      "confidence": "medium-high-strategy"
+    },
+    {
+      "id": "goatworld-rules",
+      "authority": "specialized-community",
+      "title": "Goat World — Goat Format Rules: Complete Guide",
+      "url": "https://goatworld.community/blog/goat-format-rules-complete-guide-2005-mechanics",
+      "published": "2026 (page date shown by site)",
+      "accessed": "2026-08-21",
+      "use": ["cross-check of historical mechanics", "priority examples", "format boundary"],
+      "goatTreatment": "Secondary cross-check; cannot overrule GoatFormat.com or historical evidence.",
+      "confidence": "medium"
+    },
+    {
+      "id": "edo-core-history",
+      "authority": "implementation-reference",
+      "title": "ygopro-core issue: one chain per Damage Step substep",
+      "url": "https://github.com/edo9300/ygopro-core/issues/115",
+      "published": null,
+      "accessed": "2026-08-21",
+      "use": ["simulator implementation cross-check", "historical Damage Step behavior"],
+      "goatTreatment": "Comparison only. OCGCore and project tests remain authoritative for runtime behavior.",
+      "confidence": "medium-implementation"
+    }
+  ]
+}

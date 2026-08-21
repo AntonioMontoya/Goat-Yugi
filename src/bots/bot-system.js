@@ -4,7 +4,14 @@ import { CoreHeuristicBot, CoreRandomBot, hydrateCoreBot } from "./ocgcore.js";
 import { LearnedPolicyBot } from "./learned-policy.js";
 import { NEXO2_ALGORITHM, StrategicBot } from "./strategic.js";
 import { parseSpecialistBotId, specialistSpec } from "./specialists.js";
+import { NEXO2_ALL_DECK_IDS, NEXO2_ALL_OPPONENT_DECK_IDS, NEXO2_BOT_ID, NEXO2_DECK_IDS, NEXO2_OPPONENT_DECK_IDS, isNexo2Deck, isNexo2OpponentDeck, isNexo2MatchupAllowed } from "./nexo2-contract.js";
 import NEXO_PATCH_V1 from "../../artifacts/nexo-patch-v1/candidate.json" with { type: "json" };
+// Universal candidate trained across the complete 113-deck catalog.  It is
+// intentionally published as a candidate until the OCGCore validity gate is
+// clean; the previous pilot remains in artifacts for rollback/evidence.
+import NEXO2_MODEL from "../../artifacts/nexo2-universal-v1/candidate.json" with { type: "json" };
+
+export { NEXO2_ALL_DECK_IDS, NEXO2_ALL_OPPONENT_DECK_IDS, NEXO2_BOT_ID, NEXO2_DECK_IDS, NEXO2_OPPONENT_DECK_IDS, isNexo2Deck, isNexo2OpponentDeck, isNexo2MatchupAllowed } from "./nexo2-contract.js";
 
 export const BOT_PROFILE_SCHEMA = 1;
 export const UNIVERSAL_BOT_ID = "universal-base";
@@ -40,6 +47,31 @@ const COMPATIBILITY = Object.freeze({
 const DEFAULT_BOTS = [
   { id: UNIVERSAL_BOT_ID, name: "Nexo", deckId: "goat-control", style: "IA universal adaptativa", difficulty: "expert", profile: "generic", algorithm: "ocgcore-public-strategic-v4", intelligence: 0, skillMmr: 0, rating: 1200, state: BOT_STATES.COMPETENT },
   { ...NEXO_PATCH_V1, id: NEXO_CANDIDATE_BOT_ID, botId: NEXO_CANDIDATE_BOT_ID, name: "Nexo candidato", deckId: "goat-control", profile: "generic", style: "Parche entrenado en evaluación", difficulty: "expert", intelligence: 0, skillMmr: 0, rating: 1200, state: BOT_STATES.CANDIDATE, training: false },
+  {
+    ...NEXO2_MODEL,
+    id: NEXO2_BOT_ID,
+    botId: NEXO2_BOT_ID,
+    name: "Nexo 2 · Universal 113 mazos",
+    deckId: NEXO2_ALL_DECK_IDS[0],
+    profile: "generic",
+    style: "Creencias públicas + política/valor",
+    difficulty: "expert",
+    intelligence: 0,
+    skillMmr: 0,
+    rating: 1200,
+    state: BOT_STATES.CANDIDATE,
+    pilotDeckIds: [...NEXO2_ALL_DECK_IDS],
+    opponentDeckIds: [...NEXO2_ALL_OPPONENT_DECK_IDS],
+    legacyPilotDeckIds: [...NEXO2_DECK_IDS],
+    legacyOpponentDeckIds: [...NEXO2_OPPONENT_DECK_IDS],
+    allDeckIds: [...NEXO2_ALL_DECK_IDS],
+    allOpponentDeckIds: [...NEXO2_ALL_OPPONENT_DECK_IDS],
+    curriculum: "universal-catalog",
+    trainingGames: Number(NEXO2_MODEL?.pilot?.trainingGames) || 0,
+    evaluationGames: Number(NEXO2_MODEL?.pilot?.evaluationGames) || 0,
+    evaluationArtifact: "artifacts/nexo2-universal-v1-balanced",
+    training: false,
+  },
 ];
 
 function clone(value) {
@@ -312,6 +344,9 @@ export function createBotForDeck({ botId = UNIVERSAL_BOT_ID, deckId = null, deck
   const difficultyConfig = BOT_DIFFICULTIES[resolvedDifficulty];
   const resolvedDeckId = deckId ?? source.deckId ?? source.profile ?? "goat-control";
   const resolvedProfile = deckId && deckId !== source.deckId ? resolvedDeckId : source.profile ?? resolvedDeckId;
+  if ((source.botId ?? source.id ?? botId) === NEXO2_BOT_ID || source.algorithm === NEXO2_ALGORITHM) {
+    if (!isNexo2Deck(resolvedDeckId)) throw new Error(`Nexo 2 sólo puede pilotar uno de los ${NEXO2_ALL_DECK_IDS.length} mazos del catálogo universal.`);
+  }
   if (["ocgcore-public-strategic-v3", "ocgcore-public-strategic-v4", NEXO2_ALGORITHM].includes(source.algorithm)) {
     return new StrategicBot({ ...source, id: source.id ?? botId, botId: source.botId ?? source.id ?? botId, deckId: resolvedDeckId, profile: resolvedProfile, deck, seed });
   }
