@@ -1,32 +1,13 @@
 import { ParticleSystem } from "./particles.js";
 
 let submenuParticles = null;
-let currentSubmenuMode = null;
-let currentMotionLevel = null;
 
 export function initSubmenuAtmosphere({ mode, motionLevel }) {
-  const isSubmenu = !["home", "duel"].includes(mode) && motionLevel !== "off";
-
-  if (!isSubmenu) {
-    submenuParticles?.destroy();
-    submenuParticles = null;
-    currentSubmenuMode = mode;
-    currentMotionLevel = motionLevel;
-    return;
-  }
-
-  const canvas = document.getElementById("submenu-particles");
-  if (!canvas) return;
-
-  if (currentSubmenuMode === mode && currentMotionLevel === motionLevel && submenuParticles) {
-    return;
-  }
-
   submenuParticles?.destroy();
   submenuParticles = null;
-  currentSubmenuMode = mode;
-  currentMotionLevel = motionLevel;
-
+  if (["home", "duel"].includes(mode) || motionLevel === "off") return;
+  const canvas = document.getElementById("submenu-particles");
+  if (!canvas) return;
   const mystical = ["sandbox", "training", "research"].includes(mode);
   const battle = ["play", "ladder", "bots"].includes(mode);
   submenuParticles = new ParticleSystem(canvas, {

@@ -18,6 +18,7 @@ import { bindMenuKeyboard, hashForMode, menuMarkup, modeFromHash } from "./ui/na
 import { initSpriteMenu, destroySpriteMenu } from "./ui/sprite-menu.js"; import { renderHomePage } from "./ui/home-page.js"; import { installMenuScrollNavigation } from "./ui/menu-scroll.js";
 import { initSubmenuAtmosphere } from "./ui/submenu-atmosphere.js";
 import { initDuelAtmosphere } from "./ui/duel-atmosphere.js";
+import { morphDom } from "./ui/dom-morph.js";
 import { createActionRegistry, registerAction } from "./ui/action-registry.js"; import { builderCardTileMarkup } from "./ui/deck-builder-cards.js"; import { decorateDeckLibrary } from "./ui/deck-library.js"; import { decorateDuelPiles } from "./ui/duel-piles.js";
 import { createDefaultScenarioState, loadSavedScenarios, persistSavedScenarios, renderSandboxPage } from "./ui/sandbox.js";
 import { startSandboxDuel as startSandboxDuelDriver, bindSandboxEvents } from "./ui/sandbox-driver.js";
@@ -350,16 +351,17 @@ function cardMarkup(instance, { hidden = false, compact = false, motion = false,
     : Number(instance.location) === 4 || instance.zone === "MONSTER";
   const imageBacked = card?.kind !== CARD_KIND.TOKEN;
   const defense = monsterLike && (instance.defensePosition === true || instance.position === "DEFENSE");
-  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /></div>`;
-  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
+  const cardUid = instance.uid ?? (instance.cardId ? `card-${instance.cardId}` : "");
+  if (hidden || !card) return `<div class="card back face-down ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" data-card-uid="${esc(cardUid)}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /></div>`;
+  if (instance.faceUp === false) return `<div class="card back face-down known-set ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" data-card-uid="${esc(cardUid)}" title="Colocada: ${esc(card.name)}"><img class="card-back-image" src="./goat-card-images/Back_Image.jpg" alt="Dorso de carta" draggable="false" /><small class="set-card-identity"><b>SET</b>${esc(card.name)}</small></div>`;
   const fallback = `<div class="card-fallback"${imageBacked ? " hidden" : ""}>
     <div class="card-top"><span>${esc(monsterLike ? card.kind === CARD_KIND.TOKEN ? "TOKEN" : "MONSTER" : card.kind)}</span><span>${card.level ? `★${card.level}` : ""}</span></div>
     <div class="card-name">${esc(card.name)}</div>
     ${monsterLike ? `<div class="card-stats">${card.atk} <span>/</span> ${card.def}</div>` : `<div class="card-type">${esc(card.spellType ?? card.trapType ?? card.kind)}</div>`}
     <div class="card-text">${esc(card.text)}</div>
   </div>`;
-  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" title="${esc(card.name)}">
-    ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card.name)}" loading="${esc(imageLoading ?? (compact ? "eager" : "lazy"))}" decoding="async" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false;" />` : ""}
+  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" data-card-uid="${esc(cardUid)}" title="${esc(card.name)}">
+    ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card.name)}" loading="${esc(imageLoading ?? "eager")}" decoding="sync" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false;" />` : ""}
     ${fallback}
   </div>`;
 }
@@ -487,7 +489,7 @@ function render() {
   document.documentElement.classList.toggle("duel-active", app.mode === "duel"); document.documentElement.classList.toggle("simple-menus", app.settings.compactMenus); document.documentElement.classList.toggle("touch-controls", app.settings.touchControls); document.documentElement.classList.toggle("high-contrast", app.settings.highContrast); document.documentElement.classList.toggle("large-ui-text", app.settings.largeText);
   if (app.mode !== "card-viewer" && app.cardViewerKeyHandler) { document.removeEventListener("keydown", app.cardViewerKeyHandler); app.cardViewerKeyHandler = null; }
   const content = app.mode === "home" ? renderHomePage({ escapeHtml: esc }) : app.mode === "play" ? renderPlayLobby() : app.mode === "bots" ? renderBots() : app.mode === "sandbox" ? renderSandboxPage(app.sandbox, { savedDecks: app.savedDecks, favoriteCardIds: app.favoriteCardIds, cardWorkStatuses: app.cardWorkStatuses }) : app.mode === "card-viewer" ? renderCardViewerPage(app.cardViewer, { cardMarkup, favoriteCardIds: app.favoriteCardIds, cardWorkStatuses: app.cardWorkStatuses, rerender: render }) : app.mode === "duel" ? renderDuel(renderedDuelView) : app.mode === "deck-builder" ? renderDeckBuilder() : app.mode === "training" ? renderTraining() : app.mode === "ladder" ? renderLadder() : app.mode === "settings" ? renderSettings() : renderResearch();
-  root.innerHTML = shell(content); installMenuScrollNavigation(root, app.mode, { navigate }); initSubmenuAtmosphere({ mode: app.mode, motionLevel: app.settings.motionLevel }); initDuelAtmosphere({ mode: app.mode, motionLevel: app.settings.motionLevel });
+  morphDom(root, shell(content)); installMenuScrollNavigation(root, app.mode, { navigate }); initSubmenuAtmosphere({ mode: app.mode, motionLevel: app.settings.motionLevel }); initDuelAtmosphere({ mode: app.mode, motionLevel: app.settings.motionLevel });
   const eventList = root.querySelector(".event-drawer-list"); if (eventList) eventList.scrollTop = app.duelEventLog.scrollTop;
   
   if (app.mode === "home") {

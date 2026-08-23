@@ -1,44 +1,18 @@
 import { ParticleSystem } from "./particles.js";
 
 let duelParticleSystems = [];
-let currentDuelMode = null;
-let currentMotionLevel = null;
 
 export function initDuelAtmosphere({ mode, motionLevel }) {
-  const systemReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
-  const isDuelActive = mode === "duel" && motionLevel === "full" && !systemReducedMotion;
-
-  if (!isDuelActive) {
-    if (duelParticleSystems.length > 0) {
-      duelParticleSystems.forEach((system) => system.destroy());
-      duelParticleSystems = [];
-    }
-    currentDuelMode = mode;
-    currentMotionLevel = motionLevel;
-    return;
-  }
-
-  const dustCanvas = document.getElementById("duel-particles-dust");
-  const embersCanvas = document.getElementById("duel-particles-embers");
-  if (
-    currentDuelMode === mode &&
-    currentMotionLevel === motionLevel &&
-    duelParticleSystems.length === 2 &&
-    dustCanvas &&
-    embersCanvas
-  ) {
-    return;
-  }
-
   duelParticleSystems.forEach((system) => system.destroy());
   duelParticleSystems = [];
-  currentDuelMode = mode;
-  currentMotionLevel = motionLevel;
+
+  const systemReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  if (mode !== "duel" || motionLevel !== "full" || systemReducedMotion) return;
 
   const compact = window.innerWidth < 720;
   const layers = [
     {
-      canvas: dustCanvas,
+      canvas: document.getElementById("duel-particles-dust"),
       options: {
         type: "gold",
         density: compact ? 14 : 34,
@@ -50,7 +24,7 @@ export function initDuelAtmosphere({ mode, motionLevel }) {
       },
     },
     {
-      canvas: embersCanvas,
+      canvas: document.getElementById("duel-particles-embers"),
       options: {
         type: "fire",
         density: compact ? 7 : 18,
