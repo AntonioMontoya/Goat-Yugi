@@ -5,6 +5,7 @@ import { LearnedPolicyBot } from "./learned-policy.js";
 import { NEXO2_ALGORITHM, StrategicBot } from "./strategic.js";
 import { parseSpecialistBotId, specialistSpec } from "./specialists.js";
 import { NEXO2_ALL_DECK_IDS, NEXO2_ALL_OPPONENT_DECK_IDS, NEXO2_BOT_ID, NEXO2_DECK_IDS, NEXO2_OPPONENT_DECK_IDS, isNexo2Deck, isNexo2OpponentDeck, isNexo2MatchupAllowed } from "./nexo2-contract.js";
+import { getNexo2DeckModel, registerNexo2DeckModel } from "./nexo2-deck-models.js";
 import NEXO_PATCH_V1 from "../../artifacts/nexo-patch-v1/candidate.json" with { type: "json" };
 // Universal candidate trained across the complete 113-deck catalog.  It is
 // intentionally published as a candidate until the OCGCore validity gate is
@@ -51,10 +52,10 @@ const DEFAULT_BOTS = [
     ...NEXO2_MODEL,
     id: NEXO2_BOT_ID,
     botId: NEXO2_BOT_ID,
-    name: "Nexo 2 · Universal 113 mazos",
+    name: "Nexo 2",
     deckId: NEXO2_ALL_DECK_IDS[0],
     profile: "generic",
-    style: "Creencias públicas + política/valor",
+    style: "Creencias públicas + política/valor (v5)",
     difficulty: "expert",
     intelligence: 0,
     skillMmr: 0,
@@ -128,7 +129,8 @@ export function createBotIdentity({ id = null, name = "Bot", deckId = "goat-cont
 export function getBotSpec(botId = UNIVERSAL_BOT_ID) {
   const specialist = parseSpecialistBotId(botId);
   if (specialist) return clone(specialistSpec(specialist.deckId, specialist.personaId));
-  const found = DEFAULT_BOTS.find((bot) => bot.id === botId);
+  const aliasId = botId === "nexo2" ? NEXO2_BOT_ID : botId;
+  const found = DEFAULT_BOTS.find((bot) => bot.id === aliasId);
   return clone(found ?? DEFAULT_BOTS[0]);
 }
 
@@ -344,11 +346,24 @@ export function createBotForDeck({ botId = UNIVERSAL_BOT_ID, deckId = null, deck
   const difficultyConfig = BOT_DIFFICULTIES[resolvedDifficulty];
   const resolvedDeckId = deckId ?? source.deckId ?? source.profile ?? "goat-control";
   const resolvedProfile = deckId && deckId !== source.deckId ? resolvedDeckId : source.profile ?? resolvedDeckId;
+  let effectiveSource = source;
   if ((source.botId ?? source.id ?? botId) === NEXO2_BOT_ID || source.algorithm === NEXO2_ALGORITHM) {
     if (!isNexo2Deck(resolvedDeckId)) throw new Error(`Nexo 2 sólo puede pilotar uno de los ${NEXO2_ALL_DECK_IDS.length} mazos del catálogo universal.`);
+    if (!manifest) {
+      const specialized = getNexo2DeckModel(resolvedDeckId);
+      if (specialized) {
+        effectiveSource = {
+          ...source,
+          ...specialized,
+          policyWeights: { ...(source.policyWeights ?? {}), ...(specialized.policyWeights ?? {}) },
+          decisionConfig: { ...(source.decisionConfig ?? {}), ...(specialized.decisionConfig ?? {}) },
+          neuralModel: specialized.neuralModel ?? source.neuralModel,
+        };
+      }
+    }
   }
-  if (["ocgcore-public-strategic-v3", "ocgcore-public-strategic-v4", NEXO2_ALGORITHM].includes(source.algorithm)) {
-    return new StrategicBot({ ...source, id: source.id ?? botId, botId: source.botId ?? source.id ?? botId, deckId: resolvedDeckId, profile: resolvedProfile, deck, seed });
+  if (["ocgcore-public-strategic-v3", "ocgcore-public-strategic-v4", NEXO2_ALGORITHM].includes(effectiveSource.algorithm)) {
+    return new StrategicBot({ ...effectiveSource, id: effectiveSource.id ?? botId, botId: effectiveSource.botId ?? effectiveSource.id ?? botId, deckId: resolvedDeckId, profile: resolvedProfile, deck, seed });
   }
   if (source.algorithm === "ocgcore-legal-random") {
     const random = new CoreRandomBot({ id: source.id ?? botId, botId: source.botId ?? source.id ?? botId, name: source.name ?? "Legal Random", seed, profile: resolvedProfile, deckId: resolvedDeckId, style: source.style ?? "Baseline legal", state: source.state ?? BOT_STATES.VALIDATED });
@@ -406,3 +421,4 @@ export function hydrateBot(manifest = {}) {
 }
 
 export { COMPATIBILITY as BOT_COMPATIBILITY };
+export { getNexo2DeckModel, registerNexo2DeckModel } from "./nexo2-deck-models.js";

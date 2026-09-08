@@ -69,7 +69,7 @@ export function menuMarkup({ activeMode, open, escapeHtml }) {
     </nav>`;
 }
 
-export function bindMenuKeyboard(root = document) {
+export function bindMenuKeyboard(root = document, { signal } = {}) {
   const menu = root.querySelector("#main-menu");
   const items = [...(menu?.querySelectorAll("[data-mode]") ?? [])];
   items.forEach((item, index) => item.addEventListener("keydown", (event) => {
@@ -89,5 +89,5 @@ export function bindMenuKeyboard(root = document) {
     if (target === null) return;
     event.preventDefault();
     items[target]?.focus({ preventScroll: true });
-  }));
+  }, { signal }));
 }

@@ -3,11 +3,23 @@ import { ParticleSystem } from "./particles.js";
 let duelParticleSystems = [];
 
 export function initDuelAtmosphere({ mode, motionLevel }) {
+  const systemReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  if (mode !== "duel" || motionLevel !== "full" || systemReducedMotion) {
+    if (duelParticleSystems.length > 0) {
+      duelParticleSystems.forEach((system) => system.destroy());
+      duelParticleSystems = [];
+    }
+    return;
+  }
+
+  const dustCanvas = document.getElementById("duel-particles-dust");
+  const embersCanvas = document.getElementById("duel-particles-embers");
+  if (duelParticleSystems.length > 0 && dustCanvas?.isConnected && embersCanvas?.isConnected) {
+    return;
+  }
+
   duelParticleSystems.forEach((system) => system.destroy());
   duelParticleSystems = [];
-
-  const systemReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
-  if (mode !== "duel" || motionLevel !== "full" || systemReducedMotion) return;
 
   const compact = window.innerWidth < 720;
   const layers = [

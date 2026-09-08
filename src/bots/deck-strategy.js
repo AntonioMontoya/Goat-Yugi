@@ -101,6 +101,62 @@ const DECK_PLANS = Object.freeze({
     spendAfterTurn: { interaction: 3 }, goals: ["protect life points", "assemble burn", "force a short clock"],
     scenarios: ["burn-engine", "protect-clock", "preserve-final-damage"],
   },
+  "deckout": {
+    id: "deckout-v1", archetype: "Mill / Deck-out", identity: "Vacía el Deck rival con volteos masivos de Needle Worm y Jars; no busca combate.",
+    objective: "Acelera el vaciado del Deck rival a cero cartas protegiendo los ciclos de volteo y manteniendo un candado total.",
+    playstyle: "Mill reactivo y bloqueo total",
+    keyCards: ["Needle Worm", "Morphing Jar #2", "Cyber Jar", "Book of Moon", "Book of Taiyou", "Gravity Bind", "Messenger of Peace"],
+    counterplay: "Elimina su retaguardia para romper los candados de ataque y usa Nobleman of Crossout para desterrar Needle Worm antes de que resuelva su volteo.",
+    counterplayRoles: ["backrow-removal", "target-face-down-monster", "negate", "tempo"],
+    weaknesses: ["Depende absolutamente de que sus monstruos de volteo sobrevivan boca abajo o sean volteados por Book of Taiyou."],
+    priorityRoles: ["mill", "flip", "stall", "defense", "draw", "engine"],
+    roleWeights: { mill: 2.6, flip: 2.2, stall: 1.8, defense: 1.5, draw: 1.2, interaction: 1.1, threat: -1.0, lethal: 0 },
+    openingRoles: ["flip", "stall", "defense"], keepRoles: ["flip", "stall", "defense"],
+    spendAfterTurn: { stall: 0 }, goals: ["set mill monster", "establish battle lock", "loop flip triggers", "deck out opponent"],
+    scenarios: ["mill-set", "battle-lock", "flip-recycle", "deckout-victory"],
+  },
+  "lockdown-burn": {
+    id: "lockdown-burn-v1", archetype: "Burn / Lockdown", identity: "Bloquea la batalla con Gravity Bind y quema con Lava Golem, Stealth Bird y Wave-Motion Cannon.",
+    objective: "Impide los ataques rivales mientras acumula daño directo hasta aniquilar los LP del oponente.",
+    playstyle: "Lockdown continuo y reloj de daño directo",
+    keyCards: ["Lava Golem", "Wave-Motion Cannon", "Stealth Bird", "Des Koala", "Gravity Bind", "Level Limit - Area B", "Messenger of Peace"],
+    counterplay: "Conserva removal masivo o puntual para Gravity Bind y Level Limit; destruye Wave-Motion Cannon antes de que alcance daño letal.",
+    counterplayRoles: ["backrow-removal", "life-preservation", "negate", "tempo"],
+    weaknesses: ["Sufre enormemente si el rival elimina su retaguardia de bloqueo continuo antes de acumular suficiente daño."],
+    priorityRoles: ["burn", "stall", "defense", "draw", "engine", "interaction"],
+    roleWeights: { burn: 2.5, stall: 2.0, defense: 1.6, draw: 1.2, interaction: 1.1, threat: 0.2, lethal: 1.8 },
+    openingRoles: ["stall", "defense", "burn"], keepRoles: ["burn", "stall", "defense"],
+    spendAfterTurn: { burn: 0 }, goals: ["lock battle phase", "tribute opposing threats for lava golem", "charge wave motion cannon", "close with direct burn"],
+    scenarios: ["lockdown-setup", "burn-pressure", "golem-tribute", "wave-motion-lethal"],
+  },
+  "p-a-c-m-a-n": {
+    id: "p-a-c-m-a-n-v1", archetype: "Control / Volteo", identity: "Cicla monstruos que se voltean para destruir cartas y se auto-tapan en defensa cada turno.",
+    objective: "Destruye cartas rivales cada turno con Swarm of Scarabs/Locusts y Medusa Worm mientras se mantiene protegido boca abajo.",
+    playstyle: "Control de volteo cíclico y desgaste",
+    keyCards: ["Des Lacooda", "Golem Sentry", "Medusa Worm", "Swarm of Locusts", "Swarm of Scarabs", "Book of Moon", "Gravity Bind"],
+    counterplay: "Ataca sus monstruos en cuanto se volteen boca arriba o utiliza removal de efecto antes de que puedan activar su efecto de auto-set.",
+    counterplayRoles: ["monster-removal", "backrow-removal", "avoid-blind-attacks", "tempo"],
+    weaknesses: ["Sus monstruos tienen estadísticas bajas y dependen de Gravity Bind o Book of Moon para sobrevivir entre turnos."],
+    priorityRoles: ["flip", "interaction", "defense", "stall", "draw", "engine"],
+    roleWeights: { flip: 2.2, interaction: 1.8, defense: 1.5, stall: 1.4, draw: 1.3, threat: 0.4, lethal: 0.8 },
+    openingRoles: ["flip", "stall", "defense"], keepRoles: ["flip", "interaction", "stall"],
+    spendAfterTurn: { interaction: 1 }, goals: ["set pacman monster", "flip to remove opposing cards", "reset face-down in defense", "grind out opponent"],
+    scenarios: ["pacman-opening", "removal-trigger", "auto-set-defense", "attrition-victory"],
+  },
+  "empty-jar": {
+    id: "empty-jar-v1", archetype: "Combo / Deck-out", identity: "Fuerza un OTK de vaciado de mazo en un solo turno ciclando Morphing Jar y Card Destruction.",
+    objective: "Activa Morphing Jar repetidamente con Book of Moon, Book of Taiyou y The Shallow Grave hasta que el rival no pueda robar.",
+    playstyle: "OTK de vaciado de mazo en un solo turno",
+    keyCards: ["Morphing Jar", "Cyber Jar", "Card Destruction", "Book of Moon", "Book of Taiyou", "The Shallow Grave", "Giant Trunade"],
+    counterplay: "Corta la cadena de robo con negación rápida o descarta sus piezas clave con Delinquent Duo o Trap Dustshoot.",
+    counterplayRoles: ["negate", "hand-disruption", "interaction", "graveyard-denial"],
+    weaknesses: ["Combo muy frágil: si Morphing Jar es desterrado o negado sin recuperación, el mazo colapsa."],
+    priorityRoles: ["combo", "draw", "flip", "engine", "search"],
+    roleWeights: { combo: 2.6, draw: 2.2, flip: 2.0, engine: 1.8, search: 1.5, defense: 0.6, threat: -1.0 },
+    openingRoles: ["draw", "combo", "search"], keepRoles: ["combo", "flip"],
+    spendAfterTurn: { combo: 0 }, goals: ["find morphing jar", "clear backrow with trunade", "loop flip triggers", "instant deckout"],
+    scenarios: ["jar-search", "loop-activation", "card-destruction-finish"],
+  },
   "reasoning-gate": {
     id: "reasoning-gate-v1", archetype: "Combo", identity: "Monta una secuencia de invocación y evita gastar piezas de combo fuera de ventana.",
     objective: "Monta una secuencia de invocación y conserva las piezas de combo hasta la ventana decisiva.",
@@ -245,7 +301,28 @@ export function semanticRolesForCard(card) {
   const discardCost = costClause.match(/discard (\d+|a) card/);
   if (discardCost) roles.add(`cost-discard-${discardCost[1] === "a" ? 1 : discardCost[1]}`);
   if (/tribute (?:\d+|this|a) (?:monster|card)/.test(costClause)) roles.add("cost-tribute");
-  if (/you cannot normal summon or set/.test(text)) roles.add("summon-restriction");
+  if (/you cannot (?:normal )?summon (?:or set|other monsters)/.test(text)) roles.add("summon-restriction");
+  if (card?.class === "Spirit" || /returns to (?:its owner's|the) hand during the End Phase/.test(text)) roles.add("spirit");
+  const name = normalize(card?.name);
+  if (card?.effect === "SINISTER_SERPENT" || name === "sinister serpent" || /standby phase.*graveyard.*add .*hand/.test(text)) {
+    roles.add("sinister-engine");
+    roles.add("infinite-recovery");
+    roles.add("discard-fodder");
+  }
+  if (name === "delinquent duo" || /opponent.*discards? .*card .*from .*hand/.test(text)) {
+    roles.add("hand-destruction");
+    roles.add("advantage");
+    roles.add("trinity");
+  }
+  if (name === "pot of greed" || (/draw 2 cards\b/.test(text) && kind === "SPELL")) {
+    roles.add("trinity");
+  }
+  if (name === "graceful charity" || (/draw 3 cards.*discard 2/.test(text) && kind === "SPELL")) {
+    roles.add("trinity");
+  }
+  if (roles.has("flip") && (/spell.*graveyard.*add.*hand/.test(text) || name === "magician of faith")) {
+    roles.add("spell-recovery");
+  }
   const attribute = normalize(card?.attribute);
   if (attribute === "light") roles.add("light");
   if (attribute === "dark") roles.add("dark");

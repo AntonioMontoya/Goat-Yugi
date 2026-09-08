@@ -341,12 +341,12 @@ export async function runNexo2Pilot({
     decisionConfig: {
       ...(base.decisionConfig ?? {}),
       ...(initialModel?.decisionConfig ?? {}),
-      beliefScale: Number(initialModel?.decisionConfig?.beliefScale ?? 0.4),
-      neuralScale: Number(initialModel?.decisionConfig?.neuralScale ?? 0.7),
-      valueScale: Number(initialModel?.decisionConfig?.valueScale ?? 0.25),
-      riskAversion: Number(initialModel?.decisionConfig?.riskAversion ?? 0.15),
-      viabilityMargin: Number(initialModel?.decisionConfig?.viabilityMargin ?? 1.0),
-      maxBaseRegret: Number(initialModel?.decisionConfig?.maxBaseRegret ?? 0.6),
+      beliefScale: Number(initialModel?.decisionConfig?.beliefScale ?? 0.75),
+      neuralScale: Number(initialModel?.decisionConfig?.neuralScale ?? 1.35),
+      valueScale: Number(initialModel?.decisionConfig?.valueScale ?? 0.6),
+      riskAversion: Number(initialModel?.decisionConfig?.riskAversion ?? 0.25),
+      viabilityMargin: Number(initialModel?.decisionConfig?.viabilityMargin ?? 2.0),
+      maxBaseRegret: Number(initialModel?.decisionConfig?.maxBaseRegret ?? 1.2),
     },
     training: true,
     exploration: Number(initialModel?.exploration ?? 0.12),
@@ -370,11 +370,13 @@ export async function runNexo2Pilot({
     const batch = await Promise.all(jobs);
     for (const item of batch) {
       const outcome = addRun(trainingRaw, item);
-      const reward = outcome === "win" ? 1 : outcome === "loss" || outcome === "invalid" ? -1 : 0;
-      learner.learnFromEpisode(item.episode, reward);
+      const reward = outcome === "win" ? 1 : outcome === "loss" ? -1 : 0;
+      if (item.validity?.valid) {
+        learner.learnFromEpisode(item.episode, reward);
+      }
       trainingCandidateAudits.push(item.candidateAudit);
       trainingBaseAudits.push(item.baseAudit);
-      fights.push(compactFight(item, outcome, reward));
+      fights.push(compactFight(item, outcome, item.validity?.valid ? reward : null));
       decisionLog.push(...item.decisions);
     }
     const completed = Math.min(totalTraining, cursor + batch.length);

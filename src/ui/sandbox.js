@@ -89,11 +89,12 @@ function cardImageFileName(name) {
     .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
     .replace(/[. ]+$/g, "")
     .trim();
-  return `${cleaned || "unnamed-card"}.jpg`;
+  return `${cleaned || "unnamed-card"}.webp`;
 }
 
 function cardImagePath(card) {
-  return `./goat-card-images/${encodeURIComponent(card?.imageFile ?? cardImageFileName(card?.name))}`;
+  const file = String(card?.imageFile ?? cardImageFileName(card?.name)).replace(/\.jpg$/i, ".webp");
+  return `./goat-card-images/${encodeURIComponent(file)}`;
 }
 
 function esc(value) {

@@ -302,7 +302,7 @@ export class CoreRandomBot {
       }
       case OcgMessageType.ANNOUNCE_NUMBER: {
         const options = message.options ?? [];
-        return options.length ? { ...base, value: Number(options[randomInt(this, options.length)]) } : base;
+        return options.length ? { ...base, value: randomInt(this, options.length) } : base;
       }
       default:
         return base;

@@ -134,7 +134,113 @@ function comboValue(knowledge, message, response, observation, memory) {
   if (roles.has("multi-attack") && ["summon", "special-summon"].includes(role)) value += handRoles.has("equip") || handRoles.has("attack-boost") ? 5 : -1;
   if (memory?.commitments?.delayedWin && (roles.has("stall") || roles.has("defense") || roles.has("negate"))) value += 3;
   if (memory?.commitments?.delayedWin && ["battle-phase", "attack"].includes(role)) value -= 1.5;
+
+  // Bucle Thousand-Eyes Restrict + Tsukuyomi
+  const ownHasTer = (observation.ownMonsters ?? []).some((m) => {
+    const name = String(m.name ?? "").toLowerCase();
+    return name.includes("thousand-eyes restrict") || (Number(m.attack ?? 0) > 0 && m.isToken !== true && Number(m.defense ?? 0) === 0);
+  });
+  if (ownHasTer) {
+    const isTsukuyomi = cards.some((c) => String(c.name ?? "").toLowerCase().includes("tsukuyomi"));
+    if (isTsukuyomi && role === "summon") value += 6.0;
+  }
   return value;
+}
+
+function matchupTacticalAdjustment(knowledge, message, response, { observation = {}, memory = {}, opponentModel = null } = {}) {
+  if (!opponentModel?.ready && !observation.opponentArchetype) return 0;
+  const oppArchetype = String(opponentModel?.top?.archetype ?? observation.opponentArchetype ?? "").toLowerCase();
+  const oppDeckId = String(opponentModel?.top?.deckId ?? "").toLowerCase();
+  const confidence = Math.max(0.4, Number(opponentModel?.confidence) || 0.6);
+
+  const role = strategyActionRole(message, response);
+  const cards = actionCardEntries(knowledge, message, response);
+  const roles = new Set(cards.flatMap((card) => card.roles ?? []));
+  const cardNames = cards.map((c) => String(c.name ?? "").toLowerCase());
+
+  let value = 0;
+
+  // 1. Matchup against Burn / Lockdown
+  if (/burn|lockdown/i.test(oppArchetype) || /burn/i.test(oppDeckId)) {
+    const ownMonsters = Number(observation.ownMonsterCount ?? observation.ownMonsters?.length ?? 0);
+    if (ownMonsters >= 2) {
+      if (["summon", "special-summon"].includes(role)) value -= 3.5;
+      if (role === "monster-set") value -= 2.0;
+    }
+    const hasFaceUpContinuous = (observation.opponentBackrow ?? []).some((entry) => entry?.faceUp === true);
+    if (hasFaceUpContinuous && (roles.has("backrow-removal") || roles.has("removal"))) {
+      if (["activate", "chain"].includes(role)) value += 4.5;
+    }
+    if (roles.has("cost-half-lp") || roles.has("cost-lp-1000") || roles.has("cost-lp-800")) {
+      value -= 4.0;
+    }
+  }
+
+  // 2. Matchup against Chaos (Chaos Turbo / Chaos Control)
+  if (/chaos/i.test(oppArchetype) || /chaos/i.test(oppDeckId)) {
+    let oppLight = 0;
+    let oppDark = 0;
+    for (const entry of observation.opponentGrave ?? []) {
+      const sem = publicCardSemantics(codeOf(entry));
+      if (sem?.attribute === "LIGHT") oppLight += 1;
+      if (sem?.attribute === "DARK") oppDark += 1;
+    }
+    const oppChaosReady = oppLight >= 1 && oppDark >= 1;
+    if (oppChaosReady && (roles.has("removal") || roles.has("negate") || roles.has("position"))) {
+      const currentChain = [...(observation.publicChain ?? [])].reverse().find((entry) => Number(entry.controller) !== Number(observation.player));
+      const currentOpposing = publicCardSemantics(currentChain?.code);
+      const isLowThreat = currentOpposing && (currentOpposing.roles?.includes("recruiter") || (Number(currentOpposing.atk) < 1500 && !currentOpposing.roles?.includes("boss")));
+      if (isLowThreat) {
+        value -= 3.0;
+      }
+      const maxOppAtk = Math.max(0, ...(observation.opponentMonsters ?? []).map((m) => Number(m.attack ?? m.atk ?? 0)));
+      if (maxOppAtk >= 2300) {
+        value += 3.5;
+      }
+    }
+  }
+
+  // 3. Matchup against Flip Control / Gravekeeper
+  if (/flip|gravekeeper/i.test(oppArchetype) || /flip|gravekeeper/i.test(oppDeckId)) {
+    const hasOppFaceDown = (observation.opponentMonsters ?? []).some((m) => !faceUp(m));
+    if (hasOppFaceDown) {
+      if (roles.has("remove-facedown") || cardNames.includes("nobleman of crossout")) {
+        if (["activate", "chain"].includes(role)) value += 5.0;
+      }
+      if (role === "attack" || message.type === OcgMessageType.SELECT_CARD) {
+        const attacker = cards[0];
+        if (attacker && Number(attacker.atk) < 2000) {
+          value -= 2.0;
+        }
+      }
+    }
+  }
+
+  // 4. Matchup against Warrior / Aggro
+  if (/warrior|aggro/i.test(oppArchetype) || /warrior|aggro/i.test(oppDeckId)) {
+    const ownIsAggro = /warrior|aggro|beatdown/i.test(String(knowledge?.archetype ?? knowledge?.deckId ?? ""));
+    if (!ownIsAggro && role === "monster-set" && cards.some((c) => Number(c.def) >= 1600 || c.roles?.includes("defense"))) {
+      value += 2.5;
+    }
+    if (ownIsAggro && ["summon", "special-summon", "attack"].includes(role)) {
+      value += 2.0;
+    }
+    if (role === "chain" && (roles.has("battle-removal") || roles.has("removal"))) {
+      value += 2.0;
+    }
+  }
+
+  // 5. Matchup against Goat Control
+  if (/goat-control/i.test(oppDeckId) || (/control/i.test(oppArchetype) && !/flip/i.test(oppArchetype))) {
+    const hasTokens = (observation.opponentMonsters ?? []).some((m) => m.isToken || (Number(m.attack) === 0 && Number(m.defense) === 0));
+    if (hasTokens) {
+      if (roles.has("piercing") || roles.has("multi-attack") || cardNames.includes("airknight parshath") || cardNames.includes("asura priest")) {
+        if (["summon", "special-summon", "attack"].includes(role)) value += 4.5;
+      }
+    }
+  }
+
+  return value * Math.min(1.2, confidence);
 }
 
 /** Tactical corrections that depend on the concrete OCGCore prompt. */
@@ -143,5 +249,6 @@ export function tacticalResponseAdjustment(knowledge, message, response, { obser
   if (message.type === OcgMessageType.SELECT_CARD) value += battleTargetValue(knowledge, message, response, observation, memory, opponentModel);
   value += chainValue(knowledge, message, response, observation, memory);
   value += comboValue(knowledge, message, response, observation, memory);
+  value += matchupTacticalAdjustment(knowledge, message, response, { observation, memory, opponentModel });
   return value;
 }

@@ -34,25 +34,17 @@ export function initIpadTouchController(options = {}) {
   window.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
   window.addEventListener("pointerdown", unlockAudio, { once: true, passive: true });
 
-  // 2. Prevent double-tap zoom on UI buttons/cards in iOS Safari
-  let lastTap = 0;
-  document.addEventListener("touchend", (event) => {
-    const currentTime = Date.now();
-    const tapLength = currentTime - lastTap;
-    const target = event.target;
-    if (tapLength < 300 && tapLength > 0 && !["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName)) {
-      event.preventDefault();
-    }
-    lastTap = currentTime;
-  }, { passive: false });
+  // 2. Prevent zoom on fast double-tap in iOS Safari without suppressing click events
+  // Note: Zoom prevention is handled via CSS touch-action: manipulation and viewport user-scalable=no.
+  // We explicitly do NOT call event.preventDefault() here as it cancels synthetic click events in WebKit.
 
   // 3. Long-press on cards to inspect details (420ms)
   let holdVisualTimer = null;
   document.addEventListener("pointerdown", (event) => {
-    const cardEl = event.target.closest?.("[data-card-uid], [data-card-id]");
+    const cardEl = event.target.closest?.("[data-card-inspect], [data-card-uid], [data-card-id]");
     if (!cardEl) return;
 
-    const cardId = cardEl.dataset.cardId || cardEl.dataset.cardUid;
+    const cardId = cardEl.dataset.cardInspect || cardEl.dataset.cardUid || cardEl.dataset.cardId;
     touchStartPos = { x: event.clientX, y: event.clientY };
     activeTouchCard = cardEl;
 
@@ -103,13 +95,25 @@ export function initIpadTouchController(options = {}) {
     }
   }, { passive: true });
 
-  // 4. Tap outside to clear card popover or selection
+  // 4. Tap outside to clear card popover or selection (on release to avoid premature render during gestures)
+  let tapOutsideStartPos = null;
   document.addEventListener("pointerdown", (event) => {
-    if (context.app?.mode !== "duel" || isClearingSelection) return;
-    const isCard = event.target.closest?.(
-      "[data-card-uid], [data-card-id], .card, .card-action-popover, .duel-card-inspector, .phase-command, .response-option, .duel-menu, button, select"
+    if (context.app?.mode !== "duel") return;
+    const isInteractive = event.target.closest?.(
+      "[data-card-inspect], [data-card-uid], [data-card-id], [data-action-id], .card, .card-action-popover, [data-testid='card-action-popover'], [data-testid='card-inspector'], .duel-card-inspector, .phase-command, .response-option, .duel-menu, .board-card-button, .hand-card-button, .board-card-wrap, .hand-card-wrap, button, select, input, a"
     );
-    if (!isCard && (context.app?.selectedCardUid !== null || context.app?.inspectedCard !== null)) {
+    if (!isInteractive) {
+      tapOutsideStartPos = { x: event.clientX, y: event.clientY };
+    } else {
+      tapOutsideStartPos = null;
+    }
+  }, { passive: true });
+
+  document.addEventListener("pointerup", (event) => {
+    if (!tapOutsideStartPos || context.app?.mode !== "duel" || isClearingSelection) return;
+    const dist = Math.hypot(event.clientX - tapOutsideStartPos.x, event.clientY - tapOutsideStartPos.y);
+    tapOutsideStartPos = null;
+    if (dist < 12 && (context.app?.selectedCardUid !== null || context.app?.inspectedCard !== null)) {
       if (typeof context.onClearSelection === "function") {
         isClearingSelection = true;
         try {

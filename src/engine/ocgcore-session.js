@@ -1106,20 +1106,6 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
               guard += 1;
               continue;
             }
-            const isPhaseFreePriority = request.type === OcgMessageType.SELECT_CHAIN
-              && !request.forced
-              && timingWindow?.kind === "phase-priority"
-              && ["MAIN_1", "MAIN_2", "BATTLE"].includes(this.phase)
-              && player === this.turnPlayer;
-            if (isPhaseFreePriority) {
-              const decline = requestActions.find((action) => action.coreResponse?.index === null);
-              if (decline) {
-                this.duel.respond(decline.coreResponse);
-                this.decisionCount += 1;
-                guard += 1;
-                continue;
-              }
-            }
             this.pending = request;
             this.botPending = false;
             break;
@@ -1135,20 +1121,6 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
             this.decisionCount += 1;
             guard += 1;
             continue;
-          }
-          const isPhaseFreePriority = request.type === OcgMessageType.SELECT_CHAIN
-            && !request.forced
-            && timingWindow?.kind === "phase-priority"
-            && ["MAIN_1", "MAIN_2", "BATTLE"].includes(this.phase)
-            && player === this.turnPlayer;
-          if (isPhaseFreePriority) {
-            const decline = requestActions.find((action) => action.coreResponse?.index === null);
-            if (decline) {
-              this.duel.respond(decline.coreResponse);
-              this.decisionCount += 1;
-              guard += 1;
-              continue;
-            }
           }
           if (this.pacedBot) {
             this.pending = request;

@@ -1,3 +1,5 @@
+import { isOpponentBackrowProbed, evaluateBackrowThreats } from "./negative-inference.js";
+
 const RESPONSE_ROLES = Object.freeze([
   "interaction", "monster-removal", "backrow-removal", "negate", "swing",
   "position", "defense", "stall", "flip",
@@ -23,21 +25,32 @@ function visibleRoleSet(knowledge, values = []) {
   return new Set(values.flatMap((entry) => knowledge?.byRuntimeCode?.[String(Number(entry?.runtimeCode ?? entry?.code) || 0)]?.roles ?? []));
 }
 
-function publicResponseBeliefs(observation = {}, opponentModel = null) {
+function publicResponseBeliefs(observation = {}, opponentModel = null, negativeInference = null) {
   const risks = opponentModel?.risks ?? {};
   const backrow = Math.max(0, Number(observation.opponentBackrowCount ?? observation.opponentBackrow?.length) || 0);
   const hand = Math.max(0, Number(observation.opponentHandSize) || 0);
   const evidence = opponentModel?.ready ? Math.max(0.25, Number(opponentModel.confidence) || 0) : 0.25;
   const inferred = (role) => Math.min(1, Number(risks[role]) || 0) * evidence;
-  const backrowPrior = 1 - Math.pow(0.84, backrow);
+
+  // Inferencia negativa de backrow testeado y cartas limitadas agotadas
+  const isBackrowProbed = negativeInference ? isOpponentBackrowProbed(negativeInference, observation) : false;
+  const threats = negativeInference ? evaluateBackrowThreats(negativeInference, observation) : null;
+  const backrowDamping = isBackrowProbed ? 0.35 : 1.0;
+  const backrowPrior = (1 - Math.pow(0.84, backrow)) * backrowDamping;
   const handPrior = 1 - Math.pow(0.965, hand);
+  const oppGrave = observation.opponentGrave ?? [];
+  const oppChaosBonus = (oppGrave.length >= 2 && String(opponentModel?.top?.archetype ?? "").toLowerCase().includes("chaos")) ? 0.15 : 0;
+
+  const mirrorForceDead = threats && threats.mirrorForcePossible === false ? -0.8 : 0;
+  const torrentialDead = threats && threats.torrentialPossible === false ? -0.6 : 0;
+
   return {
-    interaction: clamp(logistic(-2.25 + backrowPrior * 2.2 + handPrior * 0.8 + inferred("interaction") * 4) - 0.08, 0.02, 0.82),
-    removal: clamp(logistic(-2.7 + backrowPrior * 2 + inferred("monster-removal") * 5 + inferred("removal") * 3) - 0.06, 0.01, 0.75),
+    interaction: clamp(logistic(-2.25 + backrowPrior * 2.2 + handPrior * 0.8 + inferred("interaction") * 4 + oppChaosBonus) - 0.08, 0.02, 0.82),
+    removal: clamp(logistic(-2.7 + backrowPrior * 2 + inferred("monster-removal") * 5 + inferred("removal") * 3 + oppChaosBonus * 1.5 + mirrorForceDead) - 0.06, 0.01, 0.75),
     negate: clamp(logistic(-3.1 + backrowPrior * 1.7 + inferred("negate") * 6) - 0.04, 0.005, 0.62),
-    sweep: clamp(logistic(-3.4 + handPrior * 1.3 + inferred("swing") * 6) - 0.03, 0.005, 0.58),
+    sweep: clamp(logistic(-3.4 + handPrior * 1.3 + inferred("swing") * 6 + (backrow >= 2 ? 0.2 : 0) + torrentialDead) - 0.03, 0.005, 0.58),
     backrowRemoval: clamp(logistic(-3.0 + handPrior * 1.1 + inferred("backrow-removal") * 6) - 0.04, 0.005, 0.65),
-    battleTrick: clamp(logistic(-2.8 + backrowPrior * 2.4 + inferred("defense") * 3 + inferred("position") * 2) - 0.05, 0.01, 0.72),
+    battleTrick: clamp(logistic(-2.8 + backrowPrior * 2.4 + inferred("defense") * 3 + inferred("position") * 2 + (isBackrowProbed ? -1.5 : 0) + mirrorForceDead) - 0.05, 0.01, 0.72),
     flip: clamp(logistic(-2.9 + Number(observation.opponentMonsters?.filter((card) => card?.faceUp !== true).length ?? 0) * 0.75 + inferred("flip") * 5) - 0.04, 0.01, 0.7),
   };
 }
@@ -135,12 +148,17 @@ function optionalityValue(entry, observation) {
  * the second is an expectation over plausible public counterplay, followed by
  * a compact own follow-up estimate.
  */
-export function publicBeliefRollout(knowledge, entry, { observation = {}, memory = {}, opponentModel = null, riskAversion = 0.25 } = {}) {
-  const beliefs = publicResponseBeliefs(observation, opponentModel);
+export function publicBeliefRollout(knowledge, entry, { observation = {}, memory = {}, opponentModel = null, negativeInference = null, riskAversion = 0.25 } = {}) {
+  const beliefs = publicResponseBeliefs(observation, opponentModel, negativeInference);
   const counterplay = responseLoss(entry, observation, beliefs);
   const followUp = followUpValue(knowledge, entry, observation, memory);
   const optionality = optionalityValue(entry, observation);
-  const worstCase = counterplay.worst * clamp(riskAversion, 0, 1);
+  const ownPower = Number(observation.ownBoardPower) || 0;
+  const oppPower = Number(observation.opponentThreat) || 0;
+  const isAhead = ownPower > oppPower + 800 || (Number(observation.ownLp) || 0) > (Number(observation.opponentLp) || 0) + 2000;
+  const isBehind = oppPower > ownPower + 800 || (Number(observation.opponentLp) || 0) > (Number(observation.ownLp) || 0) + 2000;
+  const dynamicRiskAversion = isAhead ? Math.min(0.65, Number(riskAversion) * 1.4) : isBehind ? Math.max(0.08, Number(riskAversion) * 0.6) : Number(riskAversion);
+  const worstCase = counterplay.worst * clamp(dynamicRiskAversion, 0, 1);
   const value = clamp(followUp + optionality - counterplay.expected - worstCase, -6, 6);
   return {
     schema: 1,

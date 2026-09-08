@@ -221,7 +221,7 @@ export function candidateResponses(message, baseline, { deckKnowledge = null } =
       break;
     }
     case OcgMessageType.ANNOUNCE_NUMBER:
-      (message.options ?? []).forEach((value) => pushUnique(candidates, { type: OcgResponseType.ANNOUNCE_NUMBER, value: Number(value) }));
+      (message.options ?? []).forEach((_, index) => pushUnique(candidates, { type: OcgResponseType.ANNOUNCE_NUMBER, value: index }));
       break;
     case OcgMessageType.ANNOUNCE_RACE:
       {

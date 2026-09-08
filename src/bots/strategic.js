@@ -8,6 +8,7 @@ import { planStrategicResponses } from "./strategic-planner.js";
 import { reasonAboutResponses, rememberResponse } from "./state-evaluator.js";
 import { tacticalResponseAdjustment } from "./tactical-evaluator.js";
 import { GOAT_BASE_KNOWLEDGE_FINGERPRINT, GOAT_BASE_KNOWLEDGE_SCHEMA, baseKnowledgeFeatures, decisionTrainingSignal, normalizeGoatObservation, normalizeReasonCodes } from "./goat-base-knowledge.js";
+import { createNegativeInferenceTracker, updateNegativeInference } from "./negative-inference.js";
 
 export const STRATEGIC_DECISION_SCHEMA = 8;
 export const NEXO2_ALGORITHM = "ocgcore-public-belief-policy-value-v1";
@@ -33,19 +34,19 @@ export class StrategicBot {
     this.seed = Number(seed) || 1;
     this.randomState = this.seed >>> 0 || 1;
     this.policyWeights = { ...policyWeights };
-    this.nexo2Enabled = algorithm === NEXO2_ALGORITHM || neuralModel?.schema === 1 || neuralModel?.type === "public-action-mlp-policy-value";
+    this.nexo2Enabled = algorithm === NEXO2_ALGORITHM || [1, 2].includes(Number(neuralModel?.schema)) || neuralModel?.type === "public-action-mlp-policy-value";
     this.decisionConfig = {
       deckWeight: configuredNumber(decisionConfig.deckWeight, 1, 0, 3),
       stateWeight: configuredNumber(decisionConfig.stateWeight, 1.8, 0, 4),
       tacticalWeight: configuredNumber(decisionConfig.tacticalWeight, 0.5, 0, 3),
       planningScale: configuredNumber(decisionConfig.planningScale, 0.3, 0, 1.5),
-      policyScale: configuredNumber(decisionConfig.policyScale, 1.75, 0, 5),
-      viabilityMargin: configuredNumber(decisionConfig.viabilityMargin, 1.5, 0.5, 8),
-      beliefScale: configuredNumber(decisionConfig.beliefScale, this.nexo2Enabled ? 0.7 : 0, 0, 2.5),
-      neuralScale: configuredNumber(decisionConfig.neuralScale, this.nexo2Enabled ? 1.1 : 0, 0, 4),
-      valueScale: configuredNumber(decisionConfig.valueScale, this.nexo2Enabled ? 0.45 : 0, 0, 2),
+      policyScale: configuredNumber(decisionConfig.policyScale, this.nexo2Enabled ? 0.35 : 1.75, 0, 5),
+      viabilityMargin: configuredNumber(decisionConfig.viabilityMargin, this.nexo2Enabled ? 3.5 : 1.5, 0.5, 8),
+      beliefScale: configuredNumber(decisionConfig.beliefScale, this.nexo2Enabled ? 0.75 : 0, 0, 2.5),
+      neuralScale: configuredNumber(decisionConfig.neuralScale, this.nexo2Enabled ? 1.35 : 0, 0, 4),
+      valueScale: configuredNumber(decisionConfig.valueScale, this.nexo2Enabled ? 0.6 : 0, 0, 2),
       riskAversion: configuredNumber(decisionConfig.riskAversion, this.nexo2Enabled ? 0.25 : 0, 0, 1),
-      maxBaseRegret: configuredNumber(decisionConfig.maxBaseRegret, this.nexo2Enabled ? 0.75 : 8, 0, 8),
+      maxBaseRegret: configuredNumber(decisionConfig.maxBaseRegret, this.nexo2Enabled ? 3.5 : 8, 0, 8),
     };
     this.freezeLinearPolicy = freezeLinearPolicy === null ? this.nexo2Enabled : freezeLinearPolicy === true;
     this.training = training === true;
@@ -59,6 +60,7 @@ export class StrategicBot {
     this.decisions = 0;
     this.opponentModel = null;
     this.opponentEvidence = {};
+    this.negativeInferenceTracker = createNegativeInferenceTracker();
   }
 
   chooseResponse(message, context = {}) {
@@ -67,6 +69,7 @@ export class StrategicBot {
     const observation = normalizeGoatObservation({ ...(context.observation ?? {}), decisions: Number(context.observation?.decisions) || this.decisions }, message);
     this.opponentEvidence = updateOpponentEvidence(this.opponentEvidence, observation);
     this.opponentModel = inferOpponentDeck({ ...observation, opponentSeenCards: opponentEvidenceCards(this.opponentEvidence) });
+    this.negativeInferenceTracker = updateNegativeInference(this.negativeInferenceTracker, observation, message, null);
     const baseline = chooseCoreBotResponse(message, { ...context, profile: "generic", weights: {}, brave: false });
     const legal = candidateResponses(message, baseline, { deckKnowledge: this.deckKnowledge, observation });
     if (legal.length <= 1) {
@@ -90,7 +93,7 @@ export class StrategicBot {
     const rejectedByGuardrails = reasoned.rejectedByGuardrails ?? [];
     const evaluated = reasoned.map(({ candidate, analysis }) => {
       const coreScore = scoreDeckStrategy(this.deckKnowledge, message, candidate, { actionRole: strategyActionRole(message, candidate), observation, baseline: false }) * this.decisionConfig.deckWeight + Number(analysis.value) * this.decisionConfig.stateWeight;
-      const tactical = tacticalResponseAdjustment(this.deckKnowledge, message, candidate, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel });
+      const tactical = tacticalResponseAdjustment(this.deckKnowledge, message, candidate, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, negativeInference: this.negativeInferenceTracker });
       return { candidate, analysis, baseScore: coreScore + tactical * this.decisionConfig.tacticalWeight };
     });
     const planned = planStrategicResponses(this.deckKnowledge, message, evaluated, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, persona: this.persona, planningScale: this.decisionConfig.planningScale });
@@ -131,10 +134,10 @@ export class StrategicBot {
       if (this.opponentModel?.ready) features.push(`opponent:${this.opponentModel.top?.archetype}:action:${entry.role}`);
       const rawPolicyValue = features.reduce((sum, feature) => sum + Number(this.policyWeights[feature] ?? 0), 0) / Math.sqrt(Math.max(1, features.length));
       const linearPolicyValue = Math.tanh(rawPolicyValue) * this.decisionConfig.policyScale;
-      const belief = this.nexo2Enabled ? publicBeliefRollout(this.deckKnowledge, entry, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, riskAversion: this.decisionConfig.riskAversion }) : null;
+      const belief = this.nexo2Enabled ? publicBeliefRollout(this.deckKnowledge, entry, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, negativeInference: this.negativeInferenceTracker, riskAversion: this.decisionConfig.riskAversion }) : null;
       const beliefValue = Number(belief?.value) || 0;
       const plannedScore = Number(entry.score) + beliefValue * this.decisionConfig.beliefScale;
-      const nexo2Input = this.neuralPolicy ? nexo2FeatureVector(this.deckKnowledge, entry, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, belief }) : null;
+      const nexo2Input = this.neuralPolicy ? nexo2FeatureVector(this.deckKnowledge, entry, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, belief, negativeInference: this.negativeInferenceTracker }) : null;
       return { ...entry, networkIndex, features, linearPolicyValue, belief, beliefValue, basePlannerScore: Number(entry.score), plannedScore, nexo2Input };
     });
     const network = this.neuralPolicy ? this.neuralPolicy.scoreBatch(prepared.map((entry) => entry.nexo2Input)) : [];
@@ -175,7 +178,7 @@ export class StrategicBot {
       rejectedPolicyOverride = selected;
       selected = legacyBest;
     }
-    if (selected?.features) {
+    if (this.training && selected?.features) {
       const counterfactual = ranked.find((entry) => entry !== selected) ?? null;
       const learningPool = viable.length ? viable : ranked;
       this.trajectory.push({
@@ -216,6 +219,7 @@ export class StrategicBot {
       ],
     };
     rememberResponse(this.reasoningMemory, this.deckKnowledge, message, selected.candidate, observation);
+    this.negativeInferenceTracker = updateNegativeInference(this.negativeInferenceTracker, observation, message, selected.candidate);
     if ((selected.roles ?? []).includes("delayed-win")) {
       this.reasoningMemory.commitments ??= {};
       this.reasoningMemory.commitments.delayedWin = true;

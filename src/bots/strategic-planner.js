@@ -9,18 +9,26 @@ function rolesOf(analysis) {
 }
 
 function styleFor(knowledge, observation, opponentModel, persona = {}) {
-  const archetype = String(knowledge?.archetype ?? "").toLowerCase();
-  const ownLp = Number(observation?.ownLp) || 8000;
-  const opponentLp = Number(observation?.opponentLp) || 8000;
-  const behind = Number(observation?.opponentThreat) > Number(observation?.ownBoardPower) + 800 || ownLp + 1800 < opponentLp;
-  const ahead = Number(observation?.ownBoardPower) > Number(observation?.opponentThreat) + 1000 || opponentLp <= 2600;
-  if (behind) return "recover";
-  if (ahead) return "convert";
-  if (/combo|deck-out|reasoning|empty/.test(archetype)) return "assemble";
-  if (/aggro|warrior|beatdown|burn/.test(archetype)) return "pressure";
-  if (/control|lock|stall/.test(archetype)) return "control";
+  const archetype = String(knowledge?.archetype ?? knowledge?.plan?.archetype ?? "").toLowerCase();
   if (opponentModel?.ready && /combo|burn/.test(String(opponentModel.top?.archetype ?? "").toLowerCase())) return "disrupt";
+  if (/combo|deck-out|reasoning|empty/.test(archetype)) return "assemble";
+  if (/aggro|warrior|beatdown/.test(archetype)) return "pressure";
+  if (/burn|lockdown/.test(archetype)) return "burn";
+  if (/chaos/.test(archetype)) return "midrange";
+  if (/control|lock|stall/.test(archetype)) return "control";
   return persona.defaultStyle ?? "balanced";
+}
+
+function boardStateAdjustment(boardRelation, role, roles, observation) {
+  let value = 0;
+  if (boardRelation === "behind") {
+    if (["defense", "interaction", "removal", "draw", "recovery"].some((item) => roles.has(item))) value += 0.8;
+    if (role === "end-phase") value -= 0.5;
+  } else if (boardRelation === "ahead") {
+    if (["battle-phase", "attack", "special-summon"].includes(role)) value += 0.8;
+    if (roles.has("lethal") && Number(observation?.opponentLp) <= 2500) value += 1.0;
+  }
+  return value;
 }
 
 function sequenceAdjustment(role, roles, memory = {}) {
@@ -59,9 +67,15 @@ function styleAdjustment(style, role, roles, observation) {
   } else if (style === "control") {
     if (["spell-set", "monster-set", "chain"].includes(role) || roles.has("interaction")) value += 0.9;
     if (roles.has("swing") && Number(observation?.opponentMonsterCount) + Number(observation?.opponentBackrowCount) < 2) value -= 1.5;
+  } else if (style === "midrange") {
+    if (["summon", "interaction", "removal"].includes(role) || roles.has("engine")) value += 0.8;
+    if (roles.has("boss") && Number(observation?.opponentThreat) < 1500) value -= 0.5;
   } else if (style === "assemble") {
     if (["draw", "search", "engine", "combo", "grave-setup"].some((item) => roles.has(item))) value += 1.2;
     if (role === "battle-phase" && Number(observation?.ownBoardPower) < 1800) value -= 0.7;
+  } else if (style === "burn") {
+    if (roles.has("burn") || roles.has("stall") || role === "spell-set") value += 1.2;
+    if (["summon", "special-summon"].includes(role) && Number(observation?.ownMonsterCount) >= 2) value -= 1.5;
   } else if (style === "recover") {
     if (["defense", "interaction", "removal", "draw", "recovery"].some((item) => roles.has(item))) value += 1.5;
     if (role === "end-phase") value -= 1;
@@ -77,16 +91,24 @@ function styleAdjustment(style, role, roles, observation) {
 /** Scores one legal action as part of a public-information multi-step plan. */
 export function planStrategicResponses(knowledge, message, evaluated, { observation = {}, memory = {}, opponentModel = null, persona = {}, planningScale = 0.3 } = {}) {
   const style = styleFor(knowledge, observation, opponentModel, persona);
+  const ownLp = Number(observation?.ownLp) || 8000;
+  const oppLp = Number(observation?.opponentLp) || 8000;
+  const boardRelation = Number(observation?.opponentThreat) > Number(observation?.ownBoardPower) + 800 || ownLp + 1800 < oppLp
+    ? "behind"
+    : Number(observation?.ownBoardPower) > Number(observation?.opponentThreat) + 1000 || oppLp <= 2600
+      ? "ahead"
+      : "even";
   return evaluated.map((entry) => {
     const role = entry.analysis?.role ?? strategyActionRole(message, entry.candidate);
     const roles = rolesOf(entry.analysis);
     const sequence = sequenceAdjustment(role, roles, memory);
     const prediction = predictionAdjustment(role, roles, observation, opponentModel);
     const styleValue = styleAdjustment(style, role, roles, observation);
+    const boardAdj = boardStateAdjustment(boardRelation, role, roles, observation);
     const personaValue = Number(persona.roleWeights?.[role] ?? 0) + [...roles].reduce((sum, item) => sum + Number(persona.roleWeights?.[item] ?? 0), 0);
-    const planningAdjustment = (sequence + prediction + styleValue + personaValue) * Math.max(0, Math.min(1.5, Number(planningScale) || 0));
+    const planningAdjustment = (sequence + prediction + styleValue + personaValue + boardAdj) * Math.max(0, Math.min(1.5, Number(planningScale) || 0));
     const score = Number(entry.baseScore ?? 0) + planningAdjustment;
-    return { ...entry, role, roles: [...roles], score, components: { sequence, prediction, style: styleValue, persona: personaValue }, playstyle: style };
+    return { ...entry, role, roles: [...roles], score, components: { sequence, prediction, style: styleValue, persona: personaValue, board: boardAdj }, playstyle: style };
   }).sort((left, right) => right.score - left.score);
 }
 

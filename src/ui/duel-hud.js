@@ -77,7 +77,7 @@ export function renderDuelCardInspector({ snapshot, getCard, cardMarkup, esc }) 
 }
 
 export function renderCardActionPopover({ instance, model, placement = "above", getCard, esc, registerAction }) {
-  if (!instance?.cardId || model.mode !== "open") return "";
+  if (!instance?.cardId || (model.mode !== "open" && model.mode !== "response")) return "";
   const card = getCard(instance.cardId);
   if (!card) return "";
   const actions = actionsForCard(model, instance).filter((action) => !isPhaseAction(action));
