@@ -1151,6 +1151,14 @@ function bindEvents() {
 
   onAll("[data-home]", "click", () => navigate("home"));
   onAll("[data-menu-toggle]", "click", () => { app.menuOpen = !app.menuOpen; render(); });
+  if (app.menuOpen) {
+    on(document, "click", (event) => {
+      if (!event.target.closest("#main-menu, [data-menu-toggle]")) {
+        app.menuOpen = false;
+        render();
+      }
+    });
+  }
   onAll("[data-mode]", "click", (event) => navigate(event.currentTarget.dataset.mode));
   bindMenuKeyboard(document, { signal });
   onAll("[data-play-mode]", "click", (event) => { app.playMode = event.currentTarget.dataset.playMode; persistPlaySelection(); render(); });
@@ -1211,6 +1219,20 @@ function bindEvents() {
   on(document.querySelector("[data-card-clear]"), "click", () => { app.selectedCardUid = null; app.inspectedCard = null; render(); });
   on(document.querySelector("[data-card-inspector-close]"), "click", () => { app.selectedCardUid = null; app.inspectedCard = null; render(); });
   on(document.querySelector("[data-duel-menu-toggle]"), "click", (event) => { const menu = event.currentTarget.closest(".duel-menu"); const open = menu?.dataset.open !== "true"; if (!menu) return; menu.dataset.open = String(open); event.currentTarget.setAttribute("aria-expanded", String(open)); });
+  onAll(".duel-menu-panel button", "click", () => {
+    const menu = document.querySelector(".duel-menu");
+    if (menu) {
+      menu.dataset.open = "false";
+      menu.querySelector(".duel-menu-toggle")?.setAttribute("aria-expanded", "false");
+    }
+  });
+  on(document, "click", (event) => {
+    const menu = document.querySelector(".duel-menu[data-open='true']");
+    if (menu && !event.target.closest(".duel-menu")) {
+      menu.dataset.open = "false";
+      menu.querySelector(".duel-menu-toggle")?.setAttribute("aria-expanded", "false");
+    }
+  });
   on(document.querySelector(".duel-page"), "click", (event) => {
     if ((!app.selectedCardUid && !app.inspectedCard) || event.target.closest("[data-card-inspect], [data-testid='card-action-popover'], [data-testid='card-inspector']")) return;
     app.selectedCardUid = null;
@@ -1422,6 +1444,13 @@ window.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   const tagName = event.target?.tagName;
   if (["INPUT", "TEXTAREA", "SELECT"].includes(tagName)) return;
+  const openDuelMenu = document.querySelector(".duel-menu[data-open='true']");
+  if (openDuelMenu) {
+    openDuelMenu.dataset.open = "false";
+    openDuelMenu.querySelector(".duel-menu-toggle")?.setAttribute("aria-expanded", "false");
+    openDuelMenu.querySelector(".duel-menu-toggle")?.focus?.({ preventScroll: true });
+    return;
+  }
   if (app.menuOpen) {
     app.menuOpen = false;
     render();
