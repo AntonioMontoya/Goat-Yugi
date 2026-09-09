@@ -7,7 +7,7 @@ function faceUp(entry) { return entry?.faceUp === true || (Number(entry?.positio
 
 function recentSource(knowledge, memory, role) {
   const entry = [...(memory?.recent ?? [])].reverse().find((item) => item.role === role && Number(item.cardCode));
-  return knowledge?.byRuntimeCode?.[String(entry?.cardCode ?? 0)] ?? null;
+  return knowledge?.byRuntimeCode?.[String(entry?.cardCode ?? 0)] ?? publicCardSemantics(Number(entry?.cardCode)) ?? null;
 }
 
 function battleTargetValue(knowledge, message, response, observation, memory, opponentModel) {
@@ -36,9 +36,115 @@ function battleTargetValue(knowledge, message, response, observation, memory, op
   return value;
 }
 
+function effectTargetValue(knowledge, message, response, observation, memory) {
+  if (message.type !== OcgMessageType.SELECT_CARD) return 0;
+  const msgCode = Number(message?.code ?? message?.card?.code ?? message?.triggering_card?.code ?? 0);
+  const msgCard = msgCode ? (knowledge?.byRuntimeCode?.[String(msgCode)] ?? publicCardSemantics(msgCode)) : null;
+  const activator = msgCard ?? recentSource(knowledge, memory, "activate") ?? recentSource(knowledge, memory, "chain");
+  const activatorRoles = new Set(activator?.roles ?? []);
+  const isAbsorb = activatorRoles.has("absorb");
+  const isRemoval = activatorRoles.has("monster-removal") || activatorRoles.has("removal");
+  const isTakeControl = activatorRoles.has("take-control");
+  const isControlSwap = activatorRoles.has("control-swap");
+  const isRevive = activatorRoles.has("revive");
+  if (!isAbsorb && !isRemoval && !isTakeControl && !isControlSwap && !isRevive) return 0;
+
+  const selections = message.selects ?? message.select_cards ?? [];
+  let value = 0;
+  for (const index of response.indicies ?? []) {
+    const selected = selections[Number(index)];
+    const location = Number(selected?.location);
+    const controller = Number(selected?.controller ?? selected?.controler ?? 0);
+    const isOpponent = controller !== Number(observation.player);
+
+    if (location === OcgLocation.GRAVE && isRevive) {
+      const targetCode = codeOf(selected);
+      const targetSemantics = knowledge?.byRuntimeCode?.[String(targetCode)] ?? publicCardSemantics(targetCode);
+      const targetRoles = new Set(targetSemantics?.roles ?? []);
+      const targetAtk = Number(targetSemantics?.atk) || 0;
+      value += Math.min(6, targetAtk / 400);
+      if (targetRoles.has("boss") || targetAtk >= 2400) value += 5.0;
+      if (targetRoles.has("negate")) value += 4.5;
+      if (targetRoles.has("threat") || targetAtk >= 1800) value += 2.5;
+      if (targetRoles.has("flip")) value += 1.5;
+      continue;
+    }
+
+    if (location !== OcgLocation.MZONE) continue;
+
+    if (isControlSwap && !isOpponent) {
+      const targetCode = codeOf(selected);
+      const targetSemantics = knowledge?.byRuntimeCode?.[String(targetCode)] ?? publicCardSemantics(targetCode);
+      const targetRoles = new Set(targetSemantics?.roles ?? []);
+      const targetAtk = Number(targetSemantics?.atk) || 0;
+      if (targetRoles.has("token") || targetAtk === 0) value += 6.0;
+      else if (targetRoles.has("floater") || targetAtk <= 1000) value += 4.0;
+      else if (targetAtk >= 1800 || targetRoles.has("boss")) value -= 6.0;
+      continue;
+    }
+
+    if (!isOpponent) continue;
+
+    const targetCode = codeOf(selected);
+    const publicTarget = (observation.opponentMonsters ?? []).find((entry) => codeOf(entry) === targetCode && (selected.sequence === undefined || Number(entry.sequence) === Number(selected.sequence)))
+      ?? (observation.opponentMonsters ?? []).find((entry) => codeOf(entry) === targetCode);
+    const targetSemantics = knowledge?.byRuntimeCode?.[String(targetCode)] ?? publicCardSemantics(targetCode);
+    const targetRoles = new Set(targetSemantics?.roles ?? []);
+
+    const isFaceUp = publicTarget?.faceUp === true || (Number(publicTarget?.position) & OcgPosition.FACEUP) !== 0;
+    if (isFaceUp) {
+      const targetAtk = Number(publicTarget?.attack ?? targetSemantics?.atk) || 0;
+      value += Math.min(6, targetAtk / 450);
+      if (targetRoles.has("boss") || targetAtk >= 2400) value += 5.0;
+      if (targetRoles.has("threat") || targetAtk >= 1800) value += 2.5;
+      if (targetRoles.has("flip") || targetRoles.has("engine")) value += 1.5;
+    } else {
+      value += 3.5;
+      if (targetRoles.has("flip")) value += 2.0;
+    }
+  }
+  return value;
+}
+
+const RACE_MAP = {
+  warrior: 1n, spellcaster: 2n, fairy: 4n, fiend: 8n, zombie: 16n, machine: 32n,
+  aqua: 64n, pyro: 128n, rock: 256n, wingedbeast: 512n, plant: 1024n, insect: 2048n,
+  thunder: 4096n, dragon: 8192n, beast: 16384n, beastwarrior: 32768n, dinosaur: 65536n,
+  fish: 131072n, seaserpent: 262144n, reptile: 524288n
+};
+
+function raceFlag(c) {
+  if (!c) return 0n;
+  if (typeof c.race === "bigint") return c.race;
+  if (typeof c.race === "number") return BigInt(c.race);
+  const str = String(c.race || "").toLowerCase().replace(/[^a-z]/g, "");
+  return RACE_MAP[str] ?? 0n;
+}
+
+function announceRaceTacticalValue(knowledge, message, response, observation) {
+  if (message.type !== OcgMessageType.ANNOUNCE_RACE) return 0;
+  const races = response.races ?? [];
+  const oppMonsters = observation.opponentMonsters ?? [];
+  let matchedCount = 0;
+  let matchedOppAtk = 0;
+  for (const opp of oppMonsters) {
+    const sem = knowledge?.byRuntimeCode?.[String(codeOf(opp))] ?? publicCardSemantics(codeOf(opp));
+    const oppFlag = raceFlag(opp) || raceFlag(sem);
+    const oppStr = String(sem?.race ?? opp.race ?? "").toLowerCase().replace(/[^a-z]/g, "");
+    if (races.some((r) => (typeof r === "bigint" && oppFlag && r === oppFlag) || String(r).toLowerCase().replace(/[^a-z]/g, "") === oppStr)) {
+      matchedOppAtk += Number(opp.attack ?? opp.atk ?? 0);
+      matchedCount += 1;
+    }
+  }
+  if (matchedCount > 0) {
+    return 4.0 + Math.min(5, matchedOppAtk / 500) + matchedCount * 2.0;
+  }
+  return -5.0;
+}
+
 function positionValue(knowledge, message, response, observation) {
   if (message.type !== OcgMessageType.SELECT_POSITION) return 0;
-  const card = knowledge?.byRuntimeCode?.[String(Number(message.code) || 0)] ?? null;
+  const card = knowledge?.byRuntimeCode?.[String(Number(message.code) || 0)] ?? publicCardSemantics(Number(message.code) || 0) ?? null;
   if (!card) return 0;
   const position = Number(response.position) || 0;
   const roles = new Set(card.roles ?? []);
@@ -47,6 +153,7 @@ function positionValue(knowledge, message, response, observation) {
   const isFlip = roles.has("flip");
   const isWall = defense > attack || roles.has("defense") || roles.has("stall");
   const isBeater = attack >= 1400 && attack > defense;
+  const isAbsorb = roles.has("absorb") || ["relinquished", "thousand-eyes restrict"].some((n) => String(card?.name ?? "").toLowerCase().includes(n));
   const canDefendAgainstThreat = defense >= Number(observation.opponentThreat);
   const underPressure = Number(observation.opponentThreat) > Math.max(attack, Number(observation.ownBoardPower) || 0);
 
@@ -58,17 +165,71 @@ function positionValue(knowledge, message, response, observation) {
     else value -= 1;
   }
   if ((position & OcgPosition.FACEUP_DEFENSE) !== 0) {
-    if (isWall || (underPressure && canDefendAgainstThreat)) value += 2.5;
+    if (isAbsorb && attack === 0) value += 4.5;
+    else if (isWall || (underPressure && canDefendAgainstThreat)) value += 2.5;
     else if (isBeater) value -= 3.5;
     else value -= 1.5;
   }
   if ((position & OcgPosition.FACEUP_ATTACK) !== 0) {
-    if (isBeater) value += 3.5;
+    if (isAbsorb && attack === 0 && (Number(observation.opponentMonsterCount) > 0 || Number(observation.opponentThreat) > 0)) value -= 6;
+    else if (isBeater) value += 3.5;
     else if (!isWall && (!underPressure || Number(observation.opponentMonsterCount) === 0)) value += 3;
     else if (isWall) value -= 2;
     else value -= 1;
   }
   if ((position & OcgPosition.FACEDOWN_ATTACK) !== 0) value -= 6;
+  return value;
+}
+
+function announceNumberTacticalValue(knowledge, message, response, observation) {
+  if (message.type !== OcgMessageType.ANNOUNCE_NUMBER) return 0;
+  const options = message.options ?? [];
+  const declared = options[Number(response.value)] ?? response.value;
+  return declared === 4 ? 4.0 : -1.0;
+}
+
+function selectOptionTacticalValue(knowledge, message, response, observation) {
+  if (message.type !== OcgMessageType.SELECT_OPTION) return 0;
+  const sCode = Number(message?.code ?? message?.card?.code ?? 0);
+  const src = knowledge?.byRuntimeCode?.[String(sCode)] ?? publicCardSemantics(sCode);
+  const isEcon = src?.roles?.includes("modal-control") || String(src?.name ?? "").toLowerCase().includes("enemy controller");
+  if (!isEcon) return 0;
+
+  const ownMonsters = observation.ownMonsters ?? [];
+  const hasDisposable = ownMonsters.some((m) => m.isToken || (Number(m.attack ?? m.atk ?? 0) <= 1000) || (m.roles ?? []).includes("floater"));
+  const maxOppAtk = Math.max(0, ...(observation.opponentMonsters ?? []).map((m) => Number(m.attack ?? m.atk ?? 0)));
+
+  if (response.index === 1) {
+    return (hasDisposable && maxOppAtk >= 1800) ? 5.0 : -5.0;
+  }
+  if (response.index === 0) {
+    return (!hasDisposable || maxOppAtk < 1800) ? 3.0 : 0;
+  }
+  return 0;
+}
+
+function selectTributeTacticalValue(knowledge, message, response, observation) {
+  if (message.type !== OcgMessageType.SELECT_TRIBUTE && message.type !== OcgMessageType.SELECT_SUM) return 0;
+  const selections = message.selects ?? [];
+  let value = 0;
+  for (const index of response.indicies ?? []) {
+    const sel = selections[Number(index)];
+    const code = codeOf(sel);
+    const sem = knowledge?.byRuntimeCode?.[String(code)] ?? publicCardSemantics(code);
+    const roles = new Set(sem?.roles ?? []);
+    const atk = Number(sel?.attack ?? sem?.atk ?? 0);
+    const isToken = sel?.isToken || (Number(sel?.type) & 0x4000) !== 0 || roles.has("token") || (atk === 0 && Number(sel?.defense ?? sem?.def ?? 0) === 0);
+    const isFloater = roles.has("floater") || roles.has("search-on-death") || roles.has("grave-trigger")
+      || ["sangan", "sinister serpent"].some((n) => String(sem?.name ?? "").toLowerCase().includes(n));
+    const isBoss = roles.has("boss") || atk >= 2400;
+    const isSpentFlip = roles.has("flip") && atk <= 1000;
+
+    if (isToken) value += 4.0;
+    else if (isFloater) value += 4.5;
+    else if (isSpentFlip) value += 2.0;
+    else if (isBoss) value -= 8.0;
+    else if (atk >= 1800) value -= 4.0;
+  }
   return value;
 }
 
@@ -135,12 +296,14 @@ function comboValue(knowledge, message, response, observation, memory) {
   if (memory?.commitments?.delayedWin && (roles.has("stall") || roles.has("defense") || roles.has("negate"))) value += 3;
   if (memory?.commitments?.delayedWin && ["battle-phase", "attack"].includes(role)) value -= 1.5;
 
-  // Bucle Thousand-Eyes Restrict + Tsukuyomi
-  const ownHasTer = (observation.ownMonsters ?? []).some((m) => {
+  // Bucle Thousand-Eyes Restrict / Relinquished + Tsukuyomi
+  const ownHasAbsorbBoss = (observation.ownMonsters ?? []).some((m) => {
     const name = String(m.name ?? "").toLowerCase();
-    return name.includes("thousand-eyes restrict") || (Number(m.attack ?? 0) > 0 && m.isToken !== true && Number(m.defense ?? 0) === 0);
+    const sem = knowledge?.byRuntimeCode?.[String(codeOf(m))] ?? publicCardSemantics(codeOf(m));
+    const isAbsorb = sem?.roles?.includes("absorb") || name.includes("thousand-eyes restrict") || name.includes("relinquished");
+    return isAbsorb && (Number(m.attack ?? m.atk ?? 0) > 0 || (Number(m.defense ?? m.def ?? 0) > 0 && m.isToken !== true));
   });
-  if (ownHasTer) {
+  if (ownHasAbsorbBoss) {
     const isTsukuyomi = cards.some((c) => String(c.name ?? "").toLowerCase().includes("tsukuyomi"));
     if (isTsukuyomi && role === "summon") value += 6.0;
   }
@@ -246,7 +409,22 @@ function matchupTacticalAdjustment(knowledge, message, response, { observation =
 /** Tactical corrections that depend on the concrete OCGCore prompt. */
 export function tacticalResponseAdjustment(knowledge, message, response, { observation = {}, memory = {}, opponentModel = null } = {}) {
   let value = positionValue(knowledge, message, response, observation) + selectionSizeValue(message, response);
-  if (message.type === OcgMessageType.SELECT_CARD) value += battleTargetValue(knowledge, message, response, observation, memory, opponentModel);
+  if (message.type === OcgMessageType.SELECT_CARD) {
+    value += battleTargetValue(knowledge, message, response, observation, memory, opponentModel);
+    value += effectTargetValue(knowledge, message, response, observation, memory);
+  }
+  if (message.type === OcgMessageType.ANNOUNCE_RACE) {
+    value += announceRaceTacticalValue(knowledge, message, response, observation);
+  }
+  if (message.type === OcgMessageType.ANNOUNCE_NUMBER) {
+    value += announceNumberTacticalValue(knowledge, message, response, observation);
+  }
+  if (message.type === OcgMessageType.SELECT_OPTION) {
+    value += selectOptionTacticalValue(knowledge, message, response, observation);
+  }
+  if (message.type === OcgMessageType.SELECT_TRIBUTE || message.type === OcgMessageType.SELECT_SUM) {
+    value += selectTributeTacticalValue(knowledge, message, response, observation);
+  }
   value += chainValue(knowledge, message, response, observation, memory);
   value += comboValue(knowledge, message, response, observation, memory);
   value += matchupTacticalAdjustment(knowledge, message, response, { observation, memory, opponentModel });

@@ -52,16 +52,18 @@ export function isTurnPlayerFreePriority(view) {
 
 export function freePriorityPhaseIntents(view) {
   if (!isTurnPlayerFreePriority(view)) return [];
+  if (view?.pendingPhaseTransition) {
+    const target = view.pendingPhaseTransition;
+    const label = target === "NEXT_TURN" ? "Terminar turno" : (phaseLabel(target) ?? String(target));
+    return [{ target, label }];
+  }
   const phase = phaseStepId(view?.phase);
-  if (phase === "DRAW") return [{ target: "STANDBY", label: "Standby" }];
-  if (phase === "STANDBY") return [{ target: "MAIN_1", label: "Main 1" }];
-  if (phase === "MAIN_1") return [Number(view?.turn) > 1
-    ? { target: "BATTLE", label: "Battle" }
-    : { target: "END", label: "End" }];
-  if (phase === "BATTLE") return [{ target: "MAIN_2", label: "Main 2" }];
-  if (phase === "MAIN_2") return [{ target: "END", label: "End" }];
-  if (phase === "END") return [{ target: "NEXT_TURN", label: "Terminar turno" }];
-  return [];
+  if (phase === "BATTLE") return [{ target: "CONTINUE_CURRENT_PHASE", label: "Continuar Battle Phase" }];
+  if (phase === "MAIN_1") return [{ target: "CONTINUE_CURRENT_PHASE", label: "Continuar Main 1" }];
+  if (phase === "DRAW") return [{ target: view?.phasePaused ? "STANDBY" : "CONTINUE_CURRENT_PHASE", label: view?.phasePaused ? "Standby" : "Continuar Draw" }];
+  if (phase === "STANDBY") return [{ target: view?.phasePaused ? "MAIN_1" : "CONTINUE_CURRENT_PHASE", label: view?.phasePaused ? "Main 1" : "Continuar Standby" }];
+  if (phase === "END") return [{ target: view?.phasePaused ? "NEXT_TURN" : "CONTINUE_CURRENT_PHASE", label: view?.phasePaused ? "Terminar turno" : "Continuar End" }];
+  return [{ target: "CONTINUE_CURRENT_PHASE", label: `Continuar ${phaseLabel(phase)}` }];
 }
 
 export function pausedPhaseIntent(view) {

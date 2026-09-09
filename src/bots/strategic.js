@@ -3,6 +3,7 @@ import { candidateResponses } from "./legal-candidates.js";
 import { actionCardEntries, buildDeckKnowledge, deckSnapshot, scoreDeckStrategy, strategyActionRole } from "./deck-strategy.js";
 import { inferOpponentDeck, opponentEvidenceCards, updateOpponentEvidence } from "./opponent-model.js";
 import { Nexo2PolicyNetwork, nexo2FeatureVector, policyProbabilities } from "./nexo2-policy.js";
+import { computeResidualPolicyDistribution, selectResidualAction } from "../training/nexo2-policy-contract.js";
 import { publicBeliefRollout } from "./public-belief-search.js";
 import { planStrategicResponses } from "./strategic-planner.js";
 import { reasonAboutResponses, rememberResponse } from "./state-evaluator.js";
@@ -19,7 +20,7 @@ function configuredNumber(value, fallback, minimum, maximum) {
 }
 
 export class StrategicBot {
-  constructor({ id = "strategic-base", botId = id, name = "Strategic Base", algorithm = "ocgcore-public-strategic-v4", deckId = "generic", deck = null, profile = deckId, style = "Adaptativo", persona = {}, state = "Validado", skillMmr = 0, certification = null, seed = 1, policyWeights = {}, neuralModel = null, freezeLinearPolicy = null, decisionConfig = {}, trainingState = {}, training = false, exploration = 0.08, learningRate = 0.018 } = {}) {
+  constructor({ id = "strategic-base", botId = id, name = "Strategic Base", algorithm = "ocgcore-public-strategic-v4", deckId = "generic", deck = null, profile = deckId, style = "Adaptativo", persona = {}, state = "Validado", skillMmr = 0, certification = null, seed = 1, policyWeights = {}, neuralModel = null, freezeLinearPolicy = null, decisionConfig = {}, trainingState = {}, training = false, exploration = 0.08, learningRate = 0.018, legacyNegativeInference = false } = {}) {
     this.id = id;
     this.botId = botId;
     this.name = name;
@@ -34,7 +35,7 @@ export class StrategicBot {
     this.seed = Number(seed) || 1;
     this.randomState = this.seed >>> 0 || 1;
     this.policyWeights = { ...policyWeights };
-    this.nexo2Enabled = algorithm === NEXO2_ALGORITHM || [1, 2].includes(Number(neuralModel?.schema)) || neuralModel?.type === "public-action-mlp-policy-value";
+    this.nexo2Enabled = algorithm === NEXO2_ALGORITHM || [1, 2, 3].includes(Number(neuralModel?.schema)) || neuralModel?.type === "public-action-mlp-policy-value";
     this.decisionConfig = {
       deckWeight: configuredNumber(decisionConfig.deckWeight, 1, 0, 3),
       stateWeight: configuredNumber(decisionConfig.stateWeight, 1.8, 0, 4),
@@ -60,7 +61,8 @@ export class StrategicBot {
     this.decisions = 0;
     this.opponentModel = null;
     this.opponentEvidence = {};
-    this.negativeInferenceTracker = createNegativeInferenceTracker();
+    this.legacyNegativeInference = legacyNegativeInference === true;
+    this.negativeInferenceTracker = createNegativeInferenceTracker({ legacy: this.legacyNegativeInference });
   }
 
   chooseResponse(message, context = {}) {
@@ -85,6 +87,15 @@ export class StrategicBot {
         selected: { role: strategyActionRole(message, onlyLegal), cards: actionCardNames(this.deckKnowledge, message, onlyLegal), semanticRoles: [], score: null, plannedScore: null, projectedValue: null, policyValue: 0, reasons: ["ONLY_LEGAL_RESPONSE"], reasonCodes: normalizeReasonCodes(["ONLY_LEGAL_RESPONSE"], { actionRole: strategyActionRole(message, onlyLegal), observation }), components: {}, evaluationComponents: {} },
         alternatives: [],
         rejected: [],
+        counts: {
+          legal: legal.length,
+          afterSafety: legal.length,
+          viable: legal.length,
+        },
+        bestHeuristic: null,
+        bestPlanned: null,
+        bestNeural: null,
+        filterFailure: null,
       };
       rememberResponse(this.reasoningMemory, this.deckKnowledge, message, onlyLegal, observation);
       return structuredClone(onlyLegal);
@@ -140,68 +151,135 @@ export class StrategicBot {
       const nexo2Input = this.neuralPolicy ? nexo2FeatureVector(this.deckKnowledge, entry, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, belief, negativeInference: this.negativeInferenceTracker }) : null;
       return { ...entry, networkIndex, features, linearPolicyValue, belief, beliefValue, basePlannerScore: Number(entry.score), plannedScore, nexo2Input };
     });
-    const network = this.neuralPolicy ? this.neuralPolicy.scoreBatch(prepared.map((entry) => entry.nexo2Input)) : [];
-    const neuralConfidence = this.neuralPolicy ? Math.min(1, Math.sqrt(Number(this.neuralPolicy.trainingState.episodes) / 160)) : 0;
-    const ranked = prepared.map((entry, index) => {
-      const neuralPolicyValue = Number(network[index]?.policy) || 0;
-      const neuralStateValue = Number(network[index]?.value) || 0;
-      const policyValue = entry.linearPolicyValue + neuralPolicyValue * this.decisionConfig.neuralScale * neuralConfidence + neuralStateValue * this.decisionConfig.valueScale * neuralConfidence;
-      return { ...entry, neuralPolicyValue, neuralStateValue, policyValue, score: entry.plannedScore + policyValue };
-    }).sort((left, right) => right.score - left.score);
-    const bestBasePlanner = Math.max(...ranked.map((entry) => Number(entry.basePlannerScore) || 0));
-    const legacyBest = ranked.reduce((best, entry) => Number(entry.basePlannerScore) > Number(best?.basePlannerScore ?? -Infinity) ? entry : best, null);
-    const plannedBest = ranked.reduce((best, entry) => Number(entry.plannedScore) > Number(best?.plannedScore ?? -Infinity) ? entry : best, null);
-    const viable = ranked.filter((entry) => Number(entry.basePlannerScore) >= bestBasePlanner - this.decisionConfig.viabilityMargin);
-    let selected = viable[0] ?? ranked[0] ?? evaluated[0];
-    if (this.training && viable.length > 1 && this.nextRandom() < this.exploration) {
-      if (this.neuralPolicy) {
-        const probabilities = policyProbabilities(viable.map((entry) => entry.score), 1.35);
-        let threshold = this.nextRandom();
-        let choice = viable.length - 1;
-        for (let index = 0; index < probabilities.length; index += 1) {
-          threshold -= probabilities[index];
-          if (threshold <= 0) { choice = index; break; }
-        }
-        selected = viable[choice];
-      } else selected = viable[Math.floor(this.nextRandom() * Math.min(viable.length, 6))];
-    }
+    let selected = null;
+    let viable = [];
+    let ranked = [];
+    let legacyBest = null;
+    let plannedBest = null;
+    let neuralBest = null;
     let rejectedPolicyOverride = null;
-    if (!this.training && selected !== plannedBest
-      && Number(selected?.analysis?.value) < 0
-      && Number(plannedBest?.analysis?.value) >= Number(selected?.analysis?.value) + 0.75
-      && Number(selected?.plannedScore) < Number(plannedBest?.plannedScore)) {
-      rejectedPolicyOverride = selected;
-      selected = plannedBest;
-    }
-    if (!this.training && selected !== legacyBest
-      && Number(selected?.basePlannerScore) < Number(legacyBest?.basePlannerScore) - this.decisionConfig.maxBaseRegret) {
-      rejectedPolicyOverride = selected;
-      selected = legacyBest;
-    }
-    if (this.training && selected?.features) {
-      const counterfactual = ranked.find((entry) => entry !== selected) ?? null;
-      const learningPool = viable.length ? viable : ranked;
-      this.trajectory.push({
-        features: [...new Set(selected.features)],
-        alternatives: ranked.filter((entry) => entry !== selected).slice(0, 5).map((entry) => [...new Set(entry.features)]),
-        stateSignal: publicStateSignal(observation),
-        selectedRole: selected.role,
-        selectedScore: Number(selected.score) || 0,
-        selectedPlannedScore: Number(selected.plannedScore) || 0,
-        selectedProjectedValue: Number(selected.analysis?.value) || 0,
-        alternativeRole: counterfactual?.role ?? null,
-        alternativeScore: Number(counterfactual?.score) || 0,
-        alternativePlannedScore: Number(counterfactual?.plannedScore) || 0,
-        alternativeProjectedValue: Number(counterfactual?.analysis?.value) || 0,
-        goatState: observation.goatState,
-        goatWindow: observation.goatWindow,
-        baseKnowledgeFingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT,
-        selectedReasonCodes: normalizeReasonCodes(selected.analysis?.reasons ?? [], { actionRole: selected.role, observation }),
-        localRewardSignal: decisionTrainingSignal({ actionRole: selected.role, projectedValue: selected.analysis?.value, reasons: selected.analysis?.reasons ?? [], observation }),
-        nexo2Inputs: this.neuralPolicy ? learningPool.map((entry) => entry.nexo2Input) : null,
-        nexo2Chosen: this.neuralPolicy ? learningPool.indexOf(selected) : null,
-        nexo2Teacher: this.neuralPolicy ? learningPool.indexOf(legacyBest) : null,
+    let chosenResidualIndex = 0;
+    let residualDist = null;
+
+    if (this.nexo2Enabled && this.neuralPolicy) {
+      // Coherent on-policy residual policy gradient contract (Phase 7)
+      residualDist = computeResidualPolicyDistribution(prepared, this.neuralPolicy, {
+        temperature: 1.0,
+        alpha: 1.0,
       });
+
+      for (let i = 0; i < prepared.length; i += 1) {
+        prepared[i].prior = residualDist.priors[i];
+        prepared[i].rawNeuralLogit = residualDist.logits[i];
+        prepared[i].neuralPolicyValue = residualDist.logits[i];
+        prepared[i].qValue = residualDist.qValues[i];
+        prepared[i].neuralStateValue = residualDist.qValues[i];
+        prepared[i].z = residualDist.zs[i];
+        prepared[i].policyProbability = residualDist.probabilities[i];
+        prepared[i].score = residualDist.zs[i];
+      }
+
+      const selection = selectResidualAction(prepared, residualDist, {
+        training: this.training,
+        prng: () => this.nextRandom(),
+      });
+      selected = selection.chosenCandidate ?? prepared[0];
+      chosenResidualIndex = selection.chosenIndex;
+
+      ranked = [...prepared].sort((left, right) => right.score - left.score);
+      viable = prepared;
+      legacyBest = prepared.reduce((best, entry) => (Number(entry.basePlannerScore) > Number(best?.basePlannerScore ?? -Infinity) ? entry : best), null);
+      plannedBest = prepared.reduce((best, entry) => (Number(entry.plannedScore) > Number(best?.plannedScore ?? -Infinity) ? entry : best), null);
+      neuralBest = prepared.reduce((best, entry) => (Number(entry.rawNeuralLogit) > Number(best?.rawNeuralLogit ?? -Infinity) ? entry : best), null);
+
+      if (this.training && selected?.features) {
+        const counterfactual = ranked.find((entry) => entry !== selected) ?? null;
+        this.trajectory.push({
+          policyVersion: this.neuralPolicy.policyVersion ?? 1,
+          policySchema: 3,
+          candidateIds: prepared.map((e) => e.candidateId ?? e.role),
+          inputs: prepared.map((e) => e.nexo2Input),
+          heuristicScores: prepared.map((e) => Number(e.plannedScore) + Number(e.linearPolicyValue)),
+          priors: residualDist.priors,
+          logits: residualDist.logits,
+          qValues: residualDist.qValues,
+          zs: residualDist.zs,
+          probabilities: residualDist.probabilities,
+          chosenIndex: chosenResidualIndex,
+          logp: selection.logp,
+          forced: false,
+          trainable: prepared.length > 1,
+          features: [...new Set(selected.features)],
+          alternatives: ranked.filter((entry) => entry !== selected).slice(0, 5).map((entry) => [...new Set(entry.features)]),
+          stateSignal: publicStateSignal(observation),
+          selectedRole: selected.role,
+          selectedScore: Number(selected.score) || 0,
+          selectedPlannedScore: Number(selected.plannedScore) || 0,
+          selectedProjectedValue: Number(selected.analysis?.value) || 0,
+          alternativeRole: counterfactual?.role ?? null,
+          alternativeScore: Number(counterfactual?.score) || 0,
+          alternativePlannedScore: Number(counterfactual?.plannedScore) || 0,
+          alternativeProjectedValue: Number(counterfactual?.analysis?.value) || 0,
+          goatState: observation.goatState,
+          goatWindow: observation.goatWindow,
+          baseKnowledgeFingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT,
+          selectedReasonCodes: normalizeReasonCodes(selected.analysis?.reasons ?? [], { actionRole: selected.role, observation }),
+          localRewardSignal: decisionTrainingSignal({ actionRole: selected.role, projectedValue: selected.analysis?.value, reasons: selected.analysis?.reasons ?? [], observation }),
+          nexo2Inputs: prepared.map((e) => e.nexo2Input),
+          nexo2Chosen: chosenResidualIndex,
+          nexo2Teacher: legacyBest ? prepared.indexOf(legacyBest) : null,
+        });
+      }
+    } else {
+      ranked = prepared.map((entry) => {
+        const policyValue = entry.linearPolicyValue;
+        return { ...entry, neuralPolicyValue: 0, neuralStateValue: 0, policyValue, score: entry.plannedScore + policyValue };
+      }).sort((left, right) => right.score - left.score);
+      const bestBasePlanner = Math.max(...ranked.map((entry) => Number(entry.basePlannerScore) || 0));
+      legacyBest = ranked.reduce((best, entry) => (Number(entry.basePlannerScore) > Number(best?.basePlannerScore ?? -Infinity) ? entry : best), null);
+      plannedBest = ranked.reduce((best, entry) => (Number(entry.plannedScore) > Number(best?.plannedScore ?? -Infinity) ? entry : best), null);
+      neuralBest = null;
+      viable = ranked.filter((entry) => Number(entry.basePlannerScore) >= bestBasePlanner - this.decisionConfig.viabilityMargin);
+      selected = viable[0] ?? ranked[0] ?? evaluated[0];
+      if (this.training && viable.length > 1 && this.nextRandom() < this.exploration) {
+        selected = viable[Math.floor(this.nextRandom() * Math.min(viable.length, 6))];
+      }
+      if (!this.training && selected !== plannedBest
+        && Number(selected?.analysis?.value) < 0
+        && Number(plannedBest?.analysis?.value) >= Number(selected?.analysis?.value) + 0.75
+        && Number(selected?.plannedScore) < Number(plannedBest?.plannedScore)) {
+        rejectedPolicyOverride = selected;
+        selected = plannedBest;
+      }
+      if (!this.training && selected !== legacyBest
+        && Number(selected?.basePlannerScore) < Number(legacyBest?.basePlannerScore) - this.decisionConfig.maxBaseRegret) {
+        rejectedPolicyOverride = selected;
+        selected = legacyBest;
+      }
+      if (this.training && selected?.features) {
+        const counterfactual = ranked.find((entry) => entry !== selected) ?? null;
+        this.trajectory.push({
+          features: [...new Set(selected.features)],
+          alternatives: ranked.filter((entry) => entry !== selected).slice(0, 5).map((entry) => [...new Set(entry.features)]),
+          stateSignal: publicStateSignal(observation),
+          selectedRole: selected.role,
+          selectedScore: Number(selected.score) || 0,
+          selectedPlannedScore: Number(selected.plannedScore) || 0,
+          selectedProjectedValue: Number(selected.analysis?.value) || 0,
+          alternativeRole: counterfactual?.role ?? null,
+          alternativeScore: Number(counterfactual?.score) || 0,
+          alternativePlannedScore: Number(counterfactual?.plannedScore) || 0,
+          alternativeProjectedValue: Number(counterfactual?.analysis?.value) || 0,
+          goatState: observation.goatState,
+          goatWindow: observation.goatWindow,
+          baseKnowledgeFingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT,
+          selectedReasonCodes: normalizeReasonCodes(selected.analysis?.reasons ?? [], { actionRole: selected.role, observation }),
+          localRewardSignal: decisionTrainingSignal({ actionRole: selected.role, projectedValue: selected.analysis?.value, reasons: selected.analysis?.reasons ?? [], observation }),
+          nexo2Inputs: null,
+          nexo2Chosen: null,
+          nexo2Teacher: null,
+        });
+      }
     }
     this.lastReasoning = {
       requestType: Number(message?.type),
@@ -212,11 +290,20 @@ export class StrategicBot {
       baseline: { role: strategyActionRole(message, baseline), cards: actionCardNames(this.deckKnowledge, message, baseline) },
       forced: false,
       selected: selected ? { role: selected.role, cards: (selected.analysis?.cards ?? []).map((card) => card.name), semanticRoles: [...(selected.roles ?? [])], score: selected.score, plannedScore: selected.plannedScore, projectedValue: selected.analysis?.value, policyValue: selected.policyValue, linearPolicyValue: selected.linearPolicyValue, neuralPolicyValue: selected.neuralPolicyValue, neuralStateValue: selected.neuralStateValue, beliefValue: selected.beliefValue, reasons: [...(selected.analysis?.reasons ?? [])], reasonCodes: normalizeReasonCodes(selected.analysis?.reasons ?? [], { actionRole: selected.role, observation }), localRewardSignal: decisionTrainingSignal({ actionRole: selected.role, projectedValue: selected.analysis?.value, reasons: selected.analysis?.reasons ?? [], observation }), components: { ...selected.components, belief: selected.beliefValue }, beliefComponents: { ...(selected.belief?.components ?? {}) }, evaluationComponents: { ...(selected.analysis?.components ?? {}) } } : null,
-      alternatives: ranked.filter((entry) => entry !== selected).slice(0, 8).map((entry) => ({ role: entry.role, cards: (entry.analysis?.cards ?? []).map((card) => card.name), semanticRoles: [...(entry.roles ?? [])], score: entry.score, plannedScore: entry.plannedScore, projectedValue: entry.analysis?.value, policyValue: entry.policyValue, linearPolicyValue: entry.linearPolicyValue, neuralPolicyValue: entry.neuralPolicyValue, neuralStateValue: entry.neuralStateValue, beliefValue: entry.beliefValue, reasons: [...(entry.analysis?.reasons ?? [])], reasonCodes: normalizeReasonCodes(entry.analysis?.reasons ?? [], { actionRole: entry.role, observation }), localRewardSignal: decisionTrainingSignal({ actionRole: entry.role, projectedValue: entry.analysis?.value, reasons: entry.analysis?.reasons ?? [], observation }), components: { ...entry.components, belief: entry.beliefValue }, beliefComponents: { ...(entry.belief?.components ?? {}) }, evaluationComponents: { ...(entry.analysis?.components ?? {}) } })),
+      alternatives: ranked.filter((entry) => entry !== selected).map((entry) => ({ role: entry.role, cards: (entry.analysis?.cards ?? []).map((card) => card.name), semanticRoles: [...(entry.roles ?? [])], score: entry.score, plannedScore: entry.plannedScore, projectedValue: entry.analysis?.value, policyValue: entry.policyValue, linearPolicyValue: entry.linearPolicyValue, neuralPolicyValue: entry.neuralPolicyValue, neuralStateValue: entry.neuralStateValue, beliefValue: entry.beliefValue, reasons: [...(entry.analysis?.reasons ?? [])], reasonCodes: normalizeReasonCodes(entry.analysis?.reasons ?? [], { actionRole: entry.role, observation }), localRewardSignal: decisionTrainingSignal({ actionRole: entry.role, projectedValue: entry.analysis?.value, reasons: entry.analysis?.reasons ?? [], observation }), components: { ...entry.components, belief: entry.beliefValue }, beliefComponents: { ...(entry.belief?.components ?? {}) }, evaluationComponents: { ...(entry.analysis?.components ?? {}) } })),
       rejected: [
-        ...rejectedByGuardrails.slice(0, 8).map((entry) => ({ role: entry.analysis?.role, cards: (entry.analysis?.cards ?? []).map((card) => card.name), guardrail: entry.guardrail, reasonCodes: normalizeReasonCodes([entry.guardrail], { actionRole: entry.analysis?.role, observation }) })),
+        ...rejectedByGuardrails.map((entry) => ({ role: entry.analysis?.role, cards: (entry.analysis?.cards ?? []).map((card) => card.name), guardrail: entry.guardrail, reasonCodes: normalizeReasonCodes([entry.guardrail], { actionRole: entry.analysis?.role, observation }) })),
         ...(rejectedPolicyOverride ? [{ role: rejectedPolicyOverride.role, cards: (rejectedPolicyOverride.analysis?.cards ?? []).map((card) => card.name), guardrail: "LEARNED_OVERRIDE_WORSE_PUBLIC_ROUTE" }] : []),
       ],
+      counts: {
+        legal: legal.length,
+        afterSafety: reasoned.afterSafetyCount ?? reasoned.length,
+        viable: viable.length,
+      },
+      bestHeuristic: legacyBest ? { role: legacyBest.role, cards: (legacyBest.analysis?.cards ?? []).map((c) => c.name), score: legacyBest.basePlannerScore } : null,
+      bestPlanned: plannedBest ? { role: plannedBest.role, cards: (plannedBest.analysis?.cards ?? []).map((c) => c.name), score: plannedBest.plannedScore } : null,
+      bestNeural: neuralBest ? { role: neuralBest.role, cards: (neuralBest.analysis?.cards ?? []).map((c) => c.name), score: neuralBest.neuralPolicyValue } : null,
+      filterFailure: reasoned.filterFailure ?? null,
     };
     rememberResponse(this.reasoningMemory, this.deckKnowledge, message, selected.candidate, observation);
     this.negativeInferenceTracker = updateNegativeInference(this.negativeInferenceTracker, observation, message, selected.candidate);

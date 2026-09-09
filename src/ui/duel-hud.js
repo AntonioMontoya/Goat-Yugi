@@ -8,7 +8,7 @@ function registerButton(action, className, { esc, registerAction, label = null }
   return `<button type="button" class="${className}" data-action-id="${esc(actionId)}" aria-label="${esc(copy)}"><span>${esc(affordance.icon)}</span><b>${esc(copy)}</b></button>`;
 }
 
-export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox = false, fullscreenLabel, boardTilt = false, esc }) {
+export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox = false, fullscreenLabel, boardTilt = false, esc, botProfile = null }) {
   const status = interactionStatus(model, view, { manual });
   return `<header class="duel-compact-head">
     <div class="duel-title-lockup"><span class="duel-mark">GOAT</span><div><strong>${esc(title)}</strong><small>${esc(subtitle)}</small></div></div>
@@ -18,7 +18,7 @@ export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox
       ${sandbox ? `<button type="button" data-action="restart-sandbox-duel">Reiniciar escenario</button><button type="button" data-action="edit-sandbox-scenario">Editar escenario</button>` : ""}
       <button type="button" data-action="new-duel">Nuevo duelo</button><button type="button" data-action="open-play">Preparar otra partida</button>
       <button type="button" data-action="toggle-fullscreen">${esc(fullscreenLabel)}</button><button type="button" data-action="tilt">${boardTilt ? "Vista superior" : "Vista inclinada"}</button>
-      <details class="duel-debug-details"><summary>Diagnóstico</summary><code>${esc(view?.pendingType ?? "SIN DECISIÓN")} · ${esc(view?.timingWindow?.kind ?? "sin ventana")}</code><small>${Number(view?.decisionCount ?? 0)} decisiones OCGCore</small></details>
+      <details class="duel-debug-details"><summary>Diagnóstico</summary><code>${esc(view?.pendingType ?? "SIN DECISIÓN")} · ${esc(view?.timingWindow?.kind ?? "sin ventana")}</code><small>${Number(view?.decisionCount ?? 0)} decisiones OCGCore</small>${botProfile ? `<small style="display:block;margin-top:4px;color:var(--text-muted, #888)">Bot: <b>${esc(botProfile.name)}</b> [${esc(botProfile.modelOrigin ?? "base")}] · Hash: <code>${esc(String(botProfile.modelHash ?? "n/a").slice(0, 10))}</code></small>` : ""}</details>
     </div></div>
   </header>`;
 }
@@ -28,10 +28,8 @@ export function renderPhaseRail({ view, model, esc, registerAction }) {
   const currentIndex = phaseIndex(current);
   const direct = model.phaseActions;
   const preferred = model.advanceAction ?? direct[0];
-  const intent = model.phaseIntents[0] ?? null;
-  const intentLabel = intent?.target === "NEXT_TURN" ? "Terminar turno" : intent ? `Ir a ${intent.label}` : "Continuar";
-  const priorityAdvance = model.freePriority && model.declineAction && intent
-    ? { ...model.declineAction, label: intentLabel, uiPhaseTarget: intent.target }
+  const priorityPass = model.freePriority && model.declineAction
+    ? { ...model.declineAction, label: "Pasar prioridad" }
     : null;
   const automatedOcgcore = view?.kind === "ocgcore";
   const commands = automatedOcgcore && view?.botPending
@@ -42,8 +40,8 @@ export function renderPhaseRail({ view, model, esc, registerAction }) {
         ? `<small class="phase-locked">Decide en la ventana de acciones</small>`
         : direct.length
           ? registerButton(preferred, "phase-command", { esc, registerAction })
-          : priorityAdvance
-            ? registerButton(priorityAdvance, "phase-command", { esc, registerAction, label: intentLabel })
+          : priorityPass
+            ? registerButton(priorityPass, "phase-command", { esc, registerAction, label: "Pasar prioridad" })
             : `<small class="phase-locked">${model.mode === "open" ? "Sin cambio disponible" : "Completa la decisión actual"}</small>`;
   return `<nav class="duel-phase-rail" data-testid="phase-hud" aria-label="Fases del turno"><strong>FASES</strong><ol style="--phase-index:${currentIndex}">${DUEL_PHASES.map(([id, label], index) => `<li class="${id === current ? "current" : index < currentIndex ? "complete" : "future"}" data-phase="${esc(id)}" aria-label="${esc(label)}"${id === current ? ` aria-current="step"` : ""}><span>${esc(label.toUpperCase())}</span></li>`).join("")}</ol><div class="phase-rail-actions"><em>SIGUIENTE</em>${commands}</div></nav>`;
 }

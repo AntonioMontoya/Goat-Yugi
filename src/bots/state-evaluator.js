@@ -50,9 +50,9 @@ function selectedBoardInstance(message, response, observation = {}) {
   const entry = message?.pos_changes?.[Number(response?.index)];
   if (!entry) return null;
   const code = codeOf(entry);
-  return (observation.ownMonsters ?? []).find((card) => Number(card.runtimeCode) === code
+  return (observation.ownMonsters ?? []).find((card) => codeOf(card) === code
     && (entry.sequence === undefined || Number(card.sequence) === Number(entry.sequence)))
-    ?? (observation.ownMonsters ?? []).find((card) => Number(card.runtimeCode) === code)
+    ?? (observation.ownMonsters ?? []).find((card) => codeOf(card) === code)
     ?? null;
 }
 
@@ -276,7 +276,14 @@ export function projectResponseValue(knowledge, message, response, { observation
   if (role === "activate" || role === "chain") {
     const hasPublicChain = (observation.publicChain ?? []).length > 0;
     const respondingToOpponent = (observation.publicChain ?? []).some((entry) => Number(entry.controller) !== Number(observation.player));
-    components.material -= 1;
+    if (!roles.has("absorb")) {
+      components.material -= 1;
+    } else {
+      components.material += 2;
+      components.board += 2;
+      components.tempo += 2.5;
+      reasons.push("ABSORB_OPPONENT_MONSTER");
+    }
     components.material -= activationCost(roles, board, observation);
     components.safety += cards.reduce((sum, card) => sum + deckSafetyAdjustment(new Set(card.roles ?? []), card, observation, board), 0);
     if (hasAny(roles, ["draw", "search", "advantage"])) {
@@ -316,23 +323,35 @@ export function projectResponseValue(knowledge, message, response, { observation
       const opposingTargets = targetPlan.opponent;
       const strongestOpposingAttack = Math.max(0, ...opposingTargets.filter(faceUp).map((card) => Number(card.attack) || 0));
       const worthwhileRemovalTarget = opposingTargets.length > 0
-        && (roles.has("swing") && opposingTargets.length >= 2
+        && (roles.has("absorb")
+          || roles.has("swing") && opposingTargets.length >= 2
           || opposingTargets.length === 1 && board.ownPower >= board.opponentLp
           || strongestOpposingAttack >= 1000
           || strongestOpposingAttack >= board.ownLp);
-      const monsterRelevant = roles.has("monster-removal") ? (worthwhileRemovalTarget ? opposingTargets.length : 0)
+      const monsterRelevant = (roles.has("monster-removal") || roles.has("take-control")) ? (worthwhileRemovalTarget ? opposingTargets.length : 0)
         : roles.has("position") ? opposingTargets.length : 0;
       const backrowRelevant = roles.has("backrow-removal") ? board.opponentBackrow : 0;
-      const generalRelevant = !roles.has("monster-removal") && !roles.has("backrow-removal") && !roles.has("position") ? board.opponentMonsters.length + board.opponentBackrow : 0;
+      const generalRelevant = !roles.has("monster-removal") && !roles.has("backrow-removal") && !roles.has("position") && !roles.has("take-control") ? board.opponentMonsters.length + board.opponentBackrow : 0;
       const replyingToOwnChain = role === "chain" && hasPublicChain && !respondingToOpponent;
       const reusableFlipValue = roles.has("position") && targetPlan.own.some((card) => cardForCode(knowledge, card)?.roles?.includes("flip")
         && !wasJustSummonedFaceUp(memory, observation, codeOf(card)));
       // Some legal trigger windows create value without a visible target: for
       // example, placing a Spell Counter or denying the next Draw Phase.
       // They must not inherit the removal-only "empty target" penalty.
-      const independentValue = hasAny(roles, ["counter-resource", "draw-denial"]) || reusableFlipValue ? 1 : 0;
+      const independentValue = hasAny(roles, ["counter-resource", "draw-denial", "self-turn-face-down", "pacman-engine"]) || reusableFlipValue ? 1 : 0;
       const relevantOpposingState = replyingToOwnChain && !independentValue ? 0 : monsterRelevant + backrowRelevant + generalRelevant + independentValue;
       components.tempo += relevantOpposingState ? 2.5 : -3;
+      if (cards[0]?.kind === "MONSTER" && (roles.has("self-turn-face-down") || roles.has("pacman-engine"))) {
+        components.tempo += 2.5;
+        components.future += 2.5;
+        reasons.push("PACMAN_RESET_FACE_DOWN");
+      }
+      if (cards[0]?.kind === "MONSTER" && (roles.has("monster-removal") || roles.has("removal") || roles.has("banish-removal")) && worthwhileRemovalTarget) {
+        components.material += roles.has("cost-tribute") ? 2.5 : 1.5;
+        components.board += bounded((strongestOpposingAttack - 1000) / 700, 1.0, 3.5);
+        components.tempo += 1.5;
+        reasons.push("MONSTER_IGNITION_REMOVAL");
+      }
       if (!relevantOpposingState) reasons.push(role === "chain" && hasPublicChain ? "CHAIN_NEEDS_IMMEDIATE_PUBLIC_JUSTIFICATION" : "INTERACTION_HAS_NO_VISIBLE_OPPOSING_VALUE");
       if (role === "chain" && !roles.has("negate")) {
         const activeChain = publicChainTargetContext(knowledge, observation, {
@@ -433,14 +452,21 @@ export function projectResponseValue(knowledge, message, response, { observation
 
   if (role === "attack") {
     const attacker = cards[0];
-    const attack = Number(attacker?.atk ?? message?.attacks?.[Number(response.index)]?.attack) || 0;
+    const attack = Number(message?.attacks?.[Number(response.index)]?.attack ?? attacker?.attack ?? attacker?.atk) || 0;
     const targetStats = board.opponentFaceUp.map((card) => (Number(card.position) & OcgPosition.ATTACK) !== 0
       ? Number(card.attack) || 0
       : Number(card.defense) || 0);
     const canDefeatVisible = targetStats.some((value) => attack >= value);
     const canConvertBattleEffect = roles.has("banish-removal") || roles.has("battle-removal");
-    if (!targetStats.length || canDefeatVisible || board.opponentFaceDown.length || canConvertBattleEffect) components.tempo += 2;
-    else {
+    const canBoostInDamageStep = roles.has("damage-step-boost") || String(attacker?.name ?? "").toLowerCase().includes("injection fairy lily");
+    const canAttackDirectly = roles.has("direct-attacker");
+    if (attack === 0 && !canConvertBattleEffect && !roles.has("floater") && !roles.has("death-trigger")) {
+      components.tempo -= 10;
+      components.safety -= 8;
+      reasons.push("ATTACK_HAS_NO_PROFITABLE_VISIBLE_TARGET");
+    } else if (!targetStats.length || canDefeatVisible || board.opponentFaceDown.length || canConvertBattleEffect || canBoostInDamageStep || canAttackDirectly) {
+      components.tempo += 2;
+    } else {
       components.tempo -= 7;
       components.safety -= bounded((Math.min(...targetStats) - attack) / 500, 0.5, 3);
       reasons.push("ATTACK_HAS_NO_PROFITABLE_VISIBLE_TARGET");
@@ -453,10 +479,28 @@ export function projectResponseValue(knowledge, message, response, { observation
   }
 
   if (role === "battle-phase") {
-    components.tempo += board.ownPower > 0 ? 1 : -0.5;
-    if (playstyle === "aggro" && board.ownPower > 0) {
-      components.tempo += 1.5;
-      reasons.push("AGGRO_ENTER_BATTLE_PROACTIVELY");
+    const unequippedAbsorb = (board.ownMonsters ?? []).some((m) => {
+      const sem = knowledge?.byRuntimeCode?.[String(codeOf(m))] ?? publicCardSemantics(codeOf(m));
+      return sem?.roles?.includes("absorb") && (Number(m.attack ?? m.atk ?? 0) === 0);
+    });
+    const hasUnusedIgnitionRemoval = (board.ownMonsters ?? []).some((m) => {
+      const sem = knowledge?.byRuntimeCode?.[String(codeOf(m))] ?? publicCardSemantics(codeOf(m));
+      const mRoles = new Set(sem?.roles ?? []);
+      const isRemoval = mRoles.has("monster-removal") || mRoles.has("removal") || mRoles.has("banish-removal");
+      const mAtk = Number(m.attack ?? m.atk ?? 0);
+      const oppStronger = (board.opponentMonsters ?? []).some((opp) => (Number(opp.attack ?? opp.atk ?? 0) > mAtk) || (Number(opp.defense ?? opp.def ?? 0) > mAtk));
+      return isRemoval && oppStronger;
+    });
+    if ((unequippedAbsorb || hasUnusedIgnitionRemoval) && board.opponentMonsters.length > 0) {
+      components.tempo -= 4;
+      components.safety -= 3;
+      reasons.push(unequippedAbsorb ? "PRIORITIZE_ABSORPTION_BEFORE_BATTLE" : "PRIORITIZE_REMOVAL_BEFORE_BATTLE");
+    } else {
+      components.tempo += board.ownPower > 0 ? 1 : -0.5;
+      if (playstyle === "aggro" && board.ownPower > 0) {
+        components.tempo += 1.5;
+        reasons.push("AGGRO_ENTER_BATTLE_PROACTIVELY");
+      }
     }
   }
   if (role === "end-phase") components.tempo -= 0.5;
@@ -469,8 +513,14 @@ export function projectResponseValue(knowledge, message, response, { observation
     const isWall = defense > attack || roles.has("defense") || roles.has("stall");
 
     if ((currentPosition & OcgPosition.FACEDOWN) !== 0) {
-      components.future += roles.has("flip") ? 3.5 : 0.3;
-      components.tempo += roles.has("flip") || isBeater ? 1.5 : 0;
+      if (attack === 0 && !roles.has("flip") && !roles.has("absorb") && !roles.has("variable-atk") && !roles.has("dynamic-atk")) {
+        components.tempo -= 7;
+        components.safety -= 6;
+        reasons.push("AVOID_SHIFTING_ZERO_ATK_TO_ATTACK_POSITION");
+      } else {
+        components.future += roles.has("flip") ? 3.5 : 0.3;
+        components.tempo += roles.has("flip") || isBeater ? 1.5 : 0;
+      }
     } else if ((currentPosition & OcgPosition.ATTACK) !== 0) {
       if (isBeater && defense < 1400) {
         components.board -= bounded((attack - defense) / 600, 1.5, 3.5);
@@ -483,13 +533,72 @@ export function projectResponseValue(knowledge, message, response, { observation
         if (!board.opponentMonsters.length && attack > 0) components.tempo -= 3;
       }
     } else if ((currentPosition & OcgPosition.DEFENSE) !== 0) {
-      components.board += bounded((attack - defense) / 700, -2.5, 2.5);
-      components.tempo += !board.opponentMonsters.length || attack >= board.opponentPower || isBeater ? 2.5 : -1;
+      if (attack === 0 && !roles.has("absorb") && !roles.has("variable-atk") && !roles.has("dynamic-atk")) {
+        components.tempo -= 7;
+        components.safety -= 6;
+        reasons.push("AVOID_SHIFTING_ZERO_ATK_TO_ATTACK_POSITION");
+      } else {
+        components.board += bounded((attack - defense) / 700, -2.5, 2.5);
+        components.tempo += !board.opponentMonsters.length || attack >= board.opponentPower || isBeater ? 2.5 : -1;
+      }
     } else components.future += 0.1;
     components.safety += cards.reduce((sum, card) => sum + deckSafetyAdjustment(new Set(card.roles ?? []), card, observation, board), 0);
   }
-  if (role === "yes") components.coherence += hasAny(roles, ["engine", "combo", "interaction", "advantage"]) ? 1 : 0;
-  if (role === "no") components.coherence -= hasAny(roles, ["engine", "combo", "interaction", "advantage"]) ? 1 : 0;
+  if (role === "yes" || role === "no") {
+    const isYes = role === "yes";
+    if (roles.has("battle-banisher")) {
+      const oppMonsters = observation.opponentMonsters ?? [];
+      const oppAtkMax = Math.max(0, ...oppMonsters.map((m) => Number(m.attack ?? m.atk ?? 0)));
+      const ownAtk = Number(cards[0]?.atk) || 1500;
+      const oppBattled = observation.battledOpponentMonster ?? null;
+      const oppStat = Number(oppBattled?.attack ?? oppBattled?.atk ?? oppAtkMax);
+      const isOppThreat = oppStat >= 1600 || oppStat >= ownAtk
+        || oppMonsters.some((m) => Number(m.attack ?? m.atk ?? 0) >= 1600 || (m.roles ?? []).includes("boss"))
+        || Number(observation.opponentThreat) >= 1600;
+
+      if (isOppThreat) {
+        if (isYes) {
+          components.tempo += 3.5;
+          components.material += 1.0;
+          reasons.push("DD_BANISH_HIGH_THREAT");
+        } else {
+          components.tempo -= 3.0;
+          reasons.push("DD_REFUSE_BANISH_THREAT_PENALTY");
+        }
+      } else {
+        if (!isYes) {
+          components.material += 2.5;
+          components.tempo += 2.0;
+          reasons.push("PRESERVE_DD_WARRIOR_LADY");
+        } else {
+          components.material -= 3.0;
+          components.tempo -= 2.0;
+          reasons.push("AVOID_SELF_BANISH_ON_WEAK_TARGET");
+        }
+      }
+    } else if (roles.has("recruiter")) {
+      if (isYes) {
+        components.material += 3.5;
+        components.tempo += 2.5;
+        reasons.push("RECRUITER_SPECIAL_SUMMON");
+      } else {
+        components.material -= 4.0;
+        components.tempo -= 3.0;
+      }
+    } else if (roles.has("recovery") || roles.has("advantage") || roles.has("draw") || roles.has("engine")) {
+      if (isYes) {
+        components.material += 3.0;
+        components.tempo += 2.0;
+        reasons.push("TRIGGER_OPTIONAL_ADVANTAGE");
+      } else {
+        components.material -= 3.0;
+        components.tempo -= 2.0;
+      }
+    } else {
+      if (isYes) components.coherence += hasAny(roles, ["engine", "combo", "interaction", "advantage"]) ? 1 : 0;
+      if (!isYes) components.coherence -= hasAny(roles, ["engine", "combo", "interaction", "advantage"]) ? 1 : 0;
+    }
+  }
 
   const causalCard = sourceCard(knowledge, message, memory, observation);
   const causalRoles = new Set(causalCard?.roles ?? []);
@@ -500,13 +609,35 @@ export function projectResponseValue(knowledge, message, response, { observation
       const entry = selections[Number(index)];
       const card = cardForCode(knowledge, entry);
       const controller = controllerOf(entry);
-      if (controller !== null && controller !== owner) components.tempo += 3;
-      else if (wasJustSummonedFaceUp(memory, observation, codeOf(entry))) {
+      if (controller !== null && controller !== owner) {
+        components.tempo += 3.5;
+        components.safety += 1.5;
+        if ((Number(card?.atk) || 0) >= 1500 || card?.roles?.includes("boss") || card?.roles?.includes("threat")) {
+          components.tempo += 2;
+          components.safety += 2;
+          reasons.push("DISRUPT_OPPONENT_THREAT_OR_LOCK");
+        } else {
+          reasons.push("TURN_OPPONENT_MONSTER_FACE_DOWN");
+        }
+      } else if (wasJustSummonedFaceUp(memory, observation, codeOf(entry))) {
         components.material -= 3;
         components.coherence -= 5;
         reasons.push("SPENDING_A_CARD_TO_REPAIR_THE_PREVIOUS_ACTION");
-      } else if (card?.roles?.includes("flip")) components.future += 2;
-      else components.coherence -= 2;
+      } else if (card?.roles?.includes("flip")) {
+        components.future += 3;
+        components.material += 1;
+        reasons.push("RESET_OWN_FLIP_EFFECT");
+      } else if (card?.roles?.includes("absorb") || ["relinquished", "thousand-eyes restrict"].some((n) => String(card?.name ?? "").toLowerCase().includes(n))) {
+        components.future += 3.5;
+        components.material += 1.5;
+        components.tempo += 2.0;
+        reasons.push("RESET_ABSORPTION_EFFECT");
+      } else {
+        components.tempo -= 6;
+        components.coherence -= 5;
+        components.safety -= 3;
+        reasons.push("AVOID_TURNING_OWN_NON_FLIP_MONSTER_FACE_DOWN");
+      }
     }
   }
 
@@ -528,7 +659,7 @@ export function projectResponseValue(knowledge, message, response, { observation
       const intrinsic = intrinsicCardValue(card, observation);
       if (location === OcgLocation.HAND && controller === owner) {
         const cardRoles = new Set(card?.roles ?? []);
-        const isSinister = cardRoles.has("sinister-engine") || cardRoles.has("discard-fodder") || String(card?.name ?? "").toLowerCase() === "sinister serpent";
+        const isSinister = cardRoles.has("sinister-engine") || cardRoles.has("discard-fodder") || String(card?.name ?? "").toLowerCase() === "sinister serpent" || String(card?.name ?? "").toLowerCase() === "night assailant";
         if (isSinister) {
           components.material += 3.5;
           reasons.push("DISCARD_FREE_RECURSIVE_SERPENT");
@@ -545,20 +676,96 @@ export function projectResponseValue(knowledge, message, response, { observation
             reasons.push("DISCARD_LOWEST_FUTURE_VALUE");
           }
         }
-      } else if ((location === OcgLocation.DECK && causalRoles.has("search")) || (location === OcgLocation.GRAVE && causalRoles.has("recovery"))) {
+      } else if (location === OcgLocation.EXTRA) {
+        const cardRoles = new Set(card?.roles ?? []);
+        const cardAtk = Number(card?.atk) || 0;
+        components.board += bounded((cardAtk - 1000) / 700, 0.5, 3.5);
+        if (cardRoles.has("absorb")) {
+          components.board += 4.0;
+          components.tempo += 3.0;
+          reasons.push("FUSION_ABSORB_THOUSAND_EYES");
+        } else if (cardRoles.has("negate") || cardRoles.has("spell-engine")) {
+          components.safety += 3.0;
+          components.tempo += 2.0;
+          reasons.push("FUSION_LOCKDOWN_NEGATOR");
+        } else if (cardRoles.has("hand-destruction") || cardRoles.has("burn")) {
+          components.tempo += 2.5;
+          reasons.push("FUSION_TACTICAL_EFFECT");
+        }
+      } else if ((location === OcgLocation.DECK && causalRoles.has("search")) || (location === OcgLocation.GRAVE && (causalRoles.has("recovery") || causalRoles.has("revive")))) {
         components.future += intrinsic;
         if (location === OcgLocation.GRAVE && (card?.roles?.includes("trinity") || ["pot of greed", "graceful charity", "delinquent duo"].includes(String(card?.name ?? "").toLowerCase()))) {
           components.future += 5.0;
           reasons.push("RECOVER_TRINITY_SPELL");
         }
-      } else if ((location === OcgLocation.MZONE || location === OcgLocation.SZONE) && causalRoles.has("removal")) {
-        components.tempo += controller !== null && controller !== owner ? intrinsic + 1 : -intrinsic - 2;
+        if (causalRoles.has("revive")) {
+          const cardAtk = Number(card?.atk) || 0;
+          const cardDef = Number(card?.def) || 0;
+          const cardRoles = new Set(card?.roles ?? []);
+          components.board += bounded((Math.max(cardAtk, cardDef) - 700) / 600, 1.0, 4.5);
+          components.tempo += 2.0;
+          if (cardRoles.has("boss") || cardAtk >= 2400) {
+            components.tempo += 2.5;
+            reasons.push("REVIVE_HIGH_THREAT_BOSS");
+          } else if (cardRoles.has("negate")) {
+            components.safety += 2.5;
+            reasons.push("REVIVE_LOCKDOWN_MONSTER");
+          } else if (cardRoles.has("flip")) {
+            components.future += 1.5;
+            reasons.push("REVIVE_UTILITY_MONSTER");
+          }
+        }
+      } else if ((location === OcgLocation.MZONE || location === OcgLocation.SZONE) && (causalRoles.has("removal") || causalRoles.has("take-control") || causalRoles.has("control-swap") || causalRoles.has("equip") || causalRoles.has("absorb"))) {
+        if (controller !== null && controller !== owner) {
+          if (causalRoles.has("take-control")) {
+            components.tempo += 3.5;
+            components.board += bounded((Number(card?.atk) || 0) / 600, 1.5, 4.0);
+            if (card?.roles?.includes("boss") || (Number(card?.atk) || 0) >= 2400) {
+              components.tempo += 2.5;
+              reasons.push("TAKE_CONTROL_OPPONENT_BOSS");
+            } else {
+              reasons.push("TAKE_CONTROL_OPPONENT_THREAT");
+            }
+          } else if (causalRoles.has("absorb")) {
+            const cardAtk = Number(card?.atk) || 0;
+            components.board += bounded(cardAtk / 500, 1.5, 5.0);
+            components.tempo += 3.0 + bounded(cardAtk / 600, 0.5, 3.5);
+            if (card?.roles?.includes("boss") || cardAtk >= 2400) {
+              components.tempo += 2.5;
+              reasons.push("ABSORB_OPPONENT_BOSS");
+            } else {
+              reasons.push("ABSORB_OPPONENT_THREAT");
+            }
+          } else {
+            components.tempo += intrinsic + 1;
+          }
+        } else {
+          if (causalRoles.has("control-swap")) {
+            const cardAtk = Number(card?.atk) || 0;
+            const isTokenOrFloater = card?.roles?.includes("token") || card?.roles?.includes("floater") || cardAtk <= 1000;
+            if (isTokenOrFloater) {
+              components.material += 2.5;
+              components.tempo += 2.0;
+              reasons.push("SWAP_LOW_VALUE_OR_FLOATER");
+            } else {
+              components.board -= bounded((cardAtk - 1000) / 500, 2.0, 6.0);
+              components.tempo -= 3.0;
+              reasons.push("AVOID_GIVING_HIGH_VALUE_MONSTER_IN_SWAP");
+            }
+          } else if (causalRoles.has("equip")) {
+            const cardAtk = Number(card?.atk) || 0;
+            components.tempo += 2.0 + bounded(cardAtk / 800, 0, 3.0);
+            reasons.push("EQUIP_BENEFIT_OWN_BEATER");
+          } else {
+            components.tempo += -intrinsic - 2;
+          }
+        }
         if (activeChain?.card?.roles?.includes("one-shot-effect") && matchesPublicChainCard(entry, activeChain.entry)) {
           components.tempo -= 8;
           components.coherence -= 5;
           reasons.push("REMOVAL_DOES_NOT_NEGATE_ACTIVE_ONE_SHOT");
         }
-        if (controller === owner && wasJustDeployedOrExposed(memory, observation, codeOf(entry))) {
+        if (controller === owner && wasJustDeployedOrExposed(memory, observation, codeOf(entry)) && !causalRoles.has("control-swap") && !causalRoles.has("equip")) {
           components.coherence -= 6;
           reasons.push("REMOVING_A_RESOURCE_JUST_DEPLOYED_OR_EXPOSED");
         }
@@ -566,11 +773,133 @@ export function projectResponseValue(knowledge, message, response, { observation
     }
   }
 
+  if (message?.type === OcgMessageType.ANNOUNCE_RACE) {
+    const RACE_MAP = {
+      warrior: 1n, spellcaster: 2n, fairy: 4n, fiend: 8n, zombie: 16n, machine: 32n,
+      aqua: 64n, pyro: 128n, rock: 256n, wingedbeast: 512n, plant: 1024n, insect: 2048n,
+      thunder: 4096n, dragon: 8192n, beast: 16384n, beastwarrior: 32768n, dinosaur: 65536n,
+      fish: 131072n, seaserpent: 262144n, reptile: 524288n
+    };
+    const raceFlag = (c) => {
+      if (!c) return 0n;
+      if (typeof c.race === "bigint") return c.race;
+      if (typeof c.race === "number") return BigInt(c.race);
+      const str = String(c.race || "").toLowerCase().replace(/[^a-z]/g, "");
+      return RACE_MAP[str] ?? 0n;
+    };
+    const races = response.races ?? [];
+    const oppMonsters = board.opponentMonsters ?? [];
+    let matchedOppAtk = 0;
+    let matchedCount = 0;
+    for (const opp of oppMonsters) {
+      const sem = knowledge?.byRuntimeCode?.[String(codeOf(opp))] ?? publicCardSemantics(codeOf(opp));
+      const oppFlag = raceFlag(opp) || raceFlag(sem);
+      const oppStr = String(sem?.race ?? opp.race ?? "").toLowerCase().replace(/[^a-z]/g, "");
+      if (races.some((r) => (typeof r === "bigint" && oppFlag && r === oppFlag) || String(r).toLowerCase().replace(/[^a-z]/g, "") === oppStr)) {
+        matchedOppAtk += Number(opp.attack ?? opp.atk ?? 0);
+        matchedCount += 1;
+      }
+    }
+    if (matchedCount > 0) {
+      components.tempo += 3.5 + bounded(matchedOppAtk / 600, 0.5, 4.0);
+      components.material += matchedCount * 1.5;
+      reasons.push("ANNOUNCE_RACE_MATCHES_OPPONENT_BOARD");
+    } else {
+      components.tempo -= 3.0;
+      reasons.push("ANNOUNCE_RACE_MATCHES_NO_OPPOSING_TARGETS");
+    }
+  }
+
   if (message?.type === OcgMessageType.SELECT_TRIBUTE || message?.type === OcgMessageType.SELECT_SUM) {
     const selections = message.selects ?? [];
     for (const index of response.indicies ?? []) {
-      const card = cardForCode(knowledge, selections[Number(index)]);
-      components.material -= intrinsicCardValue(card, observation);
+      const sel = selections[Number(index)];
+      const card = cardForCode(knowledge, sel);
+      const cardRoles = new Set(card?.roles ?? []);
+      const atk = Number(card?.atk ?? sel?.attack ?? 0);
+      const isToken = sel?.isToken || (Number(sel?.type) & 0x4000) !== 0 || cardRoles.has("token") || (atk === 0 && Number(card?.def ?? sel?.defense ?? 0) === 0);
+      const isFloater = cardRoles.has("floater") || cardRoles.has("search-on-death") || cardRoles.has("grave-trigger")
+        || ["sangan", "sinister serpent"].some((n) => String(card?.name ?? "").toLowerCase().includes(n));
+      const isBoss = cardRoles.has("boss") || atk >= 2400;
+      const isBeater = atk >= 1800;
+      const isFaceUp = sel?.faceUp === true || (Number(sel?.position) & OcgPosition.FACEUP) !== 0;
+      const isSpentFlip = isFaceUp && cardRoles.has("flip") && atk <= 1000;
+
+      if (isToken) {
+        components.material += 2.0;
+        reasons.push("TRIBUTE_TOKEN_COST_FREE");
+      } else if (isFloater) {
+        components.material += 2.5;
+        components.future += 1.5;
+        reasons.push("TRIBUTE_FLOATER_FOR_VALUE");
+      } else if (isSpentFlip) {
+        components.material += 1.0;
+        reasons.push("TRIBUTE_SPENT_FLIP_MONSTER");
+      } else if (isBoss) {
+        components.material -= 8.0;
+        components.board -= 4.0;
+        reasons.push("AVOID_TRIBUTING_BOSS");
+      } else if (isBeater) {
+        components.material -= 3.5;
+        components.board -= 2.0;
+        reasons.push("AVOID_TRIBUTING_BEATER");
+      } else {
+        components.material -= intrinsicCardValue(card, observation);
+      }
+    }
+  }
+
+  if (message?.type === OcgMessageType.SELECT_OPTION) {
+    const sCode = Number(message?.code ?? message?.card?.code ?? 0);
+    const src = knowledge?.byRuntimeCode?.[String(sCode)] ?? publicCardSemantics(sCode) ?? sourceCard(knowledge, message, memory, observation);
+    const srcRoles = new Set(src?.roles ?? []);
+    const isEcon = srcRoles.has("modal-control") || String(src?.name ?? "").toLowerCase().includes("enemy controller");
+    if (isEcon) {
+      const ownMonsters = observation.ownMonsters ?? [];
+      const hasDisposableTribute = ownMonsters.some((m) => m.isToken || (Number(m.attack ?? m.atk ?? 0) <= 1000) || (m.roles ?? []).includes("floater"));
+      const oppBoss = Math.max(0, ...(observation.opponentMonsters ?? []).map((m) => Number(m.attack ?? m.atk ?? 0)));
+      const canTakeControlForValue = hasDisposableTribute && oppBoss >= 1800;
+
+      if (response.index === 1) {
+        if (canTakeControlForValue) {
+          components.tempo += 4.0;
+          components.board += 3.0;
+          reasons.push("ECON_TAKE_CONTROL_OPPONENT_THREAT");
+        } else {
+          components.material -= 4.0;
+          reasons.push("ECON_AVOID_TRIBUTE_WITHOUT_FODDER");
+        }
+      } else if (response.index === 0) {
+        if (!canTakeControlForValue) {
+          components.tempo += 2.0;
+          reasons.push("ECON_CHANGE_POSITION_PREFERRED");
+        } else {
+          components.tempo -= 1.0;
+        }
+      }
+    }
+  }
+
+  if (message?.type === OcgMessageType.ANNOUNCE_NUMBER) {
+    const options = message.options ?? [];
+    const declaredNumber = options[Number(response.value)] ?? response.value;
+    const oppGrave = observation.opponentGrave ?? [];
+    const oppGraveLevels = oppGrave.map((g) => {
+      const sem = knowledge?.byRuntimeCode?.[String(codeOf(g))] ?? publicCardSemantics(codeOf(g));
+      return Number(sem?.level) || 0;
+    }).filter((l) => l > 0);
+
+    if (declaredNumber === 4) {
+      components.tempo += 3.0;
+      reasons.push("REASONING_DECLARE_LEVEL_4");
+    } else if (declaredNumber === 6 && oppGraveLevels.includes(6)) {
+      components.tempo += 2.5;
+      reasons.push("REASONING_DECLARE_LEVEL_6");
+    } else if (declaredNumber === 8 && oppGraveLevels.includes(8)) {
+      components.tempo += 2.5;
+      reasons.push("REASONING_DECLARE_LEVEL_8");
+    } else {
+      components.tempo -= 1.0;
     }
   }
 
@@ -599,11 +928,17 @@ export function reasonAboutResponses(knowledge, message, candidates, context = {
   }
   const undominated = guarded.allowed.filter((entry) => !entry.dominated);
   const coherent = undominated.filter((entry) => entry.analysis.components.coherence > -4.5);
+  let filterFailure = guarded.filterFailure ?? null;
+  if (!coherent.length && !undominated.length && guarded.allowed.length > 0) {
+    filterFailure = "ALL_CANDIDATES_DOMINATED_OR_INCOHERENT";
+  }
   const pool = coherent.length ? coherent : undominated.length ? undominated : evaluated;
   const bestProjected = Math.max(...pool.map((entry) => entry.analysis.value));
   const viable = pool.filter((entry) => entry.analysis.value >= bestProjected - 6 || entry.analysis.value >= 0);
   const selected = viable.length ? viable : pool;
   selected.rejectedByGuardrails = guarded.rejected;
+  selected.afterSafetyCount = guarded.allowed.length;
+  selected.filterFailure = filterFailure;
   return selected;
 }
 

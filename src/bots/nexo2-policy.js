@@ -2,7 +2,9 @@ import { GOAT_BASE_KNOWLEDGE_FINGERPRINT, GOAT_BASE_KNOWLEDGE_SCHEMA, baseKnowle
 import { isOpponentBackrowProbed, evaluateBackrowThreats } from "./negative-inference.js";
 import { resolvePlaystyleProfile } from "./state-evaluator.js";
 
-export const NEXO2_POLICY_SCHEMA = 2;
+import { NEXO2_POLICY_SCHEMA_V3, stableSoftmax } from "../training/nexo2-policy-contract.js";
+
+export const NEXO2_POLICY_SCHEMA = NEXO2_POLICY_SCHEMA_V3;
 export const NEXO2_DENSE_SIZE = 32;
 export const NEXO2_HASH_SIZE = 256;
 export const NEXO2_INPUT_SIZE = NEXO2_DENSE_SIZE + NEXO2_HASH_SIZE;
@@ -244,6 +246,10 @@ export class Nexo2PolicyNetwork {
   constructor(model = {}, { seed = 1, learningRate = 0.004 } = {}) {
     this.inputSize = Number(model.inputSize) || NEXO2_INPUT_SIZE;
     this.hiddenSize = Number(model.hiddenSize) || NEXO2_HIDDEN_SIZE;
+    if (model.w1 && Array.isArray(model.w1) && model.w1.length !== this.inputSize * this.hiddenSize) {
+      throw new Error(`Incompatible network dimensions in model: expected w1.length=${this.inputSize * this.hiddenSize}, got ${model.w1.length}`);
+    }
+    this.policyVersion = Math.max(1, Number(model.policyVersion) || 1);
     const random = seededGenerator(Number(model.seed ?? seed) || 1);
     const scale = Math.sqrt(6 / (this.inputSize + this.hiddenSize));
     const rawW1 = modelArray(model.w1, this.inputSize * this.hiddenSize, () => initializedWeights(this.inputSize * this.hiddenSize, random, scale));
@@ -270,6 +276,7 @@ export class Nexo2PolicyNetwork {
       rewardBaseline: Number(model.trainingState?.rewardBaseline) || 0,
       meanAbsoluteAdvantage: Number(model.trainingState?.meanAbsoluteAdvantage) || 0,
     };
+    this.optimizerState = model.optimizerState ? structuredClone(model.optimizerState) : null;
   }
 
   forward(input) {
@@ -293,7 +300,15 @@ export class Nexo2PolicyNetwork {
       logit += wp[index] * hidden[index];
       rawValue += wv[index] * hidden[index];
     }
-    return { hidden, logit: clamp(logit, -12, 12), policy: Math.tanh(logit), value: Math.tanh(rawValue), rawValue };
+    return {
+      hidden,
+      rawLogit: logit,
+      logit: clamp(logit, -12, 12),
+      qValue: rawValue,
+      rawValue,
+      policy: Math.tanh(logit),
+      value: Math.tanh(rawValue),
+    };
   }
 
   scoreBatch(inputs = []) {
@@ -391,6 +406,7 @@ export class Nexo2PolicyNetwork {
   manifest() {
     return {
       schema: NEXO2_POLICY_SCHEMA,
+      policyVersion: this.policyVersion,
       type: "public-action-mlp-policy-value",
       baseKnowledgeSchema: GOAT_BASE_KNOWLEDGE_SCHEMA,
       baseKnowledgeFingerprint: GOAT_BASE_KNOWLEDGE_FINGERPRINT,
@@ -400,6 +416,7 @@ export class Nexo2PolicyNetwork {
       learningRate: this.learningRate,
       w1: [...this.w1], b1: [...this.b1], wp: [...this.wp], wv: [...this.wv], bp: this.bp, bv: this.bv,
       trainingState: { ...this.trainingState },
+      ...(this.optimizerState ? { optimizerState: structuredClone(this.optimizerState) } : {}),
     };
   }
 }

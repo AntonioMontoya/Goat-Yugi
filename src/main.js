@@ -776,7 +776,7 @@ function renderOcgcoreDuel(view = app.duel.view()) {
   const title = app.activeSandboxScenario ? "Partida de Prueba 1vs1" : manual ? "1vs1 local" : `${playerOneDeck.name} vs ${opponentName}`;
   const subtitle = app.activeSandboxScenario ? "Escenario manual · OCGCore GOAT" : `Semilla ${view.seed} · ${playerTwoDeck.name}`;
   return `<section class="page duel-page">
-     ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, esc })}
+     ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, esc, botProfile: app.duelBotProfile })}
      <div class="duel-layout"><div class="table-frame ${app.boardTilt ? "tilted" : ""} ${app.inspectedCard ? "has-inspector" : ""}">
        <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
        <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
@@ -1068,13 +1068,8 @@ function settlePendingLadder() {
 function submitOcgcoreAction(action) {
   const before = currentDuelView();
   app.duel.respond(action);
-  const intermediate = currentDuelView();
-  const phaseAction = action?.uiPhaseTarget
-    ? (intermediate?.actions ?? []).find((candidate) => isPhaseAction(candidate) && candidate.phaseTarget === action.uiPhaseTarget)
-    : null;
-  if (phaseAction) app.duel.respond(phaseAction);
   const after = currentDuelView();
-  recordDuelTransition(phaseAction ?? action, before, after);
+  recordDuelTransition(action, before, after);
   saveActiveDuelState();
   return after;
 }

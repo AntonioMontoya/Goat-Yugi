@@ -29,7 +29,7 @@ function controllerOf(entry) {
 }
 
 function rolesOf(entry) {
-  return new Set((entry?.analysis?.cards ?? []).flatMap((card) => card.roles ?? []));
+  return new Set((entry?.analysis?.cards ?? []).flatMap((card) => card?.roles ?? []));
 }
 
 function primaryCode(entry) {
@@ -69,6 +69,16 @@ function sourceCode(knowledge, message, memory = {}, observation = {}) {
 function cardSemantics(knowledge, entry) {
   const code = codeOf(entry);
   return knowledge?.byRuntimeCode?.[String(code)] ?? publicCardSemantics(code) ?? null;
+}
+
+function selectedBoardInstance(message, candidate, observation = {}) {
+  const entry = message?.pos_changes?.[Number(candidate?.index)];
+  if (!entry) return null;
+  const code = codeOf(entry);
+  return (observation.ownMonsters ?? []).find((card) => codeOf(card) === code
+    && (entry.sequence === undefined || Number(card.sequence) === Number(entry.sequence)))
+    ?? (observation.ownMonsters ?? []).find((card) => codeOf(card) === code)
+    ?? null;
 }
 
 /**
@@ -178,14 +188,25 @@ export function publicProgressSignature(observation = {}) {
   ]);
 }
 
-function rejectionReason(entry, evaluated, knowledge, message, { observation = {}, memory = {} } = {}) {
+function rejectionReason(entry, evaluated, knowledge, message, context = {}) {
+  const { observation = {}, memory = {} } = context;
   const role = entry.analysis?.role;
   const roles = rolesOf(entry);
   const sameCardAlternatives = evaluated.filter((other) => other !== entry && primaryCode(other) === primaryCode(entry));
 
   if (role === "summon" && roles.has("flip") && !isImmediateLethal(entry, observation)
     && sameCardAlternatives.some((other) => other.analysis?.role === "monster-set")) {
-    return "FLIP_VALUE_REQUIRES_SET";
+    const card = entry.analysis?.cards?.[0];
+    const attack = Number(card?.atk) || 0;
+    const opponentMonsters = (observation.opponentMonsters ?? []).filter((m) => m?.faceUp === true);
+    const canDefeatVisible = opponentMonsters.some((m) => {
+      const pos = Number(m.position) || 0;
+      const stat = (pos & OcgPosition.ATTACK) !== 0 ? (Number(m.attack ?? m.atk) || 0) : (Number(m.defense ?? m.def) || 0);
+      return attack >= stat;
+    });
+    if (!canDefeatVisible && context?.allowFlipSummon !== true) {
+      return "FLIP_VALUE_REQUIRES_SET";
+    }
   }
 
   if (role === "summon" && roles.has("spirit")) {
@@ -206,7 +227,9 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
     const card = entry.analysis?.cards?.[0];
     const attack = Number(card?.atk) || 0;
     const defense = Number(card?.def) || 0;
-    if (attack >= 1600 && attack > defense && defense < 1400
+    const oppFaceUp = (observation.opponentMonsters ?? []).filter((m) => m?.faceUp === true);
+    const facingSuperiorAttacker = oppFaceUp.some((m) => Number(m.attack ?? m.atk ?? 0) > attack);
+    if (attack >= 1600 && attack > defense && defense < 1400 && !facingSuperiorAttacker
       && sameCardAlternatives.some((other) => other.analysis?.role === "summon")) {
       return "BEATER_SHOULD_BE_SUMMONED_IN_ATTACK";
     }
@@ -221,6 +244,16 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
     if ((pos & OcgPosition.ATTACK) !== 0 && attack >= 1400 && attack > defense && defense < 1400
       && !roles.has("defense") && !roles.has("stall") && !roles.has("flip")) {
       return "AVOID_SWITCHING_BEATER_TO_DEFENSE";
+    }
+    if ((pos & OcgPosition.DEFENSE) !== 0 && attack < 1400 && !roles.has("dynamic-atk") && !roles.has("damage-step-boost") && !roles.has("variable-atk")) {
+      const oppStronger = (observation.opponentMonsters ?? []).some((m) => {
+        const oppPos = Number(m.position) || 0;
+        const oppStat = (oppPos & OcgPosition.ATTACK) !== 0 ? (Number(m.attack ?? m.atk) || 0) : (Number(m.defense ?? m.def) || 0);
+        return oppStat > attack;
+      });
+      if (oppStronger) {
+        return "AVOID_SHIFTING_LOW_ATK_TO_ATTACK";
+      }
     }
   }
 
@@ -237,7 +270,8 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
     const isMain1 = (phase & OcgPhase.MAIN1) !== 0 || phase === OcgPhase.MAIN1 || phase === 4;
     const isPastTurn1 = Number(observation.turn ?? 1) > 1;
     const canEnterBattle = Boolean(message.to_bp) || evaluated.some((other) => other !== entry && other.analysis?.role === "battle-phase");
-    if (isMain1 && isPastTurn1 && canEnterBattle) {
+    const hasHandPreparation = handRoles.has("hand-discard") || handRoles.has("prepare-discard") || context?.allowMain1Set === true;
+    if (isMain1 && isPastTurn1 && canEnterBattle && !hasHandPreparation) {
       return "DEFER_DEFENSIVE_SET_TO_MAIN_PHASE_2";
     }
   }
@@ -273,6 +307,19 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
       && recent.progressSignature === progress);
     if (repeatedWithoutProgress && evaluated.some((other) => other !== entry && other.analysis?.role !== "activate")) {
       return "REPEATED_ACTIVATION_WITHOUT_PUBLIC_PROGRESS";
+    }
+  }
+
+  if (message?.type === OcgMessageType.SELECT_IDLECMD && role === "battle-phase") {
+    const unequippedAbsorb = (observation.ownMonsters ?? []).some((m) => {
+      const sem = knowledge?.byRuntimeCode?.[String(codeOf(m))] ?? publicCardSemantics(codeOf(m));
+      const isFaceUp = m?.faceUp === true || (Number(m?.position) & OcgPosition.FACEUP) !== 0;
+      return isFaceUp && sem?.roles?.includes("absorb") && (Number(m?.attack ?? m?.atk ?? 0) === 0);
+    });
+    const oppMonsters = Number(observation.opponentMonsterCount ?? observation.opponentMonsters?.length) || 0;
+    const canActivateAbsorb = evaluated.some((other) => other !== entry && other.analysis?.role === "activate" && other.analysis?.cards?.[0]?.roles?.includes("absorb"));
+    if (unequippedAbsorb && oppMonsters > 0 && canActivateAbsorb) {
+      return "PRIORITIZE_ABSORPTION_BEFORE_BATTLE";
     }
   }
 
@@ -435,18 +482,71 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
     }
   }
 
+  if (role === "position-change") {
+    const card = entry.analysis?.cards?.[0];
+    const attack = Number(card?.atk ?? card?.attack ?? 0);
+    const instance = selectedBoardInstance(message, entry.candidate, observation);
+    const currentPos = Number(instance?.position ?? 0);
+    const isChangingToAttack = (currentPos & OcgPosition.DEFENSE) !== 0;
+    const canDoOther = evaluated.some((other) => other !== entry && ["battle-phase", "end-phase", "activate", "summon", "special-summon", "monster-set", "spell-set"].includes(other.analysis?.role));
+    if (isChangingToAttack && canDoOther) {
+      const cardRoles = new Set([...(card?.roles ?? []), ...(entry.roles ?? [])]);
+      const hasSpecialAtk = cardRoles.has("absorb") || cardRoles.has("dynamic-atk") || cardRoles.has("variable-atk")
+        || ["relinquished", "thousand-eyes restrict"].some((n) => String(card?.name ?? "").toLowerCase().includes(n));
+      if (attack === 0 && !hasSpecialAtk) {
+        return "AVOID_EXPOSING_ZERO_ATK_IN_ATTACK";
+      }
+      const oppMonsters = observation.opponentMonsters ?? [];
+      const oppHasStronger = oppMonsters.some((m) => Number(m.attack ?? m.atk ?? 0) > attack);
+      if (attack < 1400 && !hasSpecialAtk && (oppHasStronger || Number(observation.opponentThreat ?? 0) > attack)) {
+        return "AVOID_SHIFTING_LOW_ATK_TO_ATTACK";
+      }
+    }
+  }
+
   if (role === "attack") {
     const card = entry.analysis?.cards?.[0];
     const cardId = codeOf(card) || primaryCode(entry);
+    const attack = Number(message?.attacks?.[Number(entry.candidate?.index)]?.attack ?? card?.attack ?? card?.atk) || 0;
+    const attackerRoles = new Set([...(card?.roles ?? []), ...(entry.roles ?? [])]);
+    const name = String(card?.name ?? "").toLowerCase();
+    const isDamageStepBooster = attackerRoles.has("damage-step-boost") || name.includes("injection fairy lily");
+    const isDirectAttacker = attackerRoles.has("direct-attacker") || name.includes("jinzo #7") || name.includes("inaba white rabbit");
+    const hasBattleTrigger = attackerRoles.has("floater")
+      || attackerRoles.has("search-on-death")
+      || attackerRoles.has("death-trigger")
+      || attackerRoles.has("grave-trigger")
+      || attackerRoles.has("banish-removal")
+      || attackerRoles.has("battle-removal")
+      || isDamageStepBooster
+      || isDirectAttacker
+      || ["sangan", "mystic tomato", "shining angel", "mother grizzly", "giant germ", "nimble momonga", "d.d. warrior lady", "d.d. assailant"].some((val) => name.includes(val));
+    const canEndOrM2 = evaluated.some((other) => other !== entry && ["main-two", "end-phase"].includes(other.analysis?.role));
+
+    if (attack === 0 && !hasBattleTrigger && canEndOrM2) {
+      return "NO_PROFITABLE_VISIBLE_ATTACK_TARGET";
+    }
+
     const isMillEngine = MILL_ENGINE_CODES.has(cardId) || roles.has("cost-discard-5") || roles.has("deck-consume-5");
     if (isMillEngine && !isImmediateLethal(entry, observation)) {
-      const canEndOrM2 = evaluated.some((other) => other !== entry && ["main-two", "end-phase"].includes(other.analysis?.role));
-      if (canEndOrM2) return "MILL_ENGINE_NEVER_ATTACKS";
+      const isCardFaceUp = (m) => m?.faceUp === true || (Number(m?.position) & 5) !== 0 || (Number(m?.position) & 1) !== 0;
+      const oppMonsters = observation.opponentMonsters ?? [];
+      const oppFaceUp = oppMonsters.filter(isCardFaceUp);
+      const isSuicidal = oppFaceUp.length > 0 && oppFaceUp.every((m) => {
+        const pos = Number(m.position) || 0;
+        const stat = (pos & 1) !== 0 ? (Number(m.attack ?? m.atk) || 0) : (Number(m.defense ?? m.def) || 0);
+        return attack <= stat;
+      });
+      if (canEndOrM2 && (isSuicidal || (oppMonsters.length > 0 && oppFaceUp.length === 0))) {
+        return "MILL_ENGINE_NEVER_ATTACKS";
+      }
     }
 
     if (entry.analysis?.reasons?.includes("ATTACK_HAS_NO_PROFITABLE_VISIBLE_TARGET")
-      && evaluated.some((other) => other !== entry && ["main-two", "end-phase"].includes(other.analysis?.role))) {
-      return "NO_PROFITABLE_VISIBLE_ATTACK_TARGET";
+      && canEndOrM2) {
+      if (!hasBattleTrigger) {
+        return "NO_PROFITABLE_VISIBLE_ATTACK_TARGET";
+      }
     }
   }
 
@@ -485,13 +585,39 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
         }
       }
     }
-    if (["removal", "position"].some((value) => causal.has(value))) {
+    if (causal.has("removal")) {
       const owner = Number(observation.player ?? message.player ?? 0);
       const current = selectionStats(message, entry.candidate, owner);
       const alternatives = evaluated.map((other) => selectionStats(message, other.candidate, owner));
       const bestOwn = Math.min(...alternatives.map((stats) => stats.own));
       const bestOpponent = Math.max(...alternatives.filter((stats) => stats.own === bestOwn).map((stats) => stats.opponent));
       if (current.own > bestOwn || (current.own === bestOwn && current.opponent < bestOpponent)) return "AVOID_SELF_TARGET_WHEN_OPPONENT_TARGET_EXISTS";
+    }
+    if (causal.has("position") || causal.has("turn-face-down")) {
+      const selectedIndices = entry.candidate?.indicies ?? [];
+      const hasSelfNonFlip = selectedIndices.some((idx) => {
+        const item = selections[Number(idx)];
+        const targetCard = cardSemantics(knowledge, item);
+        const targetController = controllerOf(item);
+        const isOwn = targetController === owner;
+        const isFlip = targetCard?.roles?.includes("flip");
+        const isAbsorb = targetCard?.roles?.includes("absorb")
+          || ["relinquished", "thousand-eyes restrict"].some((n) => String(targetCard?.name ?? "").toLowerCase().includes(n));
+        return isOwn && !isFlip && !isAbsorb;
+      });
+      if (hasSelfNonFlip) {
+        const hasBetterTarget = evaluated.some((other) => other !== entry && (other.candidate?.indicies ?? []).some((idx) => {
+          const item = selections[Number(idx)];
+          const targetCard = cardSemantics(knowledge, item);
+          const targetController = controllerOf(item);
+          const isAbsorb = targetCard?.roles?.includes("absorb")
+            || ["relinquished", "thousand-eyes restrict"].some((n) => String(targetCard?.name ?? "").toLowerCase().includes(n));
+          return (targetController !== null && targetController !== owner) || targetCard?.roles?.includes("flip") || isAbsorb;
+        }));
+        if (hasBetterTarget) {
+          return "AVOID_TURNING_OWN_NON_FLIP_MONSTER_FACE_DOWN";
+        }
+      }
     }
     const isHandSelection = selections.some((s) => Number(s.location) === OcgLocation.HAND && controllerOf(s) === owner);
     if (isHandSelection) {
@@ -518,10 +644,47 @@ function rejectionReason(entry, evaluated, knowledge, message, { observation = {
     }
   }
 
+  if (message?.type === OcgMessageType.SELECT_TRIBUTE || message?.type === OcgMessageType.SELECT_SUM) {
+    const selectedIndices = entry.candidate?.indicies ?? [];
+    const selections = message.selects ?? [];
+    const hasBossTribute = selectedIndices.some((idx) => {
+      const item = selections[Number(idx)];
+      const c = cardSemantics(knowledge, item);
+      const cRoles = new Set(c?.roles ?? []);
+      return cRoles.has("boss") || (Number(c?.atk ?? item?.attack ?? 0) >= 2400);
+    });
+    if (hasBossTribute) {
+      const hasNonBossAlternative = evaluated.some((other) => !(other.candidate?.indicies ?? []).some((idx) => {
+        const item = selections[Number(idx)];
+        const c = cardSemantics(knowledge, item);
+        const cRoles = new Set(c?.roles ?? []);
+        return cRoles.has("boss") || (Number(c?.atk ?? item?.attack ?? 0) >= 2400);
+      }));
+      if (hasNonBossAlternative) {
+        return "AVOID_TRIBUTING_BOSS_MONSTER";
+      }
+    }
+  }
+
   if ((message?.type === OcgMessageType.SELECT_TRIBUTE || message?.type === OcgMessageType.SELECT_SUM)
     && entry.analysis?.components?.material < -7
     && evaluated.some((other) => Number(other.analysis?.components?.material) > Number(entry.analysis.components.material) + 2)) {
     return "PRESERVE_HIGH_VALUE_COST_MATERIAL";
+  }
+
+  if (message?.type === OcgMessageType.SELECT_POSITION) {
+    const card = entry.analysis?.cards?.[0] ?? cardSemantics(knowledge, message);
+    const cardRoles = new Set(card?.roles ?? []);
+    const isAbsorb = cardRoles.has("absorb") || ["relinquished", "thousand-eyes restrict"].some((n) => String(card?.name ?? "").toLowerCase().includes(n));
+    const attack = Number(card?.atk) || 0;
+    const pos = Number(entry.candidate?.position) || 0;
+    const hasOpponentThreats = Number(observation.opponentMonsterCount ?? observation.opponentMonsters?.length ?? 0) > 0 || Number(observation.opponentThreat) > 0;
+    if (isAbsorb && attack === 0 && hasOpponentThreats && (pos & OcgPosition.FACEUP_ATTACK) !== 0) {
+      const canChooseDefense = evaluated.some((other) => (Number(other.candidate?.position) & OcgPosition.DEFENSE) !== 0);
+      if (canChooseDefense) {
+        return "AVOID_EXPOSING_UNEQUIPPED_ABSORB_IN_ATTACK";
+      }
+    }
   }
 
   if (role === "no" && evaluated.some((other) => other !== entry && other.analysis?.role === "yes")) {
@@ -553,11 +716,14 @@ export function enforceDecisionGuardrails(knowledge, message, evaluated, context
     if (reason) rejected.push({ ...entry, guardrail: reason });
     else allowed.push(entry);
   }
+  const allRejected = allowed.length === 0 && evaluated.length > 0;
   return {
     allowed: allowed.length ? allowed : evaluated,
-    rejected: allowed.length ? rejected : [],
+    rejected,
+    allRejected,
+    filterFailure: allRejected ? "ALL_CANDIDATES_REJECTED_BY_GUARDRAILS" : null,
   };
 }
 
-export const DECISION_GUARDRAIL_SCHEMA = 8;
+export const DECISION_GUARDRAIL_SCHEMA = 10;
 

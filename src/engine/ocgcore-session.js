@@ -986,6 +986,7 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
     eventCount: 0,
     log: [],
     deckReversed: initialDeckReversalState(scenario),
+    pendingPhaseTransition: null,
     destroyed: false,
     advance() {
       if (this.destroyed || this.winner !== null) return this.view();
@@ -996,6 +997,9 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
         this.status = this.duel.process();
         const messages = this.duel.messages();
         const phaseChanged = messages.some((message) => message.type === OcgMessageType.NEW_TURN || message.type === OcgMessageType.NEW_PHASE);
+        if (phaseChanged) {
+          this.pendingPhaseTransition = null;
+        }
         const drawCompleted = messages.some((message) => message.type === OcgMessageType.DRAW);
         for (const message of messages) {
           if (message.type === OcgMessageType.NEW_TURN) {
@@ -1153,6 +1157,11 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
     },
     respond(action) {
       if (!this.pending || this.botPending || !action?.coreResponse || this.winner !== null) return this.view();
+      if (action.actionKind === "phase" || action.phaseTarget) {
+        this.pendingPhaseTransition = action.phaseTarget ?? action.label ?? true;
+      } else if (this.pending?.type !== OcgMessageType.SELECT_CHAIN) {
+        this.pendingPhaseTransition = null;
+      }
       const before = this.view();
       const declinedChain = this.pending.type === OcgMessageType.SELECT_CHAIN
         && action.coreResponse.type === OcgResponseType.SELECT_CHAIN
@@ -1282,6 +1291,7 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
         turnPlayer: uiPlayer(this.turnPlayer),
         phase: this.phase,
         phasePaused: this.phasePaused,
+        pendingPhaseTransition: this.pendingPhaseTransition,
         priorityPlayer: this.pending ? uiPlayer(this.pending.player) : this.phasePaused ? uiPlayer(this.turnPlayer) : (this.winner === null ? uiPlayer(1) : null),
         botPending: this.botPending,
         bot: publicBotDescriptor(this.bot),

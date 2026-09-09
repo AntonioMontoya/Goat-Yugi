@@ -28,7 +28,7 @@ function s.initial_effect(c)
   e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
   e3:SetCode(EVENT_LEAVE_FIELD)
   e3:SetOperation(s.mondesop)
-  e3:SetLabelObject(e0)
+  e3:SetLabelObject(e2)
   c:RegisterEffect(e3)
   local e4=Effect.CreateEffect(c)
   e4:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
@@ -61,7 +61,8 @@ function s.activate(e,tp,eg,ep,ev,re,r,rp)
   Duel.SpecialSummonComplete()
 end
 function s.mondesop(e,tp,eg,ep,ev,re,r,rp)
-  if e:GetLabelObject():GetLabel()~=0 then return end
+  local lo=e:GetLabelObject()
+  if lo and lo:GetLabel()~=0 then return end
   local tc=e:GetHandler():GetFirstCardTarget()
   if tc and tc:IsLocation(LOCATION_MZONE) then Duel.Destroy(tc,REASON_EFFECT) end
 end

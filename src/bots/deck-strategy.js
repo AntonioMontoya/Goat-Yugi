@@ -4,6 +4,7 @@ import { getDeck } from "../decks/decks.js";
 import { hashString } from "../engine/rng.js";
 import { NEXO2_DECK_PROFILES } from "./nexo2-deck-profiles.js";
 import { GOAT_BASE_KNOWLEDGE_FINGERPRINT, GOAT_BASE_KNOWLEDGE_SCHEMA, GOAT_BASE_RULES, baseKnowledgeFeatures, classifyGoatState } from "./goat-base-knowledge.js";
+import { publicCardSemantics } from "./card-semantics.js";
 
 const NORMALIZE_RE = /\s+/g;
 
@@ -232,6 +233,7 @@ const DECK_PLANS = Object.freeze({
 export function semanticRolesForCard(card) {
   const roles = new Set();
   const text = normalize(`${card?.visibleText ?? ""} ${card?.text ?? ""}`);
+  const name = normalize(card?.name);
   const kind = String(card?.kind ?? "").toUpperCase();
   const cardClass = normalize(card?.class);
   const family = normalize(card?.effectFamily);
@@ -288,7 +290,52 @@ export function semanticRolesForCard(card) {
   if (/destroy all spell and trap cards/.test(text)) roles.add("backrow-sweeper");
   if (/equip (?:only )?to|equipped monster|equip card/.test(text) || /equip/i.test(String(card?.subtype ?? ""))) { roles.add("equip"); roles.add("combo"); }
   if (/increase .*atk|gains? \d+ atk|original atk/.test(text)) { roles.add("attack-boost"); roles.add("lethal"); }
-  if (/attack .*additional time|attack .*for each equip|multiple attacks/.test(text)) { roles.add("multi-attack"); roles.add("combo"); roles.add("lethal"); }
+  if (/attack .*additional time|attack .*for each equip|multiple attacks|attack all monsters|second attack in a row|attack twice|can declare a second attack/i.test(text)) { roles.add("multi-attack"); roles.add("combo"); roles.add("lethal"); }
+  if (/take control|switch(?:es)? control/i.test(text) || name === "change of heart") {
+    roles.add("take-control");
+    roles.add("removal");
+    roles.add("monster-removal");
+    roles.add("interaction");
+    if (/switch(?:es)? control/i.test(text)) roles.add("control-swap");
+  }
+  if (/special summon .* from (?:either|your|the) .*graveyard|in (?:your|the|either) .*graveyard;?\s*special summon/i.test(text)) {
+    roles.add("revive");
+    roles.add("recovery");
+    roles.add("combo");
+  }
+  if (/during (?:the )?damage (?:step|calculation).*gains? \d+ atk/i.test(text)) {
+    roles.add("damage-step-boost");
+    roles.add("dynamic-atk");
+    roles.add("attack-boost");
+  }
+  if (/(?:can attack|attacks?) (?:your opponent(?:'s life points)? )?directly/i.test(text) && !/cannot attack (?:your opponent(?:'s life points)? )?directly/i.test(text)) {
+    roles.add("direct-attacker");
+  }
+  if (/inflict(?: the difference as )?battle damage|piercing/i.test(text)) {
+    roles.add("piercing");
+  }
+  if (/when this card is destroyed by battle and sent to the (?:graveyard|gy):?\s*you can special summon/i.test(text) || ["mystic tomato", "giant rat", "shining angel", "pyramid turtle", "mother grizzly", "flying kamakiri #1", "nimble momonga", "apprentice magician"].includes(name)) {
+    roles.add("recruiter");
+    roles.add("floater");
+    roles.add("combo");
+    roles.add("engine");
+  }
+  if (/(?:sent from the (?:field|deck) to the (?:graveyard|gy)|destroyed and sent to the (?:graveyard|gy))/i.test(text) || ["sangan", "witch of the black forest", "sinister serpent"].includes(name)) {
+    roles.add("floater");
+    roles.add("grave-trigger");
+  }
+  if (/(?:after damage calculation|when this card battles).*banish (?:that|both) (?:monster|monsters|card)/i.test(text) || ["d.d. warrior lady", "d.d. assailant", "d. d. warrior lady", "d. d. assailant"].includes(name)) {
+    roles.add("battle-banisher");
+    roles.add("banish-removal");
+    roles.add("monster-removal");
+  }
+  if (/turn this card into face-down defense position/i.test(text) || ["swarm of scarabs", "swarm of locusts", "des lacooda", "golem sentry", "medusa worm"].includes(name)) {
+    roles.add("self-turn-face-down");
+    roles.add("pacman-engine");
+  }
+  if (name === "enemy controller" || (/change (?:the )?battle position.*tribute 1 monster.*take control/i.test(text))) {
+    roles.add("modal-control");
+  }
   if (/skips? .*draw phase/.test(text)) { roles.add("draw-denial"); roles.add("interaction"); roles.add("control"); }
   if (/top of (?:your|the) deck|deck upside down|reveal .*top/.test(text)) roles.add("deck-information");
   if (kind === "SPELL" && /continuous/i.test(String(card?.subtype ?? ""))) roles.add("continuous-engine");
@@ -303,10 +350,19 @@ export function semanticRolesForCard(card) {
   if (/tribute (?:\d+|this|a) (?:monster|card)/.test(costClause)) roles.add("cost-tribute");
   if (/you cannot (?:normal )?summon (?:or set|other monsters)/.test(text)) roles.add("summon-restriction");
   if (card?.class === "Spirit" || /returns to (?:its owner's|the) hand during the End Phase/.test(text)) roles.add("spirit");
-  const name = normalize(card?.name);
+  if (/equip (?:that target|it) to this card|equip .* opponent .* to this card/i.test(text) || ["relinquished", "thousand-eyes restrict"].some((n) => name.includes(n))) {
+    roles.add("absorb");
+    roles.add("dynamic-atk");
+    roles.add("variable-atk");
+    roles.add("removal");
+    roles.add("monster-removal");
+  }
   if (card?.effect === "SINISTER_SERPENT" || name === "sinister serpent" || /standby phase.*graveyard.*add .*hand/.test(text)) {
     roles.add("sinister-engine");
     roles.add("infinite-recovery");
+    roles.add("discard-fodder");
+  }
+  if (name === "night assailant" || (/sent from the hand to the (?:graveyard|gy)/i.test(text) && /flip/i.test(text))) {
     roles.add("discard-fodder");
   }
   if (name === "delinquent duo" || /opponent.*discards? .*card .*from .*hand/.test(text)) {
@@ -537,7 +593,22 @@ export function actionCardEntries(knowledge, message, response) {
   const entries = indexes.map((index) => source?.[Number(index)]).filter(Boolean);
   const sourceCode = Number(message?.code ?? message?.card?.code ?? message?.triggering_card?.code ?? 0);
   if (!entries.length && sourceCode) entries.push({ code: sourceCode });
-  return entries.map((entry) => knowledge.byRuntimeCode[String(Number(entry.code ?? entry.card ?? 0))] ?? knowledge.byName[normalize(entry.name)] ?? null).filter(Boolean);
+  return entries.map((entry) => {
+    const code = Number(entry.code ?? entry.card ?? 0);
+    const byCode = knowledge?.byRuntimeCode?.[String(code)];
+    const name = normalize(entry.name);
+    const byName = name ? knowledge?.byName?.[name] : null;
+    const base = byCode ?? byName ?? publicCardSemantics(code);
+    if (!base) return null;
+    if (entry.attack !== undefined || entry.defense !== undefined) {
+      return {
+        ...base,
+        atk: entry.attack !== undefined ? Number(entry.attack) : base.atk,
+        def: entry.defense !== undefined ? Number(entry.defense) : base.def,
+      };
+    }
+    return base;
+  }).filter(Boolean);
 }
 
 function roleSet(knowledge, message, response) {
@@ -559,7 +630,7 @@ export function strategyActionRole(message, response) {
   }
   if (message?.type === OcgMessageType.SELECT_BATTLECMD) return response?.action === SelectBattleCMDAction.SELECT_CHAIN ? "chain" : response?.action === SelectBattleCMDAction.SELECT_BATTLE ? "attack" : response?.action === SelectBattleCMDAction.TO_M2 ? "main-two" : "end-phase";
   if (message?.type === OcgMessageType.SELECT_CHAIN) return response?.index === null ? "pass-chain" : "chain";
-  if (message?.type === OcgMessageType.SELECT_EFFECTYN || message?.type === OcgMessageType.SELECT_YESNO) return response?.yes ? "yes" : "no";
+  if (message?.type === OcgMessageType.SELECT_EFFECTYN || message?.type === OcgMessageType.SELECT_YESNO) return (response?.yes === true || response?.value === 1 || response?.value === true) ? "yes" : "no";
   return "decision";
 }
 

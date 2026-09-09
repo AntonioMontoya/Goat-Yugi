@@ -1,5 +1,7 @@
 import { CARDS } from "../engine/cards.js";
+import { GOAT_BANLIST } from "../format/banlist-data.js";
 import { strategyActionRole } from "./deck-strategy.js";
+import { OcgMessageType, SelectBattleCMDAction } from "../../node_modules/@jsr/n1xx1__ocgcore-wasm/dist/index.js";
 
 let cachedCardNames = null;
 
@@ -22,41 +24,29 @@ function nameOfCard(card) {
   return lookup.get(code) ?? "";
 }
 
-/** 
- * Limited cards in Goat Format (max 1 copy per deck). 
- * Once seen in public GY or banished, they cannot exist in hidden zones
- * unless explicitly recycled by Magician of Faith, Mask of Darkness, etc.
+/**
+ * Limited and Forbidden cards in Goat Format derived from authoritative banlist.
+ * Once seen in public zones, limited cards cannot exist in hidden zones
+ * unless explicitly recycled to hand/deck.
  */
-export const GOAT_LIMITED_CARDS = Object.freeze([
-  "mirror force",
-  "torrential tribute",
-  "ring of destruction",
-  "heavy storm",
-  "pot of greed",
-  "graceful charity",
-  "delinquent duo",
-  "snatch steal",
-  "premature burial",
-  "call of the haunted",
-  "mystical space typhoon",
-  "card destruction",
-  "morphing jar",
-  "black luster soldier - envoy of the beginning",
-  "sinister serpent",
-  "tribe-infecting virus",
-  "breaker the magical warrior",
-  "jinzo",
-]);
+export const GOAT_LIMITED_CARDS = Object.freeze(
+  [...GOAT_BANLIST.limited, ...GOAT_BANLIST.forbidden].map((name) => name.toLowerCase())
+);
 
-export function createNegativeInferenceTracker() {
+export function createNegativeInferenceTracker({ legacy = false } = {}) {
   return {
-    schema: 1,
-    testedSlots: {}, // sequence -> { passedAttack: boolean, turnsSet: number }
+    schema: 2,
+    legacy: legacy === true,
+    testedSlots: {}, // sequence -> { passedAttack: boolean, turnsSet: number, cardUid: string|null }
+    slotGenerations: {}, // sequence -> number
+    activeSlotIds: {}, // sequence -> string
+    pendingAttack: null, // { turn, slotsPresent: [{ sequence, uid }] }
     knownOpponentHand: [], // list of card names known in opponent's hand
     exhaustedLimitedCards: new Set(),
     lastTurn: 0,
     attacksDeclaredThisTurn: 0,
     attackDeclaringSlotPassed: false,
+    oppHadSinisterInGrave: false,
   };
 }
 
@@ -64,40 +54,199 @@ export function createNegativeInferenceTracker() {
  * Updates tracker with public observation facts and prior action events.
  */
 export function updateNegativeInference(tracker = createNegativeInferenceTracker(), observation = {}, message = null, response = null) {
+  if (tracker.legacy === true) {
+    const legacyNext = {
+      ...tracker,
+      testedSlots: { ...tracker.testedSlots },
+      knownOpponentHand: [...tracker.knownOpponentHand],
+      exhaustedLimitedCards: new Set(tracker.exhaustedLimitedCards),
+    };
+
+    const currentTurn = Number(observation.turn) || 0;
+    if (currentTurn !== legacyNext.lastTurn) {
+      legacyNext.lastTurn = currentTurn;
+      legacyNext.attacksDeclaredThisTurn = 0;
+      legacyNext.attackDeclaringSlotPassed = false;
+    }
+
+    const allPublicOppCards = [
+      ...(observation.opponentGrave ?? []),
+      ...(observation.opponentBanished ?? []),
+    ];
+    for (const card of allPublicOppCards) {
+      const name = nameOfCard(card);
+      if (name && GOAT_LIMITED_CARDS.includes(name)) {
+        legacyNext.exhaustedLimitedCards.add(name);
+      }
+    }
+
+    const oppGraveNames = (observation.opponentGrave ?? []).map(nameOfCard);
+    const oppHasSinisterInGrave = oppGraveNames.includes("sinister serpent");
+    if (!oppHasSinisterInGrave && tracker.oppHadSinisterInGrave && !legacyNext.knownOpponentHand.includes("sinister serpent")) {
+      legacyNext.knownOpponentHand.push("sinister serpent");
+    }
+    legacyNext.oppHadSinisterInGrave = oppHasSinisterInGrave;
+
+    const role = response && message ? strategyActionRole(message, response) : null;
+    const isAttackAction = role === "attack" || response?.action === 1 || response?.role === "attack";
+    if (isAttackAction) {
+      legacyNext.attacksDeclaredThisTurn += 1;
+    }
+
+    const oppBackrow = observation.opponentBackrow ?? [];
+    const publicChain = observation.publicChain ?? [];
+    const opponentChainedInBattle = publicChain.some((c) => Number(c.controller) !== Number(observation.player));
+
+    if (legacyNext.attacksDeclaredThisTurn > 0 && !opponentChainedInBattle) {
+      legacyNext.attackDeclaringSlotPassed = true;
+      for (const card of oppBackrow) {
+        const seq = Number(card.sequence ?? 0);
+        if (!card.faceUp) {
+          legacyNext.testedSlots[seq] = {
+            passedAttack: true,
+            turnsSet: (legacyNext.testedSlots[seq]?.turnsSet ?? 0) + 1,
+          };
+        }
+      }
+    }
+
+    return legacyNext;
+  }
+
   const next = {
     ...tracker,
     testedSlots: { ...tracker.testedSlots },
+    slotGenerations: { ...tracker.slotGenerations },
+    activeSlotIds: { ...tracker.activeSlotIds },
     knownOpponentHand: [...tracker.knownOpponentHand],
-    exhaustedLimitedCards: new Set(tracker.exhaustedLimitedCards),
+    exhaustedLimitedCards: new Set(),
   };
 
   const currentTurn = Number(observation.turn) || 0;
   if (currentTurn !== next.lastTurn) {
     next.lastTurn = currentTurn;
     next.attacksDeclaredThisTurn = 0;
-    next.attackDeclaringSlotPassed = false;
+    next.pendingAttack = null;
   }
 
-  // 1. Track Exhausted Limited Cards in Opponent Graveyard & Banished
-  const allPublicOppCards = [
+  // 0. If response is passed, the bot is choosing an action in the current window.
+  // Record intent (e.g. pending attack declaration) without resolving it immediately.
+  if (response && message) {
+    const isAttackAction =
+      ((Number(message?.type) === OcgMessageType.SELECT_BATTLECMD || String(message?.desc).includes("SELECT_BATTLECMD")) &&
+        Number(response?.action) === SelectBattleCMDAction.SELECT_BATTLE) ||
+      strategyActionRole(message, response) === "attack";
+    if (isAttackAction) {
+      next.pendingAttack = {
+        turn: currentTurn,
+        slotsPresent: (observation.opponentBackrow ?? [])
+          .filter((c) => !c.faceUp)
+          .map((c) => ({ sequence: Number(c.sequence ?? 0), uid: c.uid ?? `seq_${c.sequence}_gen_${next.slotGenerations[c.sequence] ?? 1}` })),
+      };
+    }
+    return next;
+  }
+
+  // 1. Recalculate Exhausted Limited Cards from CURRENT public locations (grave, banished, face-up)
+  // Limited cards leaving grave/banished (e.g. recycled) return to hidden/unknown possibilities!
+  const currentPublicOppCards = [
     ...(observation.opponentGrave ?? []),
     ...(observation.opponentBanished ?? []),
+    ...(observation.opponentMonsters ?? []).filter((c) => c.faceUp),
+    ...(observation.opponentBackrow ?? []).filter((c) => c.faceUp),
+    ...(observation.publicChain ?? []),
   ];
-  for (const card of allPublicOppCards) {
+  for (const card of currentPublicOppCards) {
     const name = nameOfCard(card);
     if (name && GOAT_LIMITED_CARDS.includes(name)) {
       next.exhaustedLimitedCards.add(name);
     }
   }
 
-  // 2. Track Known Cards in Opponent Hand
-  // e.g. Sinister Serpent entering hand during Standby Phase, Sangan search, etc.
-  const oppGraveNames = (observation.opponentGrave ?? []).map(nameOfCard);
-  const oppHasSinisterInGrave = oppGraveNames.includes("sinister serpent");
-  if (!oppHasSinisterInGrave && tracker.oppHadSinisterInGrave && !next.knownOpponentHand.includes("sinister serpent")) {
-    // Sinister returned to hand!
-    next.knownOpponentHand.push("sinister serpent");
+  // 2. Track Zone Generations & Clean Vacated Slots
+  const currentFacedownSeqMap = new Map();
+  for (const card of observation.opponentBackrow ?? []) {
+    if (!card.faceUp) {
+      const seq = Number(card.sequence ?? 0);
+      const cardUid = card.uid ?? null;
+      currentFacedownSeqMap.set(seq, cardUid);
+    }
   }
+
+  // Clean slots that are no longer occupied by a facedown card
+  for (const seqStr of Object.keys(next.testedSlots)) {
+    const seq = Number(seqStr);
+    if (!currentFacedownSeqMap.has(seq)) {
+      delete next.testedSlots[seq];
+      delete next.activeSlotIds[seq];
+    }
+  }
+
+  // Check new placements in sequence slots
+  for (const [seq, cardUid] of currentFacedownSeqMap.entries()) {
+    const prevId = next.activeSlotIds[seq];
+    if (!prevId) {
+      next.slotGenerations[seq] = (next.slotGenerations[seq] ?? 0) + 1;
+      next.activeSlotIds[seq] = cardUid ?? `seq_${seq}_gen_${next.slotGenerations[seq]}`;
+    } else if (cardUid && prevId !== cardUid) {
+      // Card changed in this slot
+      next.slotGenerations[seq] = (next.slotGenerations[seq] ?? 0) + 1;
+      next.activeSlotIds[seq] = cardUid;
+      delete next.testedSlots[seq];
+    }
+  }
+
+  // 3. Resolve Pending Attack Declaration if window finished
+  if (next.pendingAttack) {
+    const publicChain = observation.publicChain ?? [];
+    const opponentChained = publicChain.some((c) => Number(c.controller) !== Number(observation.player));
+
+    // If opponent chained a trap, window closed with response
+    if (opponentChained) {
+      next.pendingAttack = null;
+    } else {
+      // If the duel progressed (e.g. new phase, damage step, or another decision prompt without active chain)
+      next.attacksDeclaredThisTurn += 1;
+      for (const slot of next.pendingAttack.slotsPresent) {
+        if (currentFacedownSeqMap.has(slot.sequence)) {
+          const currentUid = currentFacedownSeqMap.get(slot.sequence);
+          if (!slot.uid || !currentUid || slot.uid === currentUid) {
+            next.testedSlots[slot.sequence] = {
+              passedAttack: true,
+              turnsSet: (next.testedSlots[slot.sequence]?.turnsSet ?? 0) + 1,
+              cardUid: slot.uid ?? currentUid,
+            };
+          }
+        }
+      }
+      next.pendingAttack = null;
+    }
+  }
+
+  // 4. Track Known Cards in Opponent Hand
+  // Sinister Serpent: check if it left grave
+  const oppGraveNames = (observation.opponentGrave ?? []).map(nameOfCard);
+  const oppBanishedNames = (observation.opponentBanished ?? []).map(nameOfCard);
+  const oppFieldNames = [...(observation.opponentMonsters ?? []), ...(observation.opponentBackrow ?? [])].map(nameOfCard);
+
+  const oppHasSinisterInGrave = oppGraveNames.includes("sinister serpent");
+  const oppHasSinisterInBanished = oppBanishedNames.includes("sinister serpent");
+  const oppHasSinisterOnField = oppFieldNames.includes("sinister serpent");
+
+  // Only consider returned to hand if it left grave AND was NOT banished AND was NOT sent to field
+  if (!oppHasSinisterInGrave && tracker.oppHadSinisterInGrave) {
+    if (!oppHasSinisterInBanished && !oppHasSinisterOnField) {
+      if (!next.knownOpponentHand.includes("sinister serpent")) {
+        next.knownOpponentHand.push("sinister serpent");
+      }
+    }
+  }
+  // If Sinister was in hand but is now banished, in grave, or on field, remove it
+  if (oppHasSinisterInBanished || oppHasSinisterInGrave || oppHasSinisterOnField) {
+    const sIdx = next.knownOpponentHand.indexOf("sinister serpent");
+    if (sIdx >= 0) next.knownOpponentHand.splice(sIdx, 1);
+  }
+
   next.oppHadSinisterInGrave = oppHasSinisterInGrave;
 
   // Remove known hand cards when opponent plays them publicly
@@ -114,44 +263,29 @@ export function updateNegativeInference(tracker = createNegativeInferenceTracker
     }
   }
 
-  // 3. Track Negative Inference on Battle Traps
-  // If we declared an attack during Battle Phase (or an attack is currently resolved without trap chain)
-  const role = response && message ? strategyActionRole(message, response) : null;
-  const isAttackAction = role === "attack" || response?.action === 1 || response?.role === "attack";
-  if (isAttackAction) {
-    next.attacksDeclaredThisTurn += 1;
-  }
-
-  // If we have already declared at least 1 attack this turn and opponent did not chain a trap:
-  const oppBackrow = observation.opponentBackrow ?? [];
-  const publicChain = observation.publicChain ?? [];
-  const opponentChainedInBattle = publicChain.some((c) => Number(c.controller) !== Number(observation.player));
-
-  if (next.attacksDeclaredThisTurn > 0 && !opponentChainedInBattle) {
-    next.attackDeclaringSlotPassed = true;
-    for (const card of oppBackrow) {
-      const seq = Number(card.sequence ?? 0);
-      if (!card.faceUp) {
-        next.testedSlots[seq] = {
-          passedAttack: true,
-          turnsSet: (next.testedSlots[seq]?.turnsSet ?? 0) + 1,
-        };
-      }
-    }
-  }
-
   return next;
 }
 
 /**
- * Checks if the opponent's backrow has been probed by an attack and declined to respond.
+ * Checks if all current face-down backrow cards have been probed by an attack and declined to respond.
  */
 export function isOpponentBackrowProbed(tracker = {}, observation = {}) {
-  if (Number(observation.opponentBackrowCount ?? 0) === 0) return true;
-  if (tracker.attackDeclaringSlotPassed === true) return true;
-  const oppBackrow = observation.opponentBackrow ?? [];
+  if (tracker.legacy === true) {
+    if (Number(observation.opponentBackrowCount ?? 0) === 0) return true;
+    if (tracker.attackDeclaringSlotPassed === true) return true;
+    const oppBackrow = observation.opponentBackrow ?? [];
+    if (!oppBackrow.length) return true;
+    return oppBackrow.every((card) => card.faceUp || tracker.testedSlots?.[Number(card.sequence)]?.passedAttack === true);
+  }
+  const oppBackrow = (observation.opponentBackrow ?? []).filter((card) => !card.faceUp);
   if (!oppBackrow.length) return true;
-  return oppBackrow.every((card) => card.faceUp || tracker.testedSlots?.[Number(card.sequence)]?.passedAttack === true);
+  return oppBackrow.every((card) => {
+    const seq = Number(card.sequence ?? 0);
+    const slot = tracker.testedSlots?.[seq];
+    if (!slot || !slot.passedAttack) return false;
+    if (card.uid && slot.cardUid && card.uid !== slot.cardUid) return false;
+    return true;
+  });
 }
 
 /**
@@ -162,7 +296,10 @@ export function evaluateBackrowThreats(tracker = {}, observation = {}) {
   const backrowProbed = isOpponentBackrowProbed(tracker, observation);
   const oppBackrowCount = Number(observation.opponentBackrowCount ?? observation.opponentBackrow?.length ?? 0);
 
-  const mirrorForcePossible = oppBackrowCount > 0 && !exhausted.has("mirror force") && !backrowProbed;
+  // Mirror Force is possible as long as there is an unrevealed backrow card AND it is not exhausted.
+  // Inaction reduces belief (mirrorForceRisk drops to 0.05), but NEVER proves impossibility!
+  // In legacy mode, backrowProbed falsely zeroed out mirrorForcePossible.
+  const mirrorForcePossible = oppBackrowCount > 0 && !exhausted.has("mirror force") && (tracker.legacy === true ? !backrowProbed : true);
   const torrentialPossible = oppBackrowCount > 0 && !exhausted.has("torrential tribute");
   const ringOfDestructionPossible = oppBackrowCount > 0 && !exhausted.has("ring of destruction");
 
@@ -171,7 +308,7 @@ export function evaluateBackrowThreats(tracker = {}, observation = {}) {
     torrentialPossible,
     ringOfDestructionPossible,
     backrowProbed,
-    mirrorForceRisk: mirrorForcePossible ? (backrowProbed ? 0.02 : 0.28) : 0.0,
+    mirrorForceRisk: mirrorForcePossible ? (backrowProbed ? 0.05 : 0.28) : 0.0,
     torrentialRisk: torrentialPossible ? 0.25 : 0.0,
     ringRisk: ringOfDestructionPossible ? (Number(observation.ownLp) <= 2500 ? 0.45 : 0.20) : 0.0,
     knownOpponentHandCount: tracker.knownOpponentHand?.length ?? 0,

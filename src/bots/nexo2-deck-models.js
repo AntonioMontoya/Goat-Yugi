@@ -4,6 +4,7 @@
  * ensuring they are embedded directly into web, iPad, and desktop builds.
  */
 
+import { hashString } from "../engine/rng.js";
 import CHAOS_CONTROL from "../../artifacts/nexo2-decks/chaos-control/candidate.json" with { type: "json" };
 import CHAOS_TURBO from "../../artifacts/nexo2-decks/chaos-turbo/candidate.json" with { type: "json" };
 import EARTH_AGGRO from "../../artifacts/nexo2-decks/earth-aggro/candidate.json" with { type: "json" };
@@ -37,24 +38,112 @@ export const PRELOADED_DECK_MODELS = Object.freeze({
 });
 
 export const NEXO2_DECK_MODELS = new Map();
+let activeCandidateMetadata = null;
+
+export function validateModelIntegrity(model) {
+  if (!model || typeof model !== "object") {
+    return { valid: false, reason: "El modelo no es un objeto válido" };
+  }
+
+  // Comprobar red neuronal si está presente
+  if (model.neuralModel) {
+    const net = model.neuralModel;
+    const arrayFields = ["w1", "b1", "wp", "wv", "weights"].filter((f) => net[f] != null);
+    if (arrayFields.length === 0) {
+      return { valid: false, reason: "La red neuronal no contiene capas de pesos (w1, b1, wp, wv o weights)" };
+    }
+    for (const field of arrayFields) {
+      const arr = net[field];
+      if (!Array.isArray(arr) && !(arr instanceof Float32Array || arr instanceof Float64Array)) {
+        return { valid: false, reason: `El campo ${field} de la red no es un array numérico` };
+      }
+      for (let i = 0; i < arr.length; i += 1) {
+        if (!Number.isFinite(arr[i])) {
+          return { valid: false, reason: `Peso no finito o NaN detectado en ${field}[${i}]` };
+        }
+      }
+    }
+    if (net.bp != null && !Number.isFinite(net.bp)) {
+      return { valid: false, reason: "Sesgo bp no finito o NaN" };
+    }
+    if (net.bv != null && !Number.isFinite(net.bv)) {
+      return { valid: false, reason: "Sesgo bv no finito o NaN" };
+    }
+  }
+
+  // Comprobar pesos de política si están presentes
+  if (model.policyWeights) {
+    if (typeof model.policyWeights !== "object") {
+      return { valid: false, reason: "policyWeights no es un objeto" };
+    }
+    for (const [key, val] of Object.entries(model.policyWeights)) {
+      if (!Number.isFinite(val)) {
+        return { valid: false, reason: `Peso de política '${key}' no es un número finito: ${val}` };
+      }
+    }
+  }
+
+  return { valid: true };
+}
 
 export function registerNexo2DeckModel(deckId, model) {
-  if (!deckId || !model) return;
+  if (!deckId || !model) return false;
+  const integrity = validateModelIntegrity(model);
+  if (!integrity.valid) {
+    console.warn(`[Nexo2 Registry] Modelo para '${deckId}' descartado por integridad: ${integrity.reason}`);
+    return false;
+  }
   NEXO2_DECK_MODELS.set(deckId, model);
+  return true;
 }
 
 export function clearNexo2DeckModels() {
   NEXO2_DECK_MODELS.clear();
+  activeCandidateMetadata = null;
+}
+
+export function resetToProductionModels() {
+  clearNexo2DeckModels();
+}
+
+export function registerCandidateManifest(manifest = {}, metadata = {}) {
+  if (!manifest || typeof manifest !== "object") {
+    throw new Error("registerCandidateManifest requiere un manifiesto por mazo.");
+  }
+  clearNexo2DeckModels();
+  let registeredCount = 0;
+  for (const [deckId, model] of Object.entries(manifest)) {
+    if (registerNexo2DeckModel(deckId, model)) {
+      registeredCount += 1;
+    }
+  }
+  activeCandidateMetadata = {
+    ...metadata,
+    registeredAt: new Date().toISOString(),
+    registeredDecks: registeredCount,
+    candidateHash: metadata.candidateHash ?? hashString(JSON.stringify(manifest)),
+  };
+  return activeCandidateMetadata;
+}
+
+export function getActiveCandidateMetadata() {
+  return activeCandidateMetadata ? { ...activeCandidateMetadata } : null;
 }
 
 export function getNexo2DeckModel(deckId) {
   if (!deckId) return null;
   if (NEXO2_DECK_MODELS.has(deckId)) {
-    return NEXO2_DECK_MODELS.get(deckId);
+    const candidateModel = NEXO2_DECK_MODELS.get(deckId);
+    if (validateModelIntegrity(candidateModel).valid) {
+      return candidateModel;
+    }
   }
 
   if (PRELOADED_DECK_MODELS[deckId]) {
-    return PRELOADED_DECK_MODELS[deckId];
+    const preloaded = PRELOADED_DECK_MODELS[deckId];
+    if (validateModelIntegrity(preloaded).valid) {
+      return preloaded;
+    }
   }
 
   // Dynamic discovery for other custom deck IDs in Node.js environments
@@ -67,8 +156,10 @@ export function getNexo2DeckModel(deckId) {
         if (fs.existsSync(candidatePath)) {
           const raw = fs.readFileSync(candidatePath, "utf8");
           const parsed = JSON.parse(raw);
-          NEXO2_DECK_MODELS.set(deckId, parsed);
-          return parsed;
+          if (validateModelIntegrity(parsed).valid) {
+            NEXO2_DECK_MODELS.set(deckId, parsed);
+            return parsed;
+          }
         }
       }
     } catch {
@@ -78,3 +169,4 @@ export function getNexo2DeckModel(deckId) {
 
   return null;
 }
+
