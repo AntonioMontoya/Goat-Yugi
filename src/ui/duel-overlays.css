@@ -111,3 +111,315 @@
 @keyframes result-rays-spin {
   to { transform: translate(-50%,-50%) rotate(360deg); }
 }
+
+/* Duel Pile Dialog (Graveyard & Extra Deck Viewer) */
+.pile-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 230;
+  display: grid;
+  place-items: center;
+  padding: clamp(10px, 2.5vw, 24px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.pile-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(3, 7, 14, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.pile-dialog-panel {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: min(860px, 94vw);
+  max-height: min(780px, 90dvh);
+  border: 1px solid rgba(255, 197, 83, 0.65);
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 190, 73, 0.12), transparent 45%), linear-gradient(145deg, #181c24, #0b1118 75%);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.85), 0 0 40px rgba(255, 187, 58, 0.15);
+  overflow: hidden;
+  color: #eaf3f6;
+  box-sizing: border-box;
+}
+
+.pile-dialog[data-pile-dialog="extra"] .pile-dialog-panel {
+  border-color: rgba(197, 113, 255, 0.72);
+  background: radial-gradient(circle at 50% 0%, rgba(151, 67, 217, 0.18), transparent 45%), linear-gradient(145deg, #1c152a, #0b101d 75%);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.85), 0 0 40px rgba(178, 79, 255, 0.16);
+}
+
+.pile-dialog-panel header,
+.pile-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px 14px;
+  border-bottom: 1px solid rgba(255, 197, 83, 0.2);
+  flex-shrink: 0;
+}
+
+.pile-dialog[data-pile-dialog="extra"] .pile-dialog-panel header,
+.pile-dialog[data-pile-dialog="extra"] .pile-dialog-header {
+  border-bottom-color: rgba(197, 113, 255, 0.22);
+}
+
+.pile-dialog-header .eyebrow,
+.pile-dialog-panel header .eyebrow {
+  display: block;
+  color: #ffc65f;
+  font: 800 9px var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.pile-dialog[data-pile-dialog="extra"] .pile-dialog-header .eyebrow,
+.pile-dialog[data-pile-dialog="extra"] .pile-dialog-panel header .eyebrow {
+  color: #d9a4ff;
+}
+
+.pile-dialog-header h2,
+.pile-dialog-panel header h2 {
+  margin: 4px 0 2px;
+  color: #fff6df;
+  font-size: clamp(18px, 2.5vw, 26px);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pile-dialog-header small,
+.pile-dialog-panel header small {
+  color: #9bb5c2;
+  font-size: 11px;
+}
+
+.pile-count-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 194, 84, 0.16);
+  color: #ffd37a;
+  font: 800 11px var(--mono);
+  margin-right: 4px;
+}
+
+.pile-dialog[data-pile-dialog="extra"] .pile-count-badge {
+  background: rgba(197, 113, 255, 0.2);
+  color: #efd1ff;
+}
+
+.pile-dialog-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 197, 83, 0.4);
+  border-radius: 50%;
+  background: rgba(20, 24, 34, 0.85);
+  color: #ffeaae;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+
+.pile-dialog[data-pile-dialog="extra"] .pile-dialog-close {
+  border-color: rgba(197, 113, 255, 0.45);
+  color: #f0d5ff;
+}
+
+.pile-dialog-close:hover,
+.pile-dialog-close:focus-visible {
+  border-color: #ffd37a;
+  background: rgba(45, 40, 30, 0.95);
+  color: #ffffff;
+  transform: scale(1.08);
+  outline: none;
+}
+
+.pile-dialog-close:active {
+  transform: scale(0.94);
+}
+
+.pile-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(130px, 16vw, 165px), 1fr));
+  gap: 12px;
+  padding: 18px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pile-card-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(143, 183, 201, 0.22);
+  border-radius: 10px;
+  background: rgba(12, 20, 30, 0.75);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  text-align: center;
+  position: relative;
+  touch-action: manipulation;
+}
+
+.pile-card-item:hover,
+.pile-card-item:focus-visible {
+  border-color: rgba(255, 197, 83, 0.75);
+  background: rgba(22, 32, 48, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45), 0 0 12px rgba(255, 197, 83, 0.2);
+  outline: none;
+}
+
+.pile-dialog[data-pile-dialog="extra"] .pile-card-item:hover,
+.pile-dialog[data-pile-dialog="extra"] .pile-card-item:focus-visible {
+  border-color: rgba(197, 113, 255, 0.8);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45), 0 0 12px rgba(197, 113, 255, 0.25);
+}
+
+.pile-card-item:active {
+  transform: scale(0.97);
+}
+
+.pile-card-item.pile-top-card {
+  border-color: rgba(255, 197, 83, 0.5);
+  background: linear-gradient(150deg, rgba(35, 30, 20, 0.8), rgba(12, 20, 30, 0.85));
+}
+
+.pile-card-item.pile-top-card::before {
+  content: "CARTA SUPERIOR";
+  display: block;
+  width: 100%;
+  font: 800 7px var(--mono);
+  color: #ffd37a;
+  letter-spacing: 0.1em;
+  margin-bottom: -2px;
+}
+
+.pile-card-visual {
+  width: min(100%, 115px);
+  aspect-ratio: var(--goat-card-aspect);
+  flex-shrink: 0;
+}
+
+.pile-card-visual .card {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.pile-card-item strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #f3fbff;
+  width: 100%;
+}
+
+.pile-card-item small {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #8facba;
+  font-size: 9px;
+  line-height: 1.35;
+  width: 100%;
+}
+
+.pile-empty {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  padding: 48px 20px;
+  color: #8facba;
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+}
+
+.pile-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 22px;
+  border-top: 1px solid rgba(255, 197, 83, 0.18);
+  background: rgba(4, 9, 16, 0.65);
+  flex-shrink: 0;
+}
+
+.pile-dialog[data-pile-dialog="extra"] .pile-dialog-actions {
+  border-top-color: rgba(197, 113, 255, 0.2);
+}
+
+.pile-dialog-actions small {
+  color: #829ba8;
+  font-size: 10px;
+}
+
+.pile-return-button {
+  min-height: 42px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .pile-dialog {
+    padding: 8px;
+  }
+  .pile-dialog-panel {
+    width: 100%;
+    max-height: 94dvh;
+    border-radius: 12px;
+  }
+  .pile-dialog-header,
+  .pile-dialog-panel header {
+    padding: 12px 16px;
+  }
+  .pile-card-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .pile-dialog-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .pile-dialog-actions small {
+    text-align: center;
+  }
+  .pile-return-button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+

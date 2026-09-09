@@ -26,7 +26,23 @@ export function decorateDuelPiles({ view, cardMarkup, escapeHtml, onInspectCard 
       ? "El Extra Deck rival permanece oculto durante esta partida."
       : isExtra ? "El Extra Deck está vacío." : "El Cementerio está vacío.";
     const partial = isExtra && cards.length !== visibleCount ? " · información parcial" : "";
-    dialog.innerHTML = `<div class="pile-dialog-backdrop" data-pile-close></div><section class="pile-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="pile-dialog-title"><header><div><span class="eyebrow">${isExtra ? "DUEL ZONE / EXTRA DECK" : "DUEL ZONE / PUBLIC"}</span><h2 id="pile-dialog-title">${escapeHtml(title)}</h2><small><strong class="pile-count-badge">${visibleCount} carta${visibleCount === 1 ? "" : "s"}</strong>${partial}</small></div><button type="button" class="pile-dialog-close" data-pile-close aria-label="Cerrar ${escapeHtml(title)}">×</button></header><div class="pile-card-list"></div></section>`;
+    dialog.innerHTML = `<div class="pile-dialog-backdrop" data-pile-close aria-hidden="true"></div><section class="pile-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="pile-dialog-title"><header class="pile-dialog-header"><div><span class="eyebrow">${isExtra ? "DUEL ZONE / EXTRA DECK" : "DUEL ZONE / PUBLIC"}</span><h2 id="pile-dialog-title">${escapeHtml(title)}</h2><small><strong class="pile-count-badge">${visibleCount} carta${visibleCount === 1 ? "" : "s"}</strong>${partial}</small></div><button type="button" class="pile-dialog-close" data-pile-close aria-label="Cerrar ${escapeHtml(title)}">×</button></header><div class="pile-card-list"></div><footer class="pile-dialog-actions"><small>Toca una carta para inspeccionar sus detalles o pulsa volver.</small><button type="button" class="primary-button pile-return-button" data-pile-close aria-label="Volver al duelo">Volver al duelo</button></footer></section>`;
+
+    const closeDialog = () => {
+      window.removeEventListener("keydown", onKey);
+      dialog.remove();
+      pile?.focus?.({ preventScroll: true });
+    };
+
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        closeDialog();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+
     const list = dialog.querySelector(".pile-card-list");
     if (!cards.length) list.innerHTML = `<div class="pile-empty">${escapeHtml(empty)}</div>`;
     cards.forEach((instance, index) => {
@@ -37,15 +53,30 @@ export function decorateDuelPiles({ view, cardMarkup, escapeHtml, onInspectCard 
         item.tabIndex = 0;
         item.setAttribute("role", "button");
         item.setAttribute("aria-label", `Inspeccionar ${card?.name ?? "carta"}`);
-        const inspect = () => onInspectCard({ ...instance, faceUp: true }, player);
+        const inspect = () => {
+          closeDialog();
+          onInspectCard({ ...instance, faceUp: true }, player);
+        };
         item.addEventListener("click", inspect);
-        item.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inspect(); } });
+        item.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            inspect();
+          }
+        });
       }
       item.innerHTML = `<div class="pile-card-visual">${cardMarkup({ ...instance, faceUp: true }, { compact: true })}</div><div><strong>${escapeHtml(card?.name ?? "Carta")}</strong><small>${escapeHtml(card?.kind ?? "Carta")} · ${escapeHtml(card?.text ?? "")}</small></div>`;
       list.append(item);
     });
-    dialog.addEventListener("click", (event) => { if (event.target.closest("[data-pile-close]")) dialog.remove(); });
+
+    dialog.addEventListener("click", (event) => {
+      if (event?.target?.closest?.("[data-pile-close]")) {
+        event.preventDefault?.();
+        closeDialog();
+      }
+    });
+
     document.body.append(dialog);
-    dialog.querySelector(".pile-dialog-close")?.focus();
+    dialog.querySelector(".pile-dialog-close")?.focus?.({ preventScroll: true });
   }));
 }
