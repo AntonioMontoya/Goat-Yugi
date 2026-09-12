@@ -218,7 +218,7 @@ export function renderLadderPage({ app, ladderView, chooseLocalMatch, getDeck, e
       <!-- Centro: Gran botón ornamental para Buscar Partida -->
       <div class="ranked-center-matchmaking">
         <div class="ranked-cta-plate">
-          <img src="/sprites/Sprite_Ornamentacion.png" class="ranked-plate-ornament left" alt="" aria-hidden="true" />
+          <img src="./sprites/Sprite_Ornamentacion.png" class="ranked-plate-ornament left" alt="" aria-hidden="true" />
           <div class="ranked-cta-core">
             <button type="button" class="primary-button ranked-cta-huge" data-action="start-ranked-queue">
               <span class="huge-cta-icon">⚔️</span>
@@ -233,7 +233,7 @@ export function renderLadderPage({ app, ladderView, chooseLocalMatch, getDeck, e
               <span class="ranked-feature-item">🛡️ Detección Anti-Abandono</span>
             </div>
           </div>
-          <img src="/sprites/Sprite_Ornamentacion.png" class="ranked-plate-ornament right" alt="" aria-hidden="true" />
+          <img src="./sprites/Sprite_Ornamentacion.png" class="ranked-plate-ornament right" alt="" aria-hidden="true" />
         </div>
       </div>
 

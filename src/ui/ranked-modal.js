@@ -43,7 +43,7 @@ export function renderRankBadge(tier = "Bronce", division = 5, size = "large", {
 
   return `
     <div class="rank-emblem-wrap size-${size} rank-emblem-${esc(normTier)}" style="--rank-color:${colorPrimary}; --rank-glow:${glowColor}; width:${dim}px; height:${dim}px;">
-      <img class="rank-emblem-sprite ${isUnranked ? "unranked-sprite" : `tier-sprite-${esc(normTier)}`}" src="/sprites/${esc(sprite)}" alt="${esc(tier)} ${esc(roman)}" style="width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 4px 14px ${glowColor});" />
+      <img class="rank-emblem-sprite ${isUnranked ? "unranked-sprite" : `tier-sprite-${esc(normTier)}`}" src="./sprites/${esc(sprite)}" alt="${esc(tier)} ${esc(roman)}" style="width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 4px 14px ${glowColor});" />
     </div>
   `;
 }
@@ -182,7 +182,7 @@ export function renderRankedOverlays({ app, esc, builderDeckById, playableDecks,
             <!-- Rival Fake Online -->
             <div class="versus-card opponent-side">
               <div class="card-avatar-box enemy-lord-box">
-                <img class="versus-enemy-lord-img" src="/sprites/${esc(opp.sprite ?? "EnemyLord.png")}" alt="${esc(opp.name)}" />
+                <img class="versus-enemy-lord-img" src="./sprites/${esc(opp.sprite ?? "EnemyLord.png")}" alt="${esc(opp.name)}" />
                 <div class="avatar-ring-overlay">${renderRankBadge(opp.opponentTier, opp.opponentDivision, "small", { esc })}</div>
               </div>
               <div class="card-info">
@@ -295,7 +295,7 @@ export function clearRankedQueueTimers(app) {
   }
 }
 
-export function startRankedQueue({ app, chooseRankedMatch, render }) {
+export function startRankedQueue({ app, chooseRankedMatch, render, onMatchFound = null }) {
   clearRankedQueueTimers(app);
   const playerDeckId = app.ladder?.player?.rankedDeckId ?? app.duelDeckId ?? app.playDeckId ?? "chaos-turbo";
   app.duelDeckId = playerDeckId;
@@ -329,6 +329,7 @@ export function startRankedQueue({ app, chooseRankedMatch, render }) {
     app.rankedQueue.state = "found";
     app.rankedQueue.opponent = opponent;
     app.rankedQueue.acceptDeadline = Date.now() + 10000;
+    onMatchFound?.(opponent);
 
     app.rankedQueue.countdownTimer = setTimeout(() => {
       if (app.rankedQueue?.state === "found") {
@@ -655,5 +656,4 @@ export function bindRankedPickerEvents({ on }) {
     });
   }
 }
-
 

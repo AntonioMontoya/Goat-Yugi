@@ -1,15 +1,16 @@
 export const MENU_ITEMS = Object.freeze([
   Object.freeze({ mode: "home", label: "Inicio", icon: "HOME", sprite: "Sprite_Menu", desc: "Volver al menú principal." }),
-  Object.freeze({ mode: "play", label: "Jugar", icon: "PLAY", sprite: "Sprite_Menu6", desc: "Preparar la caja de cartas para batalla local o contra bots." }),
+  Object.freeze({ mode: "play", label: "Juego Casual", icon: "PLAY", sprite: "Sprite_Menu6", desc: "Duelos casuales contra la IA o en la misma mesa." }),
+  Object.freeze({ mode: "ladder", label: "Ranked", icon: "RANK", sprite: "Sprite_Menu5", desc: "Competición local y registro de rango." }),
+  Object.freeze({ mode: "profile", label: "Perfil", icon: "USER", sprite: "Sprite_Menu3", desc: "Registro de duelista, estadísticas, rango y mazo insignia." }),
   Object.freeze({ mode: "sandbox", label: "Modo Prueba", icon: "LAB", sprite: "Sprite_Menu8", desc: "Experimentación mágica: define cartas, posiciones y LP exactos." }),
   Object.freeze({ mode: "card-viewer", label: "Cartas", icon: "CARD", sprite: "Sprite_Menu4", desc: "Explorar la colección completa y consultar rulings." }),
   Object.freeze({ mode: "deck-builder", label: "Mazos", icon: "DECK", sprite: "Sprite_Menu2", desc: "Gestión de decks y validación de formato 2005." }),
-  Object.freeze({ mode: "bots", label: "Bots", icon: "BOT", sprite: "Sprite_Menu", desc: "Desafiar oponentes IA y configurar perfiles." }),
-  Object.freeze({ mode: "ladder", label: "Ranked", icon: "RANK", sprite: "Sprite_Menu5", desc: "Competición local y registro de rango." }),
   Object.freeze({ mode: "settings", label: "Ajustes", icon: "SET", sprite: "Sprite_Menu7", desc: "Configuración visual, animaciones y opciones del sistema." }),
 ]);
 
 export const AUXILIARY_ITEMS = Object.freeze([
+  Object.freeze({ mode: "bots", label: "Bots", icon: "BOT", sprite: "Sprite_Menu", desc: "Desafiar oponentes IA y configurar perfiles." }),
   Object.freeze({ mode: "training", label: "Entrenamiento", icon: "TRAIN", sprite: "Sprite_Menu3", desc: "Conocimiento y estudio: entrenar nuevos modelos de IA." }),
   Object.freeze({ mode: "research", label: "Especificación", icon: "INFO", sprite: "Sprite_Menu3", desc: "Información técnica." }),
 ]);
@@ -48,7 +49,7 @@ export function menuMarkup({ activeMode, open, escapeHtml }) {
   const buttons = [MENU_ITEMS[0], ...SECTION_ITEMS].map(({ mode, label, sprite, desc }, index) => {
     const selected = activeMode === mode;
     return `<button type="button" class="nav-item ${selected ? "active" : ""}" data-mode="${mode}" ${selected ? 'aria-current="page"' : ""}>
-      <img src="/sprites/${sprite}.png" alt="" aria-hidden="true" />
+      <img src="./sprites/${sprite}.png" alt="" aria-hidden="true" />
       <span class="nav-item-copy"><small>${String(index + 1).padStart(2, "0")}</small><strong>${escapeHtml(label)}</strong><em>${escapeHtml(desc)}</em></span>
     </button>`;
   }).join("");
@@ -56,7 +57,7 @@ export function menuMarkup({ activeMode, open, escapeHtml }) {
   return `<div class="section-switcher" aria-label="Cambiar de sección">
       <button type="button" class="section-arrow" data-mode="${previous.mode}" aria-label="Anterior: ${escapeHtml(previous.label)}"><span aria-hidden="true">&lsaquo;</span></button>
       <button type="button" class="section-current" data-menu-toggle aria-controls="main-menu" aria-expanded="${open}">
-        <img src="/sprites/${current.sprite}.png" alt="" aria-hidden="true" />
+        <img src="./sprites/${current.sprite}.png" alt="" aria-hidden="true" />
         <span><small>SECCIÓN ${activeIndex + 1} / ${SECTION_ITEMS.length}</small><strong>${escapeHtml(current.label)}</strong></span>
         <b aria-hidden="true">${open ? "×" : "▾"}</b>
       </button>

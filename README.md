@@ -23,7 +23,7 @@ Esta carpeta contiene la adaptación completa de **GOAT Local Lab** para **iPad 
 
 ## 🚀 Despliegue Automático con GitHub Pages
 
-El proyecto incluye el workflow de GitHub Actions [`.github/workflows/deploy-ipad-pwa.yml`](../.github/workflows/deploy-ipad-pwa.yml).
+Esta carpeta ya incluye su propio workflow de GitHub Actions: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
 ### Pasos para habilitarlo en tu repositorio de GitHub:
 1. Sube los cambios a tu repositorio en GitHub (`git push origin main`).
@@ -45,18 +45,23 @@ El proyecto incluye el workflow de GitHub Actions [`.github/workflows/deploy-ipa
 
 ## 🛠️ Comandos de Desarrollo Local
 
-Desde la raíz del proyecto:
+Ejecuta estos comandos desde la raíz del repositorio de GitHub donde hayas copiado **el contenido de esta carpeta** (no hace falta copiar el proyecto principal):
 
 ```powershell
+# Instalar las dependencias exactamente como en GitHub Actions
+npm ci
+
 # Iniciar servidor de desarrollo para iPad
-npm run dev:ipad
+npm run dev
 
 # Compilar la versión de producción para iPad
-npm run build:ipad
+npm run build
 
 # Previsualizar el paquete compilado
-npm run preview:ipad
+npm run preview
 ```
+
+El workflow de GitHub Pages ejecuta automáticamente `npm ci` y `npm run build`, y publica `dist/`.
 
 ---
 
@@ -65,5 +70,4 @@ npm run preview:ipad
 La versión iPad incluye el motor completo de **Nexo 3**:
 - **113 modelos neuronales dedicados** y guardarraíles especializados ejecutándose localmente mediante WebAssembly.
 - Duelos fluidos contra cualquier mazo del catálogo con respuesta táctica instantánea y sin requerir conexión a internet.
-- Consulta [docs/NEXO3_SPECIFICATION.md](../docs/NEXO3_SPECIFICATION.md) para más detalles.
-
+- Los modelos y sus artefactos se incluyen dentro de `src/` y `artifacts/` para que el repositorio copiado sea autónomo.

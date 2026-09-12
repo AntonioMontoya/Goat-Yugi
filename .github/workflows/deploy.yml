@@ -25,12 +25,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Configure JSR registry
-        run: npm config set @jsr:registry https://npm.jsr.io
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build iPad PWA
         run: npm run build

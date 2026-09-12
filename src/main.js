@@ -51,6 +51,7 @@ import { actionsForCard, createDuelInteractionModel } from "./ui/duel-interactio
 import { AUTO_PHASE_DELAY_MS, automaticPhasePlan } from "./ui/duel-phase-flow.js";
 import { cardAffordanceBadges, renderCardActionPopover, renderDecisionBar, renderDuelCardInspector, renderDuelTopbar, renderEventCue, renderEventDrawer, renderOpenActionShortcuts, renderPhaseAdvanceConfirmation, renderPhaseRail, renderResponseTray } from "./ui/duel-hud.js";
 import { createDuelAudioController } from "./ui/duel-audio.js";
+import { playDuelResultAudio, playMatchmakingAudio, syncAppAudio } from "./ui/app-audio.js";
 const root = document.querySelector("#app"); const actionRegistry = createActionRegistry(); const duelAudio = createDuelAudioController();
 let duelPresentationTimer = null; let duelBotTimer = null; let duelPhaseTimer = null; let duelPhaseTimerKey = null; let lifeMotionTimer = null;
 function saveActiveDuelState() { saveActiveDuelStateToStorage(app); }
@@ -81,6 +82,7 @@ const app = {
   duelLoading: false,
   duelError: null,
   duelLoadEpoch: 0,
+  duelAudioSessionKey: null, lastDuelResultCueKey: null,
   duelBot: createBotForDeck({ botId: UNIVERSAL_BOT_ID, deckId: initialPlaySelection.opponentDeckId }),
   duelBotProfile: null,
   duelDeckId: initialPlaySelection.deckId,
@@ -299,10 +301,10 @@ function duelMotionFor(instance, motion = app.duelMotion) {
 }
 function rankMarkup() {
   const view = ladderView(app.ladder);
-  if (view.inPlacements) return `<div class="rank-chip tier-unranked"><img class="rank-chip-sprite" src="/sprites/Unranked.png" alt="Unranked" /><span><strong>Unranked</strong><small>${view.placements?.gamesPlayed ?? 0}/10</small></span></div>`;
+  if (view.inPlacements) return `<div class="rank-chip tier-unranked"><img class="rank-chip-sprite" src="./sprites/Unranked.png" alt="Unranked" /><span><strong>Unranked</strong><small>${view.placements?.gamesPlayed ?? 0}/10</small></span></div>`;
   const tierName = view.tier ?? view.league ?? "Bronce";
   const roman = view.divisionRoman ?? DIVISION_ROMAN[view.division] ?? "V";
-  return `<div class="rank-chip tier-${esc(tierName.toLowerCase())}"><img class="rank-chip-sprite" src="/sprites/${esc(rankSpriteFile(tierName))}" alt="${esc(tierName)}" /><span><strong>${esc(tierName)} ${esc(roman)}</strong><small>${view.lp} LP · ${view.rating} rating</small></span></div>`;
+  return `<div class="rank-chip tier-${esc(tierName.toLowerCase())}"><img class="rank-chip-sprite" src="./sprites/${esc(rankSpriteFile(tierName))}" alt="${esc(tierName)}" /><span><strong>${esc(tierName)} ${esc(roman)}</strong><small>${view.lp} LP · ${view.rating} rating</small></span></div>`;
 }
 function playableDecks() {
   return [...DECK_PRESETS, ...app.savedDecks];
@@ -366,7 +368,7 @@ function render() {
   document.documentElement.classList.toggle("duel-active", app.mode === "duel"); document.documentElement.classList.toggle("simple-menus", app.settings.compactMenus); document.documentElement.classList.toggle("touch-controls", app.settings.touchControls); document.documentElement.classList.toggle("high-contrast", app.settings.highContrast); document.documentElement.classList.toggle("large-ui-text", app.settings.largeText);
   if (app.mode !== "card-viewer" && app.cardViewerKeyHandler) { document.removeEventListener("keydown", app.cardViewerKeyHandler); app.cardViewerKeyHandler = null; }
   const content = app.mode === "home" ? renderHomePage({ app, escapeHtml: esc, savedDuel: loadSavedActiveDuelState() }) : app.mode === "profile" ? renderProfilePage({ app, esc, getCard, builderDeckById, playableDecks }) : app.mode === "play" ? renderPlayLobby() : app.mode === "bots" ? renderBots() : app.mode === "sandbox" ? renderSandboxPage(app.sandbox, { savedDecks: app.savedDecks, favoriteCardIds: app.favoriteCardIds, cardWorkStatuses: app.cardWorkStatuses }) : app.mode === "card-viewer" ? renderCardViewerPage(app.cardViewer, { cardMarkup, favoriteCardIds: app.favoriteCardIds, cardWorkStatuses: app.cardWorkStatuses, rerender: render }) : app.mode === "duel" ? renderDuel(renderedDuelView) : app.mode === "deck-builder" ? renderDeckBuilder() : app.mode === "training" ? renderTraining() : app.mode === "ladder" ? renderLadder() : app.mode === "settings" ? renderSettings() : renderResearch();
-  morphDom(root, shell(content)); installMenuScrollNavigation(root, app.mode, { navigate }); initSubmenuAtmosphere({ mode: app.mode, motionLevel: app.settings.motionLevel }); initDuelAtmosphere({ mode: app.mode, motionLevel: app.settings.motionLevel });
+  morphDom(root, shell(content)); syncAppAudio({ app, audio: duelAudio }); installMenuScrollNavigation(root, app.mode, { navigate }); initSubmenuAtmosphere({ mode: app.mode, motionLevel: app.settings.motionLevel }); initDuelAtmosphere({ mode: app.mode, motionLevel: app.settings.motionLevel });
   const eventList = root.querySelector(".event-drawer-list"); if (eventList) eventList.scrollTop = app.duelEventLog.scrollTop;
   
   if (app.mode === "home") {
@@ -439,13 +441,7 @@ function inspectKnownCard(uid) {
   app.inspectedCard = { ...found.instance, ownerName: playerName(found.player, Boolean(app.duelManual || currentDuelView()?.manual)) };
   return true;
 }
-function playDuelCue(cue) {
-  duelAudio.play(cue?.soundId ?? cue?.kind, {
-    chainLink: cue?.chainLink,
-    enabled: app.settings.sfxEnabled,
-    volume: Number(app.settings.sfxVolume) / 100,
-  });
-}
+function playDuelCue(cue) { duelAudio.play(cue?.soundId ?? cue?.kind, { chainLink: cue?.chainLink, enabled: app.settings.sfxEnabled, volume: Number(app.settings.sfxVolume) / 100 }); }
 function cueDuration(cue) {
   const duration = cue?.duration !== undefined ? Number(cue.duration) : 750;
   if (app.settings.motionLevel === "reduced") return Math.min(420, duration);
@@ -756,12 +752,12 @@ function renderOcgcoreDuel(view = app.duel.view()) {
   const oppSprite = app.pendingLadder?.opponentSprite ?? app.ladder?.activeRankedMatch?.opponentSprite ?? "EnemyLord.png";
   const oppArch = String(oppSprite).toLowerCase();
   const archCls = oppArch.includes("arquero") ? "archetype-arquero" : oppArch.includes("guerrero") ? "archetype-guerrero" : oppArch.includes("monje") ? "archetype-monje" : oppArch.includes("sacerdotisa") ? "archetype-sacerdotisa" : "archetype-default";
-  const enemyLordBackdrop = isRanked ? `<div class="duel-enemy-lord-backdrop ${archCls}" aria-hidden="true"><div class="rival-particles-field"><span class="rival-dust d1"></span><span class="rival-dust d2"></span><span class="rival-dust d3"></span><span class="rival-dust d4"></span><span class="rival-dust d5"></span><span class="rival-dust d6"></span><span class="rival-dust d7"></span><span class="rival-dust d8"></span></div><img class="duel-enemy-lord-bg-img" src="/sprites/${esc(oppSprite)}" alt="" /></div>` : "";
+  const enemyLordBackdrop = isRanked ? `<div class="duel-enemy-lord-backdrop ${archCls}" aria-hidden="true"><div class="rival-particles-field"><span class="rival-dust d1"></span><span class="rival-dust d2"></span><span class="rival-dust d3"></span><span class="rival-dust d4"></span><span class="rival-dust d5"></span><span class="rival-dust d6"></span><span class="rival-dust d7"></span><span class="rival-dust d8"></span></div><img class="duel-enemy-lord-bg-img" src="./sprites/${esc(oppSprite)}" alt="" /></div>` : "";
   return `<section class="page duel-page">
      ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, duelMenuOpen: app.duelMenuOpen, esc, botProfile: app.duelBotProfile })}
      <div class="duel-layout"><div class="table-frame ${app.boardTilt ? "tilted" : ""} ${app.inspectedCard ? "has-inspector" : ""}">
-       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
-       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
+       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
+       <img src="./sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
        <div class="duel-board ${isRanked ? "has-enemy-lord" : ""} ${app.duelPresentation ? `feedback-${esc(app.duelPresentation.kind)} tier-${esc(app.duelPresentation.tier || "notable")}` : ""}">
          ${enemyLordBackdrop}<div class="hand-strip opponent-hand">${playerHandMarkup(playerTwo, app.selectedCardUid, manual, userActions, affordanceInteraction)}</div>
          <div class="opponent-row player-row is-opponent"><div class="player-meta">${opponentAvatar}<div><strong>${esc(playerName(playerTwo, manual))}${opponentTag}</strong><small>${esc(playerTwoDeck.name)}</small></div>${lifePointMarkup(playerTwo)}</div><div class="hand-count">HAND <b>${playerTwo.handCount}</b><span class="deck-count">DECK ${playerTwo.deckCount}</span></div></div>
@@ -780,6 +776,7 @@ function renderLadder() { return renderLadderPage({ app, ladderView, chooseLocal
 function renderResearch() { return renderResearchPage({ CARDS, OCGCORE_CARD_ENTRIES, OCGCORE_MISSING_SCRIPTS, OCGCORE_ASSET_SOURCE, CARD_DATABASE_VERSION }); }
 async function resumeSavedDuel(savedState) {
   const loadEpoch = beginDuelLoad(app);
+  app.duelAudioSessionKey = `duel:${savedState.seed}:resume`; app.lastDuelResultCueKey = null; duelAudio.startDuelMusic(app.duelAudioSessionKey);
   clearDuelBotTimer();
   clearAutomaticPhaseTimer();
   if (lifeMotionTimer) window.clearTimeout(lifeMotionTimer);
@@ -911,6 +908,7 @@ function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckI
   }
   app.duelManual = app.playMode === "local";
   const seed = Math.floor(Math.random() * 0xffffffff);
+  app.duelAudioSessionKey = `duel:${seed}:${loadEpoch}`; app.lastDuelResultCueKey = null; duelAudio.startDuelMusic(app.duelAudioSessionKey);
   const selectedBotId = requestedBotId;
   const storedBot = app.botRegistry?.bots?.find((bot) => bot.id === selectedBotId);
   const storedModel = storedBot?.profiles?.[opponentDeckId]?.model;
@@ -975,6 +973,7 @@ function startSandboxDuel(scenario = app.sandbox) {
     navigate,
     render,
   });
+  app.duelAudioSessionKey = `sandbox:${app.duelLoadEpoch}`; app.lastDuelResultCueKey = null; duelAudio.startDuelMusic(app.duelAudioSessionKey);
 }
 
 function runBotTurns() {
@@ -1002,6 +1001,7 @@ function settlePendingLadder() {
   clearActiveDuelState();
   if (app.ladder) { app.ladder.activeRankedMatch = null; saveLocalState(app.ladder); }
   const result = app.duel.winner === 0 ? "win" : app.duel.winner === 1 ? "loss" : "draw";
+  playDuelResultAudio({ app, audio: duelAudio, result });
   if (app.duelBotProfile && app.lastBotRecordedSeed !== app.duel.seed) {
     const botResult = result === "win" ? "loss" : result === "loss" ? "win" : "draw";
     app.botRegistry = recordBotGame(app.botRegistry, {
@@ -1244,7 +1244,7 @@ function bindEvents() {
   on(document.querySelector("[data-duel-start-continue]"), "click", () => { app.duelStart = null; const view = currentDuelView(); if (view?.phasePaused) setDuelPresentation({ id: `phase:start:${view.turn}:${view.phase}`, kind: "phase", actor: view.turnPlayer, eyebrow: `TURNO ${String(view.turn).padStart(2, "0")}`, title: phaseLabel(view.phase), detail: "El duelo comienza en Draw Phase.", cardCode: null, duration: 1200, soundId: "phase", blocking: true }); render(); });
   on(document.querySelector("[data-motion-level]"), "change", (event) => { app.settings.motionLevel = event.target.value; app.settings.reducedMotion = app.settings.motionLevel !== "full"; persistSettings(); render(); });
   onAll("[data-setting]", "change", (event) => { const input = event.currentTarget; app.settings[input.dataset.setting] = input.checked; app.boardTilt = app.settings.boardTilt; persistSettings(); render(); });
-  on(document.querySelector("[data-sfx-volume]"), "input", (event) => { app.settings.sfxVolume = Number(event.target.value); const output = document.querySelector("[data-sfx-volume-output]"); if (output) output.textContent = `${app.settings.sfxVolume} %`; persistSettings(); });
+  on(document.querySelector("[data-sfx-volume]"), "input", (event) => { app.settings.sfxVolume = Number(event.target.value); duelAudio.setPreferences({ enabled: app.settings.sfxEnabled, volume: app.settings.sfxVolume / 100 }); const output = document.querySelector("[data-sfx-volume-output]"); if (output) output.textContent = `${app.settings.sfxVolume} %`; persistSettings(); });
   on(document.querySelector("[data-settings-reset]"), "click", () => { app.settings = { motionLevel: "full", reducedMotion: false, confirmActions: true, boardTilt: false, sfxEnabled: true, sfxVolume: 35, compactMenus: true, touchControls: false, highContrast: false, largeText: false }; app.boardTilt = false; persistSettings(); app.toast = "Preferencias restauradas."; render(); });
   onAll("[data-action-id]", "click", (event) => {
     const button = event.currentTarget;
@@ -1312,7 +1312,7 @@ function handleSecondaryAction(action, element = null) {
   if (action === "stop-training") { app.training.running = false; app.toast = "Lote cancelado de forma segura; las métricas del último chunk siguen visibles."; render(); return; }
   if (action === "clean-training") { app.training.results = []; app.training.bytes = 0; app.toast = "Datos temporales eliminados del estado de la interfaz; candidato y métricas conservados."; render(); return; }
   if (action === "reset-ladder") { app.ladder = initialLadder(); app.rankedDeckPicker = { open: true }; saveLocalState(app.ladder); app.toast = "Temporada reiniciada. Elige tu mazo para comenzar."; render(); return; }
-  if (action === "start-ranked-queue") { startRankedQueue({ app, chooseRankedMatch, render }); return; }
+  if (action === "start-ranked-queue") { startRankedQueue({ app, chooseRankedMatch, render, onMatchFound: () => playMatchmakingAudio({ app, audio: duelAudio }) }); return; }
   if (action === "cancel-ranked-queue") { cancelRankedQueue({ app, render }); return; }
   if (action === "accept-ranked-match") { acceptRankedMatch({ app, render }); return; }
   if (action === "enter-ranked-duel") { enterRankedDuel({ app, startDuel, navigate }); return; }
@@ -1448,8 +1448,8 @@ window.addEventListener("popstate", () => navigate(modeFromHash(window.location.
 window.addEventListener("hashchange", () => navigate(modeFromHash(window.location.hash), { history: false }));
 document.addEventListener("fullscreenchange", () => { if (app.mode === "duel") render(); });
 const unlockDuelAudio = () => { void duelAudio.unlock(); };
-window.addEventListener("pointerdown", unlockDuelAudio, { once: true, passive: true });
-window.addEventListener("keydown", unlockDuelAudio, { once: true });
+window.addEventListener("pointerdown", unlockDuelAudio, { once: true, passive: true, capture: true });
+window.addEventListener("keydown", unlockDuelAudio, { once: true, capture: true });
 window.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   const tagName = event.target?.tagName;
@@ -1480,6 +1480,7 @@ window.addEventListener("unhandledrejection", (event) => {
   console.warn("[GOAT Lab Unhandled Rejection]", event.reason);
 });
 document.addEventListener("visibilitychange", () => {
+  duelAudio.setHidden(document.hidden);
   if (document.hidden) {
     if (app.mode === "duel" && app.duel) saveActiveDuelState();
   } else {
