@@ -1,7 +1,7 @@
-import { OcgLocation, OcgMessageType, OcgPosition, SelectBattleCMDAction, SelectIdleCMDAction } from "../../node_modules/@jsr/n1xx1__ocgcore-wasm/dist/index.js";
+import { OcgLocation, OcgMessageType, OcgPhase, OcgPosition, SelectBattleCMDAction, SelectIdleCMDAction } from "../../node_modules/@jsr/n1xx1__ocgcore-wasm/dist/index.js";
 import { actionCardEntries, strategyActionRole } from "./deck-strategy.js";
 import { publicCardSemantics } from "./card-semantics.js";
-import { enforceDecisionGuardrails, matchesPublicChainCard, publicChainTargetContext, publicProgressSignature } from "./decision-guardrails.js";
+import { enforceDecisionGuardrails, matchesPublicChainCard, publicChainTargetContext, publicProgressSignature, BATTLE_LOCK_CODES, CONTINUOUS_THREAT_CODES } from "./decision-guardrails.js";
 import { publicMonsterTargetPlan } from "./target-feasibility.js";
 
 export const PLAYSTYLE_COMPONENT_WEIGHTS = Object.freeze({
@@ -13,6 +13,15 @@ export const PLAYSTYLE_COMPONENT_WEIGHTS = Object.freeze({
 });
 
 export function resolvePlaystyleProfile(knowledge) {
+  const explicitPlaystyle = String(knowledge?.playstyle ?? "").toLowerCase();
+  if (explicitPlaystyle) {
+    if (/burn/.test(explicitPlaystyle)) return "burn";
+    if (/aggro|beatdown/.test(explicitPlaystyle)) return "aggro";
+    if (/combo|mill|deck-out/.test(explicitPlaystyle)) return "combo";
+    if (/control|lockdown|stall/.test(explicitPlaystyle)) return "control";
+    if (/midrange/.test(explicitPlaystyle)) return "midrange";
+  }
+
   const plan = knowledge?.plan ?? {};
   const text = `${knowledge?.deckId ?? ""} ${knowledge?.archetype ?? ""} ${plan.archetype ?? ""} ${plan.playstyle ?? ""} ${plan.id ?? ""}`.toLowerCase();
 
@@ -190,35 +199,66 @@ export function projectResponseValue(knowledge, message, response, { observation
   if (role === "summon" || role === "special-summon") {
     for (const card of cards) {
       const attack = Number(card.atk) || 0;
-      const immediateLethal = !board.opponentMonsters.length && attack > 0 && attack >= board.opponentLp;
-      components.board += bounded((attack - 1000) / 700, -1.5, 2.5);
-      components.tempo += 1;
       const defense = Number(card.def) || 0;
-      if (playstyle === "aggro" && attack >= 1600 && attack >= defense) {
+      const cardName = String(card.name ?? "").toLowerCase();
+      const isGravekeeper = cardName.includes("gravekeeper");
+      const necrovalleyActive = (board.ownBackrowCards ?? observation.ownBackrow ?? []).some((b) => {
+        const bc = codeOf(b);
+        const bn = String(b?.name ?? "").toLowerCase();
+        return (bc === 47355498 || bc === 135106001 || bn.includes("necrovalley")) && (b?.faceUp === true || (Number(b?.position) & 1) !== 0);
+      });
+      const effectiveAttack = attack + (isGravekeeper && necrovalleyActive ? 500 : 0);
+      const effectiveDefense = defense + (isGravekeeper && necrovalleyActive ? 500 : 0);
+      const immediateLethal = !board.opponentMonsters.length && effectiveAttack > 0 && effectiveAttack >= board.opponentLp;
+      components.board += bounded((effectiveAttack - 1000) / 700, -1.5, 2.5);
+      components.tempo += 1;
+      if ((playstyle === "aggro" || necrovalleyActive) && effectiveAttack >= 1600 && effectiveAttack >= effectiveDefense) {
         components.tempo += 1.5;
         components.board += 1.0;
-        reasons.push("AGGRO_PROACTIVE_PRESSURE");
+        reasons.push(necrovalleyActive ? "NECROVALLEY_BEATER_PRESSURE" : "AGGRO_PROACTIVE_PRESSURE");
       }
       if (card.roles?.includes("flip") && !immediateLethal) {
         components.future -= 3.5;
         reasons.push("FACEUP_SUMMON_DOES_NOT_ENABLE_FLIP_VALUE");
       }
-      if (board.opponentPower > attack && board.opponentFaceUp.length) components.safety -= bounded((board.opponentPower - attack) / 900, 0, 2.5);
+      const isTsukuyomi = cardName.includes("tsukuyomi") || (card.roles?.includes("spirit") && card.roles?.includes("position"));
+      if (isTsukuyomi) {
+        const hasOpponentFaceUpThreat = (board.opponentFaceUp ?? []).some((m) => {
+          const mAtk = Number(m.attack ?? m.atk ?? 0);
+          const mDef = Number(m.defense ?? m.def ?? 0);
+          const mName = String(m.name ?? "").toLowerCase();
+          const hasDangerousEffect = mName.includes("mirage dragon") || mName.includes("jinzo") || mName.includes("thousand-eyes") || mName.includes("relinquished") || mName.includes("black luster");
+          return mAtk >= 1500 || mAtk > mDef || hasDangerousEffect;
+        });
+        const hasRecyclableFlip = (board.ownMonsters ?? []).some((m) => {
+          const sem = knowledge?.byRuntimeCode?.[String(codeOf(m))] ?? publicCardSemantics(codeOf(m));
+          return sem?.roles?.includes("flip") && m.faceUp === true;
+        });
+        if (hasOpponentFaceUpThreat || hasRecyclableFlip) {
+          components.tempo += 2.5;
+          components.board += 2.0;
+          components.material += 1.0;
+          reasons.push("TSUKUYOMI_FLIP_TACTICAL_VALUE");
+        }
+      }
+      if (!isTsukuyomi && board.opponentPower > effectiveAttack && board.opponentFaceUp.length) {
+        components.safety -= bounded((board.opponentPower - effectiveAttack) / 900, 0, 2.5);
+      }
       if (immediateLethal) components.tempo += 6;
       const isBreaker = !card.roles?.includes("continuous-engine") && (
         (card.roles?.includes("counter-resource") && (card.roles?.includes("backrow-removal") || card.roles?.includes("destroy-removal"))) ||
-        String(card.name ?? "").toLowerCase().includes("breaker the magical warrior")
+        cardName.includes("breaker the magical warrior")
       );
       if (isBreaker && board.opponentBackrow === 0 && board.opponentMonsters.length === 0 && Number(observation.turn ?? 1) <= 2) {
         components.tempo -= 2.5;
         reasons.push("HOLD_BREAKER_UNTIL_OPPONENT_SETS_BACKROW");
       }
-      if (attack < 1000 && !card.roles?.includes("continuous-engine") && Number(observation.turn ?? 1) <= 1 && !immediateLethal) {
+      if (effectiveAttack < 1000 && !isTsukuyomi && !card.roles?.includes("continuous-engine") && Number(observation.turn ?? 1) <= 1 && !immediateLethal) {
         components.safety -= 2.5;
         components.tempo -= 1.5;
         reasons.push("AVOID_WEAK_ATTACK_SUMMON_ON_FIRST_TURN");
       }
-      if ((card.roles?.includes("sinister-engine") || String(card.name ?? "").toLowerCase() === "sinister serpent") && Number(observation.turn ?? 1) <= 2) {
+      if ((card.roles?.includes("sinister-engine") || cardName === "sinister serpent") && Number(observation.turn ?? 1) <= 2) {
         components.future -= 2.5;
         reasons.push("PRESERVE_SINISTER_IN_HAND_FOR_DISCARD");
       }
@@ -273,6 +313,57 @@ export function projectResponseValue(knowledge, message, response, { observation
     }
   }
 
+  if (role === "spell-set") {
+    const phase = Number(observation.phase) || 0;
+    const isTurn1 = Number(observation.turn ?? 1) <= 1;
+    const isMain1 = (phase & OcgPhase.MAIN1) !== 0 || phase === OcgPhase.MAIN1 || phase === 4;
+    const isMain2 = (phase & OcgPhase.MAIN2) !== 0 || phase === OcgPhase.MAIN2 || phase === 8 || phase === 16;
+    const handSize = Number(observation.handSize ?? observation.ownHand?.length) || 0;
+
+    for (const card of cards) {
+      const cardRoles = new Set(card.roles ?? []);
+      const isCardReactive = cardRoles.has("reactive") || cardRoles.has("interaction") || cardRoles.has("defense") || cardRoles.has("negate");
+      const isNormalSpell = card.kind === "SPELL" && !cardRoles.has("reactive") && !cardRoles.has("quick-play");
+
+      if (isNormalSpell) {
+        if (handSize > 6) {
+          components.future += 1.0;
+          reasons.push("SET_SPELL_TO_AVOID_END_PHASE_DISCARD");
+        } else {
+          components.future -= 3.0;
+          components.tempo -= 1.5;
+          reasons.push("AVOID_SETTING_NORMAL_SPELL_WITHOUT_PRESSURE");
+        }
+      }
+
+      if (isTurn1) {
+        if (isCardReactive) {
+          components.safety += 2.5;
+          components.future += 1.5;
+          reasons.push("TURN_ONE_SET_DEFENSIVE_BACKROW");
+        }
+      } else {
+        if (isMain1) {
+          components.tempo -= 2.0;
+          components.safety -= 1.5;
+          reasons.push("DEFER_SET_TO_MAIN_PHASE_2");
+        } else if (isMain2) {
+          if (isCardReactive) {
+            components.safety += 2.5;
+            components.tempo += 1.0;
+            reasons.push("MAIN_PHASE_2_SET_DEFENSIVE_BACKROW");
+          }
+        }
+      }
+
+      const ownBackCount = Number(board.ownBackrow) || 0;
+      if (ownBackCount >= 2) {
+        components.safety -= 2.0;
+        reasons.push("RISK_HEAVY_STORM_BLOWOUT_ON_THIRD_BACKROW");
+      }
+    }
+  }
+
   if (role === "activate" || role === "chain") {
     const hasPublicChain = (observation.publicChain ?? []).length > 0;
     const respondingToOpponent = (observation.publicChain ?? []).some((entry) => Number(entry.controller) !== Number(observation.player));
@@ -322,12 +413,18 @@ export function projectResponseValue(knowledge, message, response, { observation
       const targetPlan = publicMonsterTargetPlan(roles, observation);
       const opposingTargets = targetPlan.opponent;
       const strongestOpposingAttack = Math.max(0, ...opposingTargets.filter(faceUp).map((card) => Number(card.attack) || 0));
+      const hasDefensiveThreat = opposingTargets.some((card) => {
+        const cRoles = new Set(cardForCode(knowledge, card)?.roles ?? []);
+        const def = Number(card.defense ?? card.def ?? 0);
+        return def >= 1400 || cRoles.has("burn") || cRoles.has("clock") || cRoles.has("stall") || cRoles.has("flip");
+      });
       const worthwhileRemovalTarget = opposingTargets.length > 0
         && (roles.has("absorb")
           || roles.has("swing") && opposingTargets.length >= 2
           || opposingTargets.length === 1 && board.ownPower >= board.opponentLp
           || strongestOpposingAttack >= 1000
-          || strongestOpposingAttack >= board.ownLp);
+          || strongestOpposingAttack >= board.ownLp
+          || hasDefensiveThreat);
       const monsterRelevant = (roles.has("monster-removal") || roles.has("take-control")) ? (worthwhileRemovalTarget ? opposingTargets.length : 0)
         : roles.has("position") ? opposingTargets.length : 0;
       const backrowRelevant = roles.has("backrow-removal") ? board.opponentBackrow : 0;
@@ -352,6 +449,31 @@ export function projectResponseValue(knowledge, message, response, { observation
         components.tempo += 1.5;
         reasons.push("MONSTER_IGNITION_REMOVAL");
       }
+      if (cards[0]?.kind === "MONSTER" && (roles.has("backrow-removal") || roles.has("spell-removal") || roles.has("destroy-removal")) && board.opponentBackrow > 0) {
+        const isCardActiveFaceUp = (c) => c?.faceUp === true || (Number(c?.position) & 1) !== 0;
+        const oppHasLockOrClock = (observation.opponentBackrow ?? []).some((c) =>
+          isCardActiveFaceUp(c) && (CONTINUOUS_THREAT_CODES.has(codeOf(c)) || BATTLE_LOCK_CODES.has(codeOf(c)))
+        );
+        components.material += 1.5;
+        components.tempo += oppHasLockOrClock ? 4.0 : 2.0;
+        components.board += 1.5;
+        if (oppHasLockOrClock) components.safety += 2.5;
+        reasons.push(oppHasLockOrClock ? "MONSTER_IGNITION_DESTROY_LOCK_OR_CLOCK" : "MONSTER_IGNITION_BACKROW_REMOVAL");
+      }
+      if (cards[0]?.kind === "MONSTER" && (roles.has("attack-boost") || roles.has("dynamic-atk"))) {
+        const oppStrongerOrEqual = (board.opponentFaceUp ?? []).some((opp) => {
+          const oppAtk = Number(opp.attack ?? opp.atk ?? 0);
+          const oppDef = Number(opp.defense ?? opp.def ?? 0);
+          const oppStat = (Number(opp.position) & OcgPosition.ATTACK) !== 0 ? oppAtk : oppDef;
+          return oppStat >= (Number(cards[0]?.attack ?? cards[0]?.atk) || 0) && oppStat <= 2500;
+        });
+        const openBoardSafeHit = board.opponentMonsters.length === 0 && board.opponentBackrow === 0;
+        if (oppStrongerOrEqual || openBoardSafeHit) {
+          components.tempo += 3.0;
+          components.board += 2.5;
+          reasons.push("ACTIVATE_ATTACK_BOOST_BEFORE_BATTLE");
+        }
+      }
       if (!relevantOpposingState) reasons.push(role === "chain" && hasPublicChain ? "CHAIN_NEEDS_IMMEDIATE_PUBLIC_JUSTIFICATION" : "INTERACTION_HAS_NO_VISIBLE_OPPOSING_VALUE");
       if (role === "chain" && !roles.has("negate")) {
         const activeChain = publicChainTargetContext(knowledge, observation, {
@@ -373,7 +495,7 @@ export function projectResponseValue(knowledge, message, response, { observation
     }
     if (roles.has("swing")) {
       const opposingTargets = roles.has("backrow-removal") ? board.opponentBackrow : board.opponentMonsters.length;
-      const ownCollateral = roles.has("backrow-removal") ? board.ownBackrow : board.ownMonsters.length;
+      const ownCollateral = roles.has("target-opponent-board") ? 0 : (roles.has("backrow-removal") ? board.ownBackrow : board.ownMonsters.length);
       components.material += bounded((opposingTargets - ownCollateral) * 1.4, -5, 5);
       if (roles.has("backrow-sweeper")) {
         const isLethalPush = board.ownPower >= board.opponentLp;
@@ -388,9 +510,20 @@ export function projectResponseValue(knowledge, message, response, { observation
           components.material += 2.0;
           reasons.push("HEAVY_STORM_FAVORABLE_TRADE");
         } else if (board.opponentBackrow === 1) {
-          components.material -= 4.0;
-          components.tempo -= 2.0;
-          reasons.push("AVOID_HEAVY_STORM_ON_SINGLE_TARGET");
+          const isCardActiveFaceUp = (c) => c?.faceUp === true || (Number(c?.position) & 1) !== 0;
+          const oppHasLockOrClock = (observation.opponentBackrow ?? []).some((c) =>
+            isCardActiveFaceUp(c) && (CONTINUOUS_THREAT_CODES.has(codeOf(c)) || BATTLE_LOCK_CODES.has(codeOf(c)))
+          );
+          if (oppHasLockOrClock) {
+            components.material += 2.0;
+            components.tempo += 4.0;
+            components.safety += 3.0;
+            reasons.push("HEAVY_STORM_DESTROY_CRITICAL_CLOCK_OR_LOCK");
+          } else {
+            components.material -= 4.0;
+            components.tempo -= 2.0;
+            reasons.push("AVOID_HEAVY_STORM_ON_SINGLE_TARGET");
+          }
         }
       }
     }
@@ -456,7 +589,9 @@ export function projectResponseValue(knowledge, message, response, { observation
     const targetStats = board.opponentFaceUp.map((card) => (Number(card.position) & OcgPosition.ATTACK) !== 0
       ? Number(card.attack) || 0
       : Number(card.defense) || 0);
-    const canDefeatVisible = targetStats.some((value) => attack >= value);
+    const canChangePositionOnAttack = roles.has("position") || String(attacker?.name ?? "").toLowerCase().includes("assailant");
+    const canDefeatVisible = targetStats.some((value) => attack >= value)
+      || (canChangePositionOnAttack && board.opponentFaceUp.some((card) => attack >= (Number(card.defense) || 0)));
     const canConvertBattleEffect = roles.has("banish-removal") || roles.has("battle-removal");
     const canBoostInDamageStep = roles.has("damage-step-boost") || String(attacker?.name ?? "").toLowerCase().includes("injection fairy lily");
     const canAttackDirectly = roles.has("direct-attacker");
@@ -470,6 +605,20 @@ export function projectResponseValue(knowledge, message, response, { observation
       components.tempo -= 7;
       components.safety -= bounded((Math.min(...targetStats) - attack) / 500, 0.5, 3);
       reasons.push("ATTACK_HAS_NO_PROFITABLE_VISIBLE_TARGET");
+    }
+    if (!board.opponentMonsters.length && board.opponentBackrow > 0) {
+      const isFloater = roles.has("floater") || roles.has("death-trigger") || roles.has("grave-trigger");
+      if (isFloater) {
+        components.safety += 2.0;
+        reasons.push("PROBE_UNKNOWN_BACKROW_WITH_FLOATER");
+      } else {
+        const ownAttackers = (board.ownMonsters ?? []).filter((m) => (Number(m.position) & OcgPosition.ATTACK) !== 0);
+        const maxOwnAtk = Math.max(...ownAttackers.map((m) => Number(m.attack ?? m.atk) || 0), attack);
+        if (attack < maxOwnAtk) {
+          components.safety += 1.0;
+          reasons.push("PROBE_UNKNOWN_BACKROW_WITH_LOWER_ATK");
+        }
+      }
     }
     if (!board.opponentMonsters.length && attack >= board.opponentLp) components.tempo += 8;
     if (playstyle === "aggro") {
@@ -491,10 +640,28 @@ export function projectResponseValue(knowledge, message, response, { observation
       const oppStronger = (board.opponentMonsters ?? []).some((opp) => (Number(opp.attack ?? opp.atk ?? 0) > mAtk) || (Number(opp.defense ?? opp.def ?? 0) > mAtk));
       return isRemoval && oppStronger;
     });
-    if ((unequippedAbsorb || hasUnusedIgnitionRemoval) && board.opponentMonsters.length > 0) {
+    const hasUnusedIgnitionBoost = (board.ownMonsters ?? []).some((m) => {
+      const sem = knowledge?.byRuntimeCode?.[String(codeOf(m))] ?? publicCardSemantics(codeOf(m));
+      const mRoles = new Set(sem?.roles ?? []);
+      const isBoost = mRoles.has("attack-boost") || mRoles.has("dynamic-atk") || String(m.name ?? "").toLowerCase().includes("bazoo");
+      const mAtk = Number(m.attack ?? m.atk ?? 0);
+      const oppStronger = (board.opponentMonsters ?? []).some((opp) => (Number(opp.attack ?? opp.atk ?? 0) > mAtk && Number(opp.attack ?? opp.atk ?? 0) <= 2500) || (Number(opp.defense ?? opp.def ?? 0) > mAtk && Number(opp.defense ?? opp.def ?? 0) <= 2500));
+      const hasGraveFuel = (observation.graveyard ?? []).some((c) => !c.kind || c.kind === "MONSTER");
+      return isBoost && oppStronger && hasGraveFuel && mAtk < 2500;
+    });
+    const hasUnusedIgnitionBackrowRemoval = (board.ownMonsters ?? []).some((m) => {
+      const sem = knowledge?.byRuntimeCode?.[String(codeOf(m))] ?? publicCardSemantics(codeOf(m));
+      const mRoles = new Set(sem?.roles ?? []);
+      const isBreaker = mRoles.has("backrow-removal") || String(m.name ?? "").toLowerCase().includes("breaker");
+      const oppHasLock = (observation.opponentBackrow ?? []).some((c) =>
+        (c?.faceUp === true || (Number(c?.position) & 1) !== 0) && (CONTINUOUS_THREAT_CODES.has(codeOf(c)) || BATTLE_LOCK_CODES.has(codeOf(c)))
+      );
+      return isBreaker && oppHasLock;
+    });
+    if ((unequippedAbsorb || hasUnusedIgnitionRemoval || hasUnusedIgnitionBoost || hasUnusedIgnitionBackrowRemoval) && (board.opponentMonsters.length > 0 || hasUnusedIgnitionBackrowRemoval)) {
       components.tempo -= 4;
       components.safety -= 3;
-      reasons.push(unequippedAbsorb ? "PRIORITIZE_ABSORPTION_BEFORE_BATTLE" : "PRIORITIZE_REMOVAL_BEFORE_BATTLE");
+      reasons.push(unequippedAbsorb ? "PRIORITIZE_ABSORPTION_BEFORE_BATTLE" : hasUnusedIgnitionBackrowRemoval ? "PRIORITIZE_BACKROW_REMOVAL_BEFORE_BATTLE" : hasUnusedIgnitionBoost ? "PRIORITIZE_BOOST_BEFORE_BATTLE" : "PRIORITIZE_REMOVAL_BEFORE_BATTLE");
     } else {
       components.tempo += board.ownPower > 0 ? 1 : -0.5;
       if (playstyle === "aggro" && board.ownPower > 0) {

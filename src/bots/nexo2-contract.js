@@ -53,3 +53,15 @@ export function nexo2DeckLabel(deckId) {
   if (isNexo2OpponentDeck(deckId)) return "Mazo de enfrentamiento Nexo 2";
   return "Fuera del piloto Nexo 2";
 }
+
+export {
+  NEXO3_BOT_ID,
+  NEXO3_ALGORITHM,
+  NEXO3_ALL_DECK_IDS,
+  NEXO3_ALL_OPPONENT_DECK_IDS,
+  NEXO3_CATALOG_SIZE,
+  isNexo3Deck,
+  isNexo3OpponentDeck,
+  isNexo3MatchupAllowed,
+  nexo3DeckLabel,
+} from "./nexo3-contract.js";

@@ -8,16 +8,16 @@ function registerButton(action, className, { esc, registerAction, label = null }
   return `<button type="button" class="${className}" data-action-id="${esc(actionId)}" aria-label="${esc(copy)}"><span>${esc(affordance.icon)}</span><b>${esc(copy)}</b></button>`;
 }
 
-export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox = false, fullscreenLabel, boardTilt = false, esc, botProfile = null }) {
+export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox = false, fullscreenLabel, boardTilt = false, duelMenuOpen = false, esc, botProfile = null }) {
   const status = interactionStatus(model, view, { manual });
   return `<header class="duel-compact-head">
     <div class="duel-title-lockup"><span class="duel-mark">GOAT</span><div><strong>${esc(title)}</strong><small>${esc(subtitle)}</small></div></div>
     <div class="duel-live-status mode-${esc(model.mode)}" data-testid="duel-interaction-status"><i></i><span><b>${esc(status.eyebrow)}</b><small>${esc(status.title)}</small></span></div>
     <div class="duel-head-meta"><span>TURNO <b>${String(view?.turn ?? 0).padStart(2, "0")}</b></span><span>${esc(phaseLabel(view?.phase))}</span><span class="priority-owner">${esc(model.priorityName)}</span></div>
-    <div class="duel-menu" data-open="false"><button type="button" class="duel-menu-toggle" data-duel-menu-toggle aria-label="Abrir menú del duelo" aria-expanded="false">•••</button><div class="duel-menu-panel">
+    <div class="duel-menu" data-open="${duelMenuOpen ? "true" : "false"}"><button type="button" class="duel-menu-toggle" data-duel-menu-toggle aria-label="Abrir menú del duelo" aria-expanded="${duelMenuOpen ? "true" : "false"}">•••</button><div class="duel-menu-panel">
       ${sandbox ? `<button type="button" data-action="restart-sandbox-duel">Reiniciar escenario</button><button type="button" data-action="edit-sandbox-scenario">Editar escenario</button>` : ""}
-      <button type="button" data-action="new-duel">Nuevo duelo</button><button type="button" data-action="open-play">Preparar otra partida</button>
-      <button type="button" data-action="toggle-fullscreen">${esc(fullscreenLabel)}</button><button type="button" data-action="tilt">${boardTilt ? "Vista superior" : "Vista inclinada"}</button>
+      <button type="button" data-action="new-duel">Reiniciar duelo</button>
+      <button type="button" data-action="exit-to-home">Salir al menú principal</button>
       <details class="duel-debug-details"><summary>Diagnóstico</summary><code>${esc(view?.pendingType ?? "SIN DECISIÓN")} · ${esc(view?.timingWindow?.kind ?? "sin ventana")}</code><small>${Number(view?.decisionCount ?? 0)} decisiones OCGCore</small>${botProfile ? `<small style="display:block;margin-top:4px;color:var(--text-muted, #888)">Bot: <b>${esc(botProfile.name)}</b> [${esc(botProfile.modelOrigin ?? "base")}] · Hash: <code>${esc(String(botProfile.modelHash ?? "n/a").slice(0, 10))}</code></small>` : ""}</details>
     </div></div>
   </header>`;
@@ -109,6 +109,10 @@ export function renderPhaseAdvanceConfirmation({ view, model, pending, esc }) {
   if (!pending?.action || !model?.optionalActions?.length) return "";
   const count = model.optionalActions.length;
   const destination = pending.label ?? playerFacingActionLabel(pending.action);
+  const passingPriority = model.freePriority && pending.action.actionKind === "decline";
+  if (passingPriority) {
+    return `<section class="duel-phase-priority duel-phase-confirmation" data-testid="phase-advance-confirmation" role="alertdialog" aria-label="Confirmar paso de prioridad"><div><span>${esc(phaseLabel(view?.phase))} · VENTANA RÁPIDA</span><strong>¿Pasar prioridad?</strong><small>Aún tienes ${count} ${count === 1 ? "activación rápida disponible" : "activaciones rápidas disponibles"}. Si pasas, no la usarás en esta ventana y OCGCore continuará con las acciones legales de la fase.</small></div><div class="priority-choices"><button type="button" class="priority-choice priority-choice-no" data-phase-advance-cancel><span>←</span><b>Seguir decidiendo</b></button><button type="button" class="priority-choice" data-phase-advance-confirm><span>→</span><b>Sí, pasar prioridad</b></button></div></section>`;
+  }
   return `<section class="duel-phase-priority duel-phase-confirmation" data-testid="phase-advance-confirmation" role="alertdialog" aria-label="Confirmar cambio de fase"><div><span>${esc(phaseLabel(view?.phase))} · CAMBIO DE FASE</span><strong>¿${esc(destination)}?</strong><small>Aún tienes ${count} ${count === 1 ? "acción legal disponible" : "acciones legales disponibles"}. Si continúas, no podrás realizarlas en esta fase.</small></div><div class="priority-choices"><button type="button" class="priority-choice priority-choice-no" data-phase-advance-cancel><span>←</span><b>Seguir jugando</b></button><button type="button" class="priority-choice" data-phase-advance-confirm><span>→</span><b>Sí, pasar de fase</b></button></div></section>`;
 }
 
@@ -133,9 +137,16 @@ export function renderResponseTray({ view, model, revealed = false, cardForCode,
   if (!revealed && options.length) {
     const alertTitle = view?.pendingType === "SELECT_EFFECTYN" ? "Tienes una posible activación" : "Tienes una respuesta disponible";
     const yesLabel = view?.pendingType === "SELECT_EFFECTYN" ? "Ver activación" : "Responder";
-    return `<section class="duel-response-tray response-alert" data-testid="response-tray" role="alertdialog" aria-label="${esc(alertTitle)}"><div class="response-alert-animation" data-testid="response-alert-animation" aria-hidden="true"><img class="response-alert-ornament" src="./sprites/Sprite_Ornamentacion8.png" alt="" /></div><div class="response-copy"><span>${esc(eyebrow)}</span><strong>${esc(alertTitle)}</strong><small>${esc(title)}</small></div><div class="response-alert-actions"><button type="button" class="response-reveal" data-action-options-reveal><span>FX</span><b>${esc(yesLabel)}</b></button>${decline ? registerButton(decline, "response-decline", { esc, registerAction, label: view?.pendingType === "SELECT_EFFECTYN" ? "No activar" : "No responder" }) : ""}</div></section>`;
+    return `<section class="duel-response-tray response-alert" data-testid="response-tray" role="alertdialog" aria-label="${esc(alertTitle)}"><div class="response-alert-animation" data-testid="response-alert-animation" aria-hidden="true"><img class="response-alert-ornament" src="./sprites/Sprite_Ornamentacion8.webp" alt="" /></div><div class="response-copy"><span>${esc(eyebrow)}</span><strong>${esc(alertTitle)}</strong><small>${esc(title)}</small></div><div class="response-alert-actions"><button type="button" class="response-reveal" data-action-options-reveal><span>FX</span><b>${esc(yesLabel)}</b></button>${decline ? registerButton(decline, "response-decline", { esc, registerAction, label: view?.pendingType === "SELECT_EFFECTYN" ? "No activar" : "No responder" }) : ""}</div></section>`;
   }
   return `<section class="duel-response-tray response-revealed" data-testid="response-tray-options" role="region" aria-label="${esc(title)}"><div class="response-copy"><span>${esc(eyebrow)}</span><strong>${esc(title)}</strong><small>${esc(detail)}</small></div><div class="response-options">${options.map((action) => responseOption(action, { cardForCode, cardMarkup, esc, registerAction })).join("") || `<span class="response-required">Elige la respuesta obligatoria disponible.</span>`}</div>${decline ? registerButton(decline, "response-decline", { esc, registerAction, label: "No hacer nada" }) : ""}</section>`;
+}
+
+function registerNumberButton(action, { esc, registerAction }) {
+  const actionId = registerAction(action);
+  const match = String(action.label ?? "").match(/\d+/);
+  const num = match ? match[0] : String(action.coreResponse?.value !== undefined ? action.coreResponse.value + 1 : "");
+  return `<button type="button" class="decision-number-btn" data-action-id="${esc(actionId)}" aria-label="Declarar ${esc(num)}" title="Declarar Nivel ${esc(num)}"><span class="number-star">★</span><b class="number-num">${esc(num)}</b></button>`;
 }
 
 export function renderDecisionBar({ view, model, actions, directField = false, esc, registerAction }) {
@@ -146,10 +157,14 @@ export function renderDecisionBar({ view, model, actions, directField = false, e
     : directField
       ? responses.filter((action) => Array.isArray(action.selectionCards) && action.selectionCards.length === 0)
       : responses;
-  const buttons = secondary.slice(0, 16).map((action) => registerButton(action, "decision-action", { esc, registerAction })).join("");
-  const title = directField ? "Elige directamente una carta iluminada" : model.prompt.title;
-  const detail = directField ? `${model.priorityName}: pulsa el objetivo válido en el Campo.` : model.prompt.detail;
-  return `<section class="duel-decision-bar" data-testid="decision-bar" role="region" aria-label="${esc(title)}"><div><span>DECISIÓN NECESARIA · ${esc(model.priorityName)}</span><strong>${esc(title)}</strong><small>${esc(detail)}</small></div>${buttons ? `<div class="decision-actions">${buttons}</div>` : ""}</section>`;
+  const isNumberAnnouncement = view?.pendingType === "ANNOUNCE_NUMBER" || (secondary.length > 0 && secondary.every((a) => a.actionKind === "announce-number"));
+  const buttons = isNumberAnnouncement
+    ? secondary.slice(0, 16).map((action) => registerNumberButton(action, { esc, registerAction })).join("")
+    : secondary.slice(0, 16).map((action) => registerButton(action, "decision-action", { esc, registerAction })).join("");
+  const title = directField ? "Elige directamente una carta iluminada" : (isNumberAnnouncement ? "Declara un nivel de monstruo" : model.prompt.title);
+  const detail = directField ? `${model.priorityName}: pulsa el objetivo válido en el Campo.` : (isNumberAnnouncement ? `${model.priorityName}: elige el nivel que declaras para el efecto.` : model.prompt.detail);
+  const actionContainerClass = isNumberAnnouncement ? "decision-actions decision-number-picker" : "decision-actions";
+  return `<section class="duel-decision-bar ${isNumberAnnouncement ? "has-number-picker" : ""}" data-testid="decision-bar" role="region" aria-label="${esc(title)}"><div><span>DECISIÓN NECESARIA · ${esc(model.priorityName)}</span><strong>${esc(title)}</strong><small>${esc(detail)}</small></div>${buttons ? `<div class="${actionContainerClass}">${buttons}</div>` : ""}</section>`;
 }
 
 export function renderEventDrawer(view, { esc, state = {} }) {

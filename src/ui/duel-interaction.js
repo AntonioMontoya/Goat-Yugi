@@ -1,7 +1,6 @@
 import {
   chainResponseModel,
   chainWindowContext,
-  freePriorityPhaseIntents,
   isPhaseAction,
   isTurnPlayerFreePriority,
   pausedPhaseIntent,
@@ -138,7 +137,7 @@ export function createDuelInteractionModel(view, { manual = false } = {}) {
     optionalActions,
     advanceAction: preferredPhaseAction(view),
     autoPhaseAdvance: Boolean(automaticPhasePlan(view)),
-    phaseIntents: pausedPhaseIntent(view).length ? pausedPhaseIntent(view) : freePriorityPhaseIntents(view),
+    phaseIntents: pausedPhaseIntent(view),
     responseOptions: response?.options ?? [],
     declineAction: response?.decline ?? actions.find((action) => action?.coreResponse?.yes === false) ?? null,
     globalActions: optionalActions.filter((action) => { const key = actionKey(action); return !key || !visibleActionKeys.has(key); }),

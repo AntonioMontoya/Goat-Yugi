@@ -3,6 +3,7 @@ import { getCard, getCardByName } from "../engine/cards.js";
 import { getDeck } from "../decks/decks.js";
 import { hashString } from "../engine/rng.js";
 import { NEXO2_DECK_PROFILES } from "./nexo2-deck-profiles.js";
+import { getDeckProfile } from "../decks/deck-profiles.js";
 import { GOAT_BASE_KNOWLEDGE_FINGERPRINT, GOAT_BASE_KNOWLEDGE_SCHEMA, GOAT_BASE_RULES, baseKnowledgeFeatures, classifyGoatState } from "./goat-base-knowledge.js";
 import { publicCardSemantics } from "./card-semantics.js";
 
@@ -89,18 +90,18 @@ const DECK_PLANS = Object.freeze({
     scenarios: ["rota-target", "first-pressure", "trade-up", "attack-lethal"],
   },
   "panda-burn": {
-    id: "panda-burn-v1", archetype: "Burn", identity: "Convierte permanentes y daño directo en un reloj; no intercambia recursos sin necesidad.",
-    objective: "Convierte permanentes y daño directo en un reloj y protege la última secuencia de burn.",
-    playstyle: "Burn defensivo y control del reloj",
-    keyCards: ["Stealth Bird", "Wave-Motion Cannon", "Just Desserts", "Scapegoat"],
-    counterplay: "Presiona sus cartas continuas, conserva removal para el motor de daño y no le des turnos gratis para montar el reloj.",
-    counterplayRoles: ["backrow-removal", "interaction", "life-preservation", "tempo"],
-    weaknesses: ["Depende de permanentes y de mantener la partida bajo control de ritmo."],
-    priorityRoles: ["draw", "burn", "engine", "defense", "interaction", "stall", "lethal"],
-    roleWeights: { draw: 1.3, burn: 1.8, engine: 1.2, defense: 1.2, interaction: 0.8, stall: 1.4, lethal: 1.7 },
-    openingRoles: ["draw", "engine", "defense"], keepRoles: ["burn", "defense", "stall"],
-    spendAfterTurn: { interaction: 3 }, goals: ["protect life points", "assemble burn", "force a short clock"],
-    scenarios: ["burn-engine", "protect-clock", "preserve-final-damage"],
+    id: "panda-burn-v1", archetype: "Aggro / Midrange", identity: "Presión agresiva de atacantes de alto ATK con soporte de Creature Swap y BLS.",
+    objective: "Mantiene la presión de combate con atacantes de 1900 ATK, roba el control con Creature Swap y cierra con Summoned Skull y BLS.",
+    playstyle: "Aggro de combate y tempo",
+    keyCards: ["Gemini Elf", "Mechanicalchaser", "Summoned Skull", "Airknight Parshath", "Creature Swap", "Black Luster Soldier - Envoy of the Beginning"],
+    counterplay: "Elimina sus atacantes antes de que establezca presencia y conserva respuestas para Creature Swap y BLS.",
+    counterplayRoles: ["monster-removal", "interaction", "defense", "tempo"],
+    weaknesses: ["Depende del control del campo mediante atacantes normales y sufre si pierde el tempo."],
+    priorityRoles: ["threat", "tempo", "boss", "lethal", "interaction", "draw", "engine"],
+    roleWeights: { threat: 1.9, tempo: 1.7, boss: 1.8, lethal: 1.7, interaction: 1.5, draw: 1.3, engine: 1.2, defense: 0.5, stall: 0.4 },
+    openingRoles: ["threat", "tempo", "draw", "engine"], keepRoles: ["boss", "interaction"],
+    spendAfterTurn: { interaction: 2, boss: 0 }, goals: ["establish beater tempo", "press combat advantage", "convert board into lethal"],
+    scenarios: ["beater-opening", "combat-pressure", "boss-closure"],
   },
   "deckout": {
     id: "deckout-v1", archetype: "Mill / Deck-out", identity: "Vacía el Deck rival con volteos masivos de Needle Worm y Jars; no busca combate.",
@@ -159,18 +160,18 @@ const DECK_PLANS = Object.freeze({
     scenarios: ["jar-search", "loop-activation", "card-destruction-finish"],
   },
   "reasoning-gate": {
-    id: "reasoning-gate-v1", archetype: "Combo", identity: "Monta una secuencia de invocación y evita gastar piezas de combo fuera de ventana.",
-    objective: "Monta una secuencia de invocación y conserva las piezas de combo hasta la ventana decisiva.",
-    playstyle: "Combo de preparación y explosión",
-    keyCards: ["Reasoning", "Monster Gate", "Black Luster Soldier - Envoy of the Beginning"],
-    counterplay: "Interrumpe el primer buscador o la pieza que conecta la secuencia; no malgastes removal en cartas que no son el motor.",
-    counterplayRoles: ["negate", "interaction", "remove-engine", "graveyard-denial"],
-    weaknesses: ["Una interrupción temprana puede dejar cartas muertas y cortar toda la secuencia."],
-    priorityRoles: ["combo", "draw", "engine", "grave-setup", "interaction", "boss", "lethal"],
-    roleWeights: { combo: 1.8, draw: 1.3, engine: 1.3, "grave-setup": 1.1, interaction: 0.7, boss: 1.2, lethal: 1.6 },
-    openingRoles: ["draw", "combo", "engine"], keepRoles: ["combo", "boss", "interaction"],
-    spendAfterTurn: { interaction: 2 }, goals: ["assemble combo", "protect key activation", "end with decisive swing"],
-    scenarios: ["combo-piece", "gate-resolution", "protect-combo", "combo-lethal"],
+    id: "reasoning-gate-v1", archetype: "Aggro / Midrange", identity: "Presión masiva de beaters y tributos de 2500 ATK con Summoned Skull y Airknight Parshath.",
+    objective: "Mantiene ventaja por combate con atacantes de 1850-1900 ATK, invoca a Summoned Skull tributando floaters y cierra con BLS.",
+    playstyle: "Beatdown agresivo de tributo y tempo",
+    keyCards: ["Summoned Skull", "Airknight Parshath", "Gemini Elf", "Mechanicalchaser", "Gravekeeper's Spy", "Black Luster Soldier - Envoy of the Beginning", "Creature Swap"],
+    counterplay: "Elimina los monstruos tributables antes de que baje Summoned Skull y no regales monstruos fuertes ante Creature Swap.",
+    counterplayRoles: ["monster-removal", "tempo", "interaction"],
+    weaknesses: ["Depende de conservar presencia en campo para realizar invocaciones de tributo de alto impacto."],
+    priorityRoles: ["threat", "tempo", "boss", "lethal", "interaction", "draw", "engine"],
+    roleWeights: { threat: 1.8, tempo: 1.6, boss: 1.8, lethal: 1.7, interaction: 1.4, draw: 1.2, engine: 1.2, defense: 0.6, stall: 0.4 },
+    openingRoles: ["threat", "tempo", "engine", "draw"], keepRoles: ["boss", "interaction"],
+    spendAfterTurn: { interaction: 2, boss: 0 }, goals: ["establish beater board", "tribute floater for summoned skull", "press for lethal"],
+    scenarios: ["beater-pressure", "tribute-skull-summon", "boss-closure"],
   },
   "earth-aggro": {
     id: "earth-aggro-v1", archetype: "Aggro", identity: "Mantiene presión de ATK, usa removal para abrir ataques y no se queda esperando.",
@@ -228,6 +229,90 @@ const DECK_PLANS = Object.freeze({
     spendAfterTurn: { lethal: 3 }, goals: ["set value monster", "protect flip resolution", "win incremental advantage"],
     scenarios: ["set-value", "flip-reuse", "protect-flip", "resource-endgame"],
   },
+  "goatformat-strike-ninja": {
+    id: "strike-ninja-v1", archetype: "Aggro / Control", identity: "Presión evasiva de Strike Ninja con recruiter floaters y remoción puntual.",
+    objective: "Mantiene el campo con Tomato y Scout Plane, esquiva remociones clave con Strike Ninja y cierra con ventaja de combate.",
+    playstyle: "Midrange de tempo y evasión",
+    keyCards: ["Strike Ninja", "Mystic Tomato", "D.D. Scout Plane", "Exiled Force", "Reinforcement of the Army", "Solemn Judgment"],
+    counterplay: "Fuerza el destierro de Strike Ninja sin regalar ataques directos y castiga el gasto de LP de Solemn.",
+    counterplayRoles: ["monster-removal", "tempo", "interaction"],
+    weaknesses: ["El gasto excesivo de LP con Solemn lo vuelve vulnerable al daño directo o al burn."],
+    priorityRoles: ["threat", "tempo", "search", "interaction", "draw", "engine"],
+    roleWeights: { threat: 1.5, tempo: 1.4, search: 1.5, interaction: 1.3, draw: 1.1, lethal: 1.3, defense: 0.8 },
+    openingRoles: ["search", "engine", "tempo", "threat"], keepRoles: ["interaction"],
+    spendAfterTurn: { interaction: 2 }, goals: ["establish floater presence", "maintain strike ninja on field", "trade efficiently"],
+    scenarios: ["floater-opening", "strike-ninja-field", "trade-advantage"],
+  },
+  "goatformat-chaos-return": {
+    id: "chaos-return-v1", archetype: "Chaos / Beatdown", identity: "Presión sólida de beaters DARK/LIGHT con finalizador masivo de Return en turno letal.",
+    objective: "Establece presencia sólida con Spy y Dekoichi, destierra recursos con Chaos y remata con Return from the Different Dimension.",
+    playstyle: "Midrange de tempo con remate de Return",
+    keyCards: ["Return from the Different Dimension", "Chaos Sorcerer", "Black Luster Soldier - Envoy of the Beginning", "Gravekeeper's Spy", "Dekoichi the Battlechanted Locomotive"],
+    counterplay: "Presiona antes de que llene la zona de desterradas y no permitas que un Return masivo resuelva con campo libre.",
+    counterplayRoles: ["graveyard-denial", "backrow-removal", "tempo", "interaction"],
+    weaknesses: ["Return consume la mitad de LP y depende de tener suficientes monstruos desterrados."],
+    priorityRoles: ["threat", "tempo", "grave-setup", "boss", "draw", "interaction", "lethal"],
+    roleWeights: { threat: 1.6, tempo: 1.5, boss: 1.7, lethal: 1.8, draw: 1.2, "grave-setup": 1.2, interaction: 1.2, defense: 0.8 },
+    openingRoles: ["defense", "draw", "engine", "tempo"], keepRoles: ["boss", "lethal"],
+    spendAfterTurn: { boss: 0, lethal: 2 }, goals: ["set defense or draw engine", "banish high ATK monsters", "decisive lethal Return"],
+    scenarios: ["opening-defense", "chaos-banish", "return-lethal-swing"],
+  },
+  "goatformat-gravekeeper": {
+    id: "gravekeeper-v1", archetype: "Aggro / Control", identity: "Bloqueo de cementerio con Necrovalley y beatdown agresivo de 2000 ATK con Spear Soldier y Assailant.",
+    objective: "Activa Necrovalley rápidamente, niega recursos de cementerio y arrolla con atacantes potenciados de 2000 ATK.",
+    playstyle: "Aggro de presión bajo Necrovalley",
+    keyCards: ["Necrovalley", "Gravekeeper's Spear Soldier", "Gravekeeper's Assailant", "Gravekeeper's Spy", "Terraforming", "Rite of Spirit"],
+    counterplay: "Destruye Necrovalley con removal de magias y fuerza intercambios antes de que monte múltiples atacantes.",
+    counterplayRoles: ["backrow-removal", "monster-removal", "tempo"],
+    weaknesses: ["Pierde gran parte de su poder ofensivo si Necrovalley es destruida."],
+    priorityRoles: ["threat", "tempo", "engine", "search", "interaction", "lethal"],
+    roleWeights: { threat: 1.8, tempo: 1.6, engine: 1.5, search: 1.4, lethal: 1.6, interaction: 1.2, defense: 0.7 },
+    openingRoles: ["engine", "search", "threat", "defense"], keepRoles: ["threat", "interaction"],
+    spendAfterTurn: {}, goals: ["activate necrovalley", "summon 2000 ATK beaters", "relentless battle pressure"],
+    scenarios: ["necrovalley-search", "spear-soldier-beatdown", "combat-finish"],
+  },
+  "goatformat-drain-aggro": {
+    id: "drain-aggro-v1", archetype: "Aggro / Lockdown", identity: "Anula efectos de monstruos en campo con Skill Drain y aplasta con monstruos de 2200-2800 ATK sin tributo.",
+    objective: "Niega monstruos de efecto rivales con Skill Drain y mantiene presión ofensiva con Fusilier Dragon, Goblin Attack Force y Giant Orc.",
+    playstyle: "Aggro de cerrojo y fuerza bruta",
+    keyCards: ["Skill Drain", "Fusilier Dragon, the Dual-Mode Beast", "Goblin Attack Force", "Giant Orc", "Solemn Judgment"],
+    counterplay: "Usa removal de magia/trampa para romper Skill Drain o castiga la defensa de los atacantes tras el ataque.",
+    counterplayRoles: ["backrow-removal", "battle-interaction", "tempo"],
+    weaknesses: ["Paga 1000 LP por Skill Drain y sus monstruos cambian a posición de defensa con 0 DEF tras atacar."],
+    priorityRoles: ["threat", "tempo", "interaction", "lethal", "defense"],
+    roleWeights: { threat: 1.8, tempo: 1.6, interaction: 1.5, lethal: 1.7, defense: 0.6, draw: 1.0 },
+    openingRoles: ["threat", "tempo", "interaction"], keepRoles: ["interaction", "lethal"],
+    spendAfterTurn: {}, goals: ["summon high ATK beaters", "lockdown monster effects", "fast combat victory"],
+    scenarios: ["fusilier-opening", "drain-lockdown", "overwhelming-beatdown"],
+  },
+  "goatformat-last-warrior": {
+    id: "last-warrior-v1", archetype: "Lockdown / Fusion", identity: "Invocación turbo de The Last Warrior from Another Planet para prohibir toda invocación y cerrar con Wave-Motion.",
+    objective: "Fusiona a The Last Warrior con Metamorphosis sobre Fusilier/Gaia o Cyber-Stein, protege el campo con contra-trampas y quema con Wave-Motion.",
+    playstyle: "Cerrojo total de invocación y reloj de daño",
+    keyCards: ["The Last Warrior from Another Planet", "Metamorphosis", "Fusilier Dragon, the Dual-Mode Beast", "Swift Gaia the Fierce Knight", "Cyber-Stein", "Wave-Motion Cannon", "Solemn Judgment", "Interdimensional Matter Transporter"],
+    counterplay: "Impide la resolución de Metamorphosis o Cyber-Stein y destruye The Last Warrior con remoción no destructiva o contra-efectos.",
+    counterplayRoles: ["negate", "backrow-removal", "monster-removal", "tempo"],
+    weaknesses: ["Pagar 5000 LP con Cyber-Stein deja al mazo vulnerable al daño directo si el cerrojo falla."],
+    priorityRoles: ["lockdown", "burn", "stall", "defense", "interaction", "threat", "lethal"],
+    roleWeights: { lockdown: 2.4, burn: 2.0, stall: 1.8, defense: 1.6, interaction: 1.5, draw: 1.2, threat: 0.6, lethal: 1.6 },
+    openingRoles: ["defense", "stall", "engine", "burn"], keepRoles: ["lockdown", "interaction", "burn"],
+    spendAfterTurn: { burn: 0 }, goals: ["summon the last warrior", "lock opponent summons", "charge wave motion cannon", "protect field"],
+    scenarios: ["metamorphosis-fusilier", "last-warrior-lockdown", "wave-motion-victory"],
+  },
+  "goatformat-flute-dragon": {
+    id: "flute-dragon-v1", archetype: "Combo / Aggro", identity: "Despliegue masivo de Dragones con Lord of D. y The Flute of Summoning Dragon con protección de selección.",
+    objective: "Invoca a Lord of D., activa la Flauta para invocar Tyrant Dragon y Horus LV6 de la mano y barre con ataques dobles imparables.",
+    playstyle: "Swarm de dragones y tempo agresivo",
+    keyCards: ["Lord of D.", "The Flute of Summoning Dragon", "Tyrant Dragon", "Horus the Black Flame Dragon LV6", "Mirage Dragon", "Luster Dragon", "Stamping Destruction"],
+    counterplay: "Elimina a Lord of D. antes de que resuelva la Flauta y fuerza defensas antes de que bajen múltiples Dragones de 2900 ATK.",
+    counterplayRoles: ["monster-removal", "battle-interaction", "tempo", "negate"],
+    weaknesses: ["Combo dependiente de tener a Lord of D. y la Flauta simultáneamente en mano o mesa con Dragones para invocar."],
+    priorityRoles: ["combo", "threat", "tempo", "search", "interaction", "lethal", "defense"],
+    roleWeights: { combo: 2.0, threat: 1.8, tempo: 1.7, search: 1.3, interaction: 1.2, lethal: 1.8, defense: 0.6, draw: 1.1 },
+    openingRoles: ["search", "engine", "tempo", "threat"], keepRoles: ["combo", "threat", "lethal"],
+    spendAfterTurn: { lethal: 2 }, goals: ["assemble lord of d and flute", "summon tyrant dragon and horus", "overwhelming dragon rush"],
+    scenarios: ["flute-activation", "dragon-swarm", "mirage-dragon-safe-attack"],
+  },
 });
 
 export function semanticRolesForCard(card) {
@@ -259,14 +344,21 @@ export function semanticRolesForCard(card) {
   if (/token/.test(text)) { roles.add("token"); roles.add("resource"); roles.add("defense"); }
   if (/change .* (?:battle |defense |attack )?position|face-up .*face-down|face-down defense position/.test(text) || family === "position") { roles.add("position"); roles.add("tempo"); roles.add("interaction"); }
   if (/change .*face-up monster .*face-down defense position|change .*face-up monster to face-down defense position/.test(text)) roles.add("turn-face-down");
-  if (/destroy|banish|remove from play|return .*field .*hand|send .*field .*graveyard/.test(text)) { roles.add("interaction"); roles.add("removal"); }
+  const bounceRemoval = /return (?:that target|those targets|them|all (?:monsters?|spell|trap|cards?)[^.]*) to (?:the |its owner's |their owners' )?(?:hand|deck)|(?:to target|target|select) [^;.]+;? (?:and )?return it to (?:the |its owner's )?(?:hand|deck)|return .* on the field to (?:the |its owner's )?(?:hand|deck)/i;
+  const parts = text.split(";");
+  const effectClause = parts.length > 1 ? parts.slice(1).join(";") : parts[0];
+  const isBanishRemoval = (/banish|remove from play/i.test(effectClause)
+    && !/for each (?:banished|monster banished|card banished)/i.test(effectClause)
+    && !/banish this face-up card/i.test(effectClause))
+    || /banish .*(?:opponent|their)/i.test(costClause);
+  if (/destroy|send .*field .*(?:graveyard|gy)/.test(text) || isBanishRemoval || bounceRemoval.test(text)) { roles.add("interaction"); roles.add("removal"); }
   if (/(?:spell|trap)(?: card)?s?/.test(text) && roles.has("removal")) roles.add("backrow-removal");
   if (/monster(?: card)?s?/.test(text) && roles.has("removal")) roles.add("monster-removal");
   if (/(?:target|destroy|banish|remove from play|select|change) (?:the )?(?:up to )?(?:\d+|one|a)?\s*(?:face-down|set)(?: defense position)? monster/.test(text)) roles.add("target-face-down-monster");
-  if (/(?:target|destroy|banish|remove from play|select|change) (?:the )?(?:up to )?(?:\d+|one|a)?\s*face-up(?: attack position| defense position)? monster/.test(text)) roles.add("target-face-up-monster");
+  if (/(?:target|destroy|banish|remove from play|select|change) (?:the )?(?:up to )?(?:\d+|one|a|all)?\s*face-up(?: attack position| defense position)? monster/.test(text)) roles.add("target-face-up-monster");
   if (/(?:monster|card)s? your opponent controls|your opponent(?:'s|s') (?:face-up |face-down )?(?:monster|card)|on your opponent(?:'s|s') side of the field/.test(text)) roles.add("target-opponent-board");
   if (/\bdestroy\b/.test(text) && roles.has("removal")) roles.add("destroy-removal");
-  if (/\bbanish\b|remove from play/.test(text) && roles.has("removal")) roles.add("banish-removal");
+  if (isBanishRemoval && roles.has("removal")) roles.add("banish-removal");
   // A card that is already resolving on the chain cannot be stopped merely
   // by destroying it. This semantic distinction lets the common decision
   // layer handle Raigeki Break, Mystical Space Typhoon, Heavy Storm and
@@ -280,7 +372,7 @@ export function semanticRolesForCard(card) {
   if (/cannot attack|end the battle phase|battle damage .* 0|not destroyed by battle/.test(text)) { roles.add("defense"); roles.add("stall"); }
   if (/cannot declare an attack|cannot attack|skip (?:their|your|the) .*battle phase|level .* monsters? cannot attack/.test(text)) { roles.add("defense"); roles.add("stall"); }
   if (/inflict .*damage|damage to your opponent/.test(text)) { roles.add("burn"); roles.add("lethal"); }
-  if (/all (?:monsters|spell|trap)|each (?:monster|spell|trap)/.test(text) && roles.has("interaction")) roles.add("swing");
+  if (/all (?:(?:face-up |face-down )?(?:attack |defense )?position )?(?:monsters|spell|trap)|each (?:(?:face-up |face-down )?(?:attack |defense )?position )?(?:monster|spell|trap)/i.test(text) && roles.has("interaction")) roles.add("swing");
   if (/deck.*0 cards|cannot draw|send .*deck/.test(text)) roles.add("deck-out");
   if (/shuffle .*hand|discard .*hand|both players.*draw/.test(text)) roles.add("reset");
   if (/win the duel|after \d+ turns?/.test(text)) { roles.add("alternate-win"); roles.add("delayed-win"); roles.add("lethal"); roles.add("combo"); }
@@ -303,7 +395,7 @@ export function semanticRolesForCard(card) {
     roles.add("recovery");
     roles.add("combo");
   }
-  if (/during (?:the )?damage (?:step|calculation).*gains? \d+ atk/i.test(text)) {
+  if (/during (?:the )?damage (?:step|calculation).*gains? \d+ atk/i.test(text) || /this card gains \d+ atk/i.test(text)) {
     roles.add("damage-step-boost");
     roles.add("dynamic-atk");
     roles.add("attack-boost");
@@ -527,6 +619,7 @@ export function buildDeckKnowledge(deckId = "generic", deck = null) {
   const byName = Object.fromEntries(cards.map((card) => [normalize(card.name), card]));
   const byRuntimeCode = Object.fromEntries(cards.filter((card) => card.runtimeCode).map((card) => [String(card.runtimeCode), card]));
   const roles = roleCount(cards);
+  const profile = getDeckProfile(deckId);
   return {
     schema: 1,
     baseKnowledgeSchema: GOAT_BASE_KNOWLEDGE_SCHEMA,
@@ -537,6 +630,11 @@ export function buildDeckKnowledge(deckId = "generic", deck = null) {
     resolved: source.unresolved !== true,
     name: source.name ?? deckId,
     archetype: source.archetype ?? plan.archetype,
+    tier: source.tier ?? profile.tier,
+    tierNumber: source.tierNumber ?? profile.tierNumber,
+    playstyle: source.playstyle ?? profile.playstyle,
+    riskTolerance: source.riskTolerance ?? profile.riskTolerance,
+    riskProfile: source.riskProfile ?? profile.riskProfile,
     plan,
     mainSize: source.main?.length ?? 0,
     main: [...(source.main ?? [])],
@@ -715,7 +813,8 @@ export function scoreDeckStrategy(knowledge, message, response, { actionRole = "
   if (opening && roles.size && [...roles].some((role) => plan.openingRoles?.includes(role))) score += 0.8;
   if (roles.has("interaction")) score += threat > 0 ? 0.9 : 0.15;
   if (roles.has("defense") || roles.has("stall")) score += ownLp <= 3000 || threat > ownLp / 2 ? 0.75 : 0;
-  if (roles.has("boss")) score += observation.chaosReady ? 1.8 : -0.7;
+  const isChaosBoss = roles.has("chaos") || plan.archetype?.toLowerCase().includes("chaos");
+  if (roles.has("boss")) score += isChaosBoss ? (observation.chaosReady ? 1.8 : -0.7) : 1.4;
   if (roles.has("lethal")) score += Number(observation.opponentLp) <= 3000 ? 1.5 : 0;
   if (roles.has("draw") || roles.has("search")) score += Number(observation.handSize) <= 4 ? 0.65 : 0.15;
   if (actionRole === "attack") score += Number(observation.ownBoardPower) > Number(observation.opponentThreat) ? 0.8 : -0.25;

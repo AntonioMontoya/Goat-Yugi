@@ -329,7 +329,8 @@ function padPublishedMain(ids, category, index) {
 }
 
 export function officialMainDeckForName(name) {
-  const list = GOATFORMAT_DECK_LISTS[slug(name)];
+  const key = slug(name);
+  const list = GOATFORMAT_DECK_LISTS[key] ?? (key === "warrior-anti-meta" ? GOATFORMAT_DECK_LISTS["warrior"] : null);
   if (!list) return null;
   return Object.freeze(resolveNames(list).ids);
 }

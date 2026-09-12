@@ -49,13 +49,14 @@ export function persistPlaySelection(selection) {
   try { if (typeof localStorage !== "undefined") localStorage.setItem(PLAY_SELECTION_KEY, JSON.stringify(selection)); } catch { /* Keep selection in memory when storage is unavailable. */ }
 }
 
+export const ACTIVE_DUEL_STORAGE_KEY = "goat-local-lab-active-duel-v1";
+
 export function saveActiveDuelState(app) {
   if (!app.duel || app.duel.kind !== "ocgcore" || app.duel.winner !== null || app.activeSandboxScenario) {
     clearActiveDuelState();
     return;
   }
   try {
-    if (typeof sessionStorage === "undefined") return;
     const payload = {
       seed: app.duel.seed,
       startingPlayer: app.duel.startingPlayer ?? 0,
@@ -66,24 +67,30 @@ export function saveActiveDuelState(app) {
       duelManual: app.duelManual,
       pendingLadder: app.pendingLadder,
       decisionJournal: app.duel.decisionJournal ?? [],
+      turn: app.duel.turn ?? 1,
+      phase: app.duel.phase ?? "DRAW",
+      opponentName: app.duelBotProfile?.name ?? (app.pendingLadder?.opponentName ?? "Rival"),
+      isRanked: !!app.pendingLadder?.isRankedMatch || !!app.ladder?.activeRankedMatch?.active,
       savedAt: Date.now(),
     };
-    sessionStorage.setItem(ACTIVE_DUEL_SESSION_KEY, JSON.stringify(payload));
+    const serialized = JSON.stringify(payload);
+    if (typeof localStorage !== "undefined") localStorage.setItem(ACTIVE_DUEL_STORAGE_KEY, serialized);
+    if (typeof sessionStorage !== "undefined") sessionStorage.setItem(ACTIVE_DUEL_SESSION_KEY, serialized);
   } catch (_) {}
 }
 
 export function clearActiveDuelState() {
   try {
-    if (typeof sessionStorage !== "undefined") {
-      sessionStorage.removeItem(ACTIVE_DUEL_SESSION_KEY);
-    }
+    if (typeof localStorage !== "undefined") localStorage.removeItem(ACTIVE_DUEL_STORAGE_KEY);
+    if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(ACTIVE_DUEL_SESSION_KEY);
   } catch (_) {}
 }
 
 export function loadSavedActiveDuelState() {
   try {
-    if (typeof sessionStorage === "undefined") return null;
-    const stored = sessionStorage.getItem(ACTIVE_DUEL_SESSION_KEY);
+    let stored = null;
+    if (typeof localStorage !== "undefined") stored = localStorage.getItem(ACTIVE_DUEL_STORAGE_KEY);
+    if (!stored && typeof sessionStorage !== "undefined") stored = sessionStorage.getItem(ACTIVE_DUEL_SESSION_KEY);
     if (!stored) return null;
     const parsed = JSON.parse(stored);
     if (parsed && typeof parsed.seed === "number" && parsed.duelDeckId && parsed.opponentDeckId) {
@@ -92,3 +99,4 @@ export function loadSavedActiveDuelState() {
   } catch (_) {}
   return null;
 }
+

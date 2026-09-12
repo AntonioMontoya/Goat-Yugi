@@ -152,13 +152,18 @@ export function getNexo2DeckModel(deckId) {
       const fs = globalThis.process?.getBuiltinModule?.("fs");
       const path = globalThis.process?.getBuiltinModule?.("path");
       if (fs && path) {
-        const candidatePath = path.resolve(process.cwd(), "artifacts", "nexo2-decks", deckId, "candidate.json");
-        if (fs.existsSync(candidatePath)) {
-          const raw = fs.readFileSync(candidatePath, "utf8");
-          const parsed = JSON.parse(raw);
-          if (validateModelIntegrity(parsed).valid) {
-            NEXO2_DECK_MODELS.set(deckId, parsed);
-            return parsed;
+        const pathsToTry = [
+          path.resolve(process.cwd(), "artifacts", "nexo3-decks", deckId, "candidate.json"),
+          path.resolve(process.cwd(), "artifacts", "nexo2-decks", deckId, "candidate.json"),
+        ];
+        for (const candidatePath of pathsToTry) {
+          if (fs.existsSync(candidatePath)) {
+            const raw = fs.readFileSync(candidatePath, "utf8");
+            const parsed = JSON.parse(raw);
+            if (validateModelIntegrity(parsed).valid) {
+              NEXO2_DECK_MODELS.set(deckId, parsed);
+              return parsed;
+            }
           }
         }
       }

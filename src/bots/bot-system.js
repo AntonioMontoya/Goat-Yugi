@@ -13,6 +13,10 @@ import {
   registerCandidateManifest,
   resetToProductionModels,
 } from "./nexo2-deck-models.js";
+import {
+  getNexo3DeckModel,
+  registerNexo3DeckModel,
+} from "./nexo3-deck-models.js";
 import NEXO_PATCH_V1 from "../../artifacts/nexo-patch-v1/candidate.json" with { type: "json" };
 // Universal candidate trained across the complete 113-deck catalog.  It is
 // intentionally published as a candidate until the OCGCore validity gate is
@@ -20,6 +24,7 @@ import NEXO_PATCH_V1 from "../../artifacts/nexo-patch-v1/candidate.json" with { 
 import NEXO2_MODEL from "../../artifacts/nexo2-universal-v1/candidate.json" with { type: "json" };
 
 export { NEXO2_ALL_DECK_IDS, NEXO2_ALL_OPPONENT_DECK_IDS, NEXO2_BOT_ID, NEXO2_DECK_IDS, NEXO2_OPPONENT_DECK_IDS, isNexo2Deck, isNexo2OpponentDeck, isNexo2MatchupAllowed } from "./nexo2-contract.js";
+export { NEXO3_BOT_ID, NEXO3_ALGORITHM, NEXO3_ALL_DECK_IDS, NEXO3_ALL_OPPONENT_DECK_IDS, isNexo3Deck, isNexo3OpponentDeck, isNexo3MatchupAllowed, nexo3DeckLabel } from "./nexo3-contract.js";
 
 export const BOT_PROFILE_SCHEMA = 1;
 export const UNIVERSAL_BOT_ID = "universal-base";
@@ -59,10 +64,10 @@ const DEFAULT_BOTS = [
     ...NEXO2_MODEL,
     id: NEXO2_BOT_ID,
     botId: NEXO2_BOT_ID,
-    name: "Nexo 2",
+    name: "Nexo 3",
     deckId: NEXO2_ALL_DECK_IDS[0],
     profile: "generic",
-    style: "Creencias públicas + política/valor (v5)",
+    style: "IA universal especializada con guardarraíles (113 mazos)",
     difficulty: "expert",
     intelligence: 0,
     skillMmr: 0,
@@ -77,7 +82,7 @@ const DEFAULT_BOTS = [
     curriculum: "universal-catalog",
     trainingGames: Number(NEXO2_MODEL?.pilot?.trainingGames) || 0,
     evaluationGames: Number(NEXO2_MODEL?.pilot?.evaluationGames) || 0,
-    evaluationArtifact: "artifacts/nexo2-universal-v1-balanced",
+    evaluationArtifact: "artifacts/nexo3-guardrailed",
     training: false,
   },
 ];
@@ -136,7 +141,7 @@ export function createBotIdentity({ id = null, name = "Bot", deckId = "goat-cont
 export function getBotSpec(botId = UNIVERSAL_BOT_ID) {
   const specialist = parseSpecialistBotId(botId);
   if (specialist) return clone(specialistSpec(specialist.deckId, specialist.personaId));
-  const aliasId = botId === "nexo2" ? NEXO2_BOT_ID : botId;
+  const aliasId = (botId === "nexo2" || botId === "nexo3") ? NEXO2_BOT_ID : botId;
   const found = DEFAULT_BOTS.find((bot) => bot.id === aliasId);
   return clone(found ?? DEFAULT_BOTS[0]);
 }
@@ -362,18 +367,19 @@ export function createBotForDeck({ botId = UNIVERSAL_BOT_ID, deckId = null, deck
   const resolvedProfile = deckId && deckId !== source.deckId ? resolvedDeckId : source.profile ?? resolvedDeckId;
   let effectiveSource = source;
   let modelOrigin = manifest ? "custom-manifest" : "spec";
-  if ((source.botId ?? source.id ?? botId) === NEXO2_BOT_ID || source.algorithm === NEXO2_ALGORITHM) {
-    if (!isNexo2Deck(resolvedDeckId)) throw new Error(`Nexo 2 sólo puede pilotar uno de los ${NEXO2_ALL_DECK_IDS.length} mazos del catálogo universal.`);
+  const isNexoFlagship = (source.botId ?? source.id ?? botId) === NEXO2_BOT_ID || (source.botId ?? source.id ?? botId) === "nexo3" || source.algorithm === NEXO2_ALGORITHM;
+  if (isNexoFlagship) {
+    if (!isNexo2Deck(resolvedDeckId)) throw new Error(`Nexo 3 sólo puede pilotar uno de los ${NEXO2_ALL_DECK_IDS.length} mazos del catálogo universal.`);
     if (manifest) {
       const integrity = validateModelIntegrity(manifest);
       if (!integrity.valid) {
-        console.warn(`[Nexo 2] Manifiesto suministrado inválido o corrupto (${integrity.reason}). Aplicando fallback seguro.`);
+        console.warn(`[Nexo 3] Manifiesto suministrado inválido o corrupto (${integrity.reason}). Aplicando fallback seguro.`);
         manifest = null;
         modelOrigin = "fallback-corrupt-manifest";
       }
     }
     if (!manifest) {
-      const specialized = getNexo2DeckModel(resolvedDeckId);
+      const specialized = getNexo3DeckModel(resolvedDeckId) ?? getNexo2DeckModel(resolvedDeckId);
       if (specialized) {
         effectiveSource = {
           ...source,
@@ -459,3 +465,9 @@ export {
   resetToProductionModels,
   clearNexo2DeckModels,
 } from "./nexo2-deck-models.js";
+export {
+  getNexo3DeckModel,
+  registerNexo3DeckModel,
+  clearNexo3DeckModels,
+} from "./nexo3-deck-models.js";
+

@@ -57,3 +57,13 @@ npm run build:ipad
 # Previsualizar el paquete compilado
 npm run preview:ipad
 ```
+
+---
+
+## 🤖 Inteligencia Artificial Nexo 3
+
+La versión iPad incluye el motor completo de **Nexo 3**:
+- **113 modelos neuronales dedicados** y guardarraíles especializados ejecutándose localmente mediante WebAssembly.
+- Duelos fluidos contra cualquier mazo del catálogo con respuesta táctica instantánea y sin requerir conexión a internet.
+- Consulta [docs/NEXO3_SPECIFICATION.md](../docs/NEXO3_SPECIFICATION.md) para más detalles.
+

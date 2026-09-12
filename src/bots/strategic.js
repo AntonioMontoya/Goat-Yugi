@@ -36,6 +36,10 @@ export class StrategicBot {
     this.randomState = this.seed >>> 0 || 1;
     this.policyWeights = { ...policyWeights };
     this.nexo2Enabled = algorithm === NEXO2_ALGORITHM || [1, 2, 3].includes(Number(neuralModel?.schema)) || neuralModel?.type === "public-action-mlp-policy-value";
+    this.deckKnowledge = buildDeckKnowledge(deckId, deck);
+    const defaultRiskAversion = this.nexo2Enabled
+      ? Math.max(0.02, Math.min(0.40, (1 - Number(this.deckKnowledge?.riskTolerance ?? 0.5)) * 0.40))
+      : 0;
     this.decisionConfig = {
       deckWeight: configuredNumber(decisionConfig.deckWeight, 1, 0, 3),
       stateWeight: configuredNumber(decisionConfig.stateWeight, 1.8, 0, 4),
@@ -46,7 +50,7 @@ export class StrategicBot {
       beliefScale: configuredNumber(decisionConfig.beliefScale, this.nexo2Enabled ? 0.75 : 0, 0, 2.5),
       neuralScale: configuredNumber(decisionConfig.neuralScale, this.nexo2Enabled ? 1.35 : 0, 0, 4),
       valueScale: configuredNumber(decisionConfig.valueScale, this.nexo2Enabled ? 0.6 : 0, 0, 2),
-      riskAversion: configuredNumber(decisionConfig.riskAversion, this.nexo2Enabled ? 0.25 : 0, 0, 1),
+      riskAversion: configuredNumber(decisionConfig.riskAversion, defaultRiskAversion, 0, 1),
       maxBaseRegret: configuredNumber(decisionConfig.maxBaseRegret, this.nexo2Enabled ? 3.5 : 8, 0, 8),
     };
     this.freezeLinearPolicy = freezeLinearPolicy === null ? this.nexo2Enabled : freezeLinearPolicy === true;
@@ -56,7 +60,6 @@ export class StrategicBot {
     this.trainingState = { rewardBaseline: Number(trainingState.rewardBaseline) || 0, episodes: Math.max(0, Number(trainingState.episodes) || 0) };
     this.neuralPolicy = this.nexo2Enabled ? new Nexo2PolicyNetwork(neuralModel ?? {}, { seed: this.seed ^ 0xa511e9b3, learningRate: Math.min(0.02, this.learningRate * 0.24) }) : null;
     this.trajectory = [];
-    this.deckKnowledge = buildDeckKnowledge(deckId, deck);
     this.reasoningMemory = { recent: [] };
     this.decisions = 0;
     this.opponentModel = null;
@@ -107,7 +110,7 @@ export class StrategicBot {
       const tactical = tacticalResponseAdjustment(this.deckKnowledge, message, candidate, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, negativeInference: this.negativeInferenceTracker });
       return { candidate, analysis, baseScore: coreScore + tactical * this.decisionConfig.tacticalWeight };
     });
-    const planned = planStrategicResponses(this.deckKnowledge, message, evaluated, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, persona: this.persona, planningScale: this.decisionConfig.planningScale });
+    const planned = planStrategicResponses(this.deckKnowledge, message, evaluated, { observation, memory: this.reasoningMemory, opponentModel: this.opponentModel, persona: this.persona, planningScale: this.decisionConfig.planningScale, negativeInference: this.negativeInferenceTracker });
     const boardRelation = Number(observation.ownBoardPower) > Number(observation.opponentThreat) + 500 ? "ahead" : Number(observation.opponentThreat) > Number(observation.ownBoardPower) + 500 ? "behind" : "even";
     const turnBin = Math.min(6, Math.floor((Number(observation.turn) || 0) / 2));
     const phaseBin = String(Number(observation.phase) || 0);

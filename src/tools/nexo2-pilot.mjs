@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { NEXO2_PILOT_DECKS, formatNexo2PilotMarkdown, runNexo2Pilot } from "../training/nexo2-pilot.js";
+import { NEXO2_OPPONENT_DECKS, NEXO2_PILOT_DECKS, NEXO2_UNIVERSAL_DECKS, NEXO2_UNIVERSAL_OPPONENT_DECKS, formatNexo2PilotMarkdown, runNexo2Pilot } from "../training/nexo2-pilot.js";
+import { buildDeckKnowledge, describeDeckKnowledge } from "../bots/deck-strategy.js";
+import { getDeck } from "../decks/decks.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const args = process.argv.slice(2);
@@ -31,25 +33,32 @@ function optionalNumber(name) {
   return value;
 }
 
-const trainingGames = nonNegativeInteger("training-games", 54);
-const evaluationGames = positiveInteger("evaluation-games", 72);
+const trainingGames = nonNegativeInteger("training-games", 500);
+const evaluationGames = positiveInteger("evaluation-games", 400);
 const workers = positiveInteger("workers", 4);
 const seed = positiveInteger("seed", 8_200_000);
+const maxSteps = positiveInteger("max-steps", 10_000);
 const decisionSampleLimit = positiveInteger("decision-sample-limit", 16);
-const deckIds = String(option("decks", NEXO2_PILOT_DECKS.join(","))).split(",").map((value) => value.trim()).filter(Boolean);
+const curriculum = args.includes("--all-decks") || option("curriculum", "pilot") === "universal" ? "universal" : "pilot";
+const defaultDecks = curriculum === "universal" ? NEXO2_UNIVERSAL_DECKS : NEXO2_PILOT_DECKS;
+const defaultOpponents = curriculum === "universal" ? NEXO2_UNIVERSAL_OPPONENT_DECKS : NEXO2_OPPONENT_DECKS;
+const deckIds = String(option("bot-decks", option("decks", defaultDecks.join(",")))).split(",").map((value) => value.trim()).filter(Boolean);
+const opponentDeckIds = String(option("opponent-decks", defaultOpponents.join(","))).split(",").map((value) => value.trim()).filter(Boolean);
 const outputDir = path.resolve(root, option("out", path.join("artifacts", `nexo2-pilot-${seed}`)));
 const resumePath = option("resume", null);
 const resumeDocument = resumePath ? JSON.parse(fs.readFileSync(path.resolve(root, resumePath), "utf8")) : null;
-const initialModel = resumeDocument?.candidate ?? resumeDocument;
-if (initialModel) {
-  const overrides = {
-    beliefScale: optionalNumber("belief-scale"),
-    neuralScale: optionalNumber("neural-scale"),
-    valueScale: optionalNumber("value-scale"),
-    riskAversion: optionalNumber("risk-aversion"),
-    maxBaseRegret: optionalNumber("max-base-regret"),
-    viabilityMargin: optionalNumber("viability-margin"),
-  };
+let initialModel = resumeDocument?.candidate ?? resumeDocument ?? null;
+const overrides = {
+  beliefScale: optionalNumber("belief-scale"),
+  neuralScale: optionalNumber("neural-scale"),
+  valueScale: optionalNumber("value-scale"),
+  riskAversion: optionalNumber("risk-aversion"),
+  maxBaseRegret: optionalNumber("max-base-regret"),
+  viabilityMargin: optionalNumber("viability-margin"),
+};
+const hasOverrides = Object.values(overrides).some((value) => value !== null);
+if (hasOverrides) {
+  initialModel = initialModel ? { ...initialModel } : {};
   initialModel.decisionConfig = { ...(initialModel.decisionConfig ?? {}) };
   for (const [key, value] of Object.entries(overrides)) if (value !== null) initialModel.decisionConfig[key] = value;
 }
@@ -58,9 +67,12 @@ fs.mkdirSync(checkpointDir, { recursive: true });
 
 const report = await runNexo2Pilot({
   deckIds,
+  opponentDeckIds,
+  curriculum,
   trainingGames,
   evaluationGames,
   workers,
+  maxSteps,
   seed,
   initialModel,
   decisionSampleLimit,
@@ -80,6 +92,10 @@ fs.writeFileSync(path.join(outputDir, "candidate.json"), `${JSON.stringify(repor
 fs.writeFileSync(path.join(outputDir, "combat-log.jsonl"), `${report.fights.map((entry) => JSON.stringify(entry)).join("\n")}\n`, "utf8");
 fs.writeFileSync(path.join(outputDir, "decision-samples.jsonl"), `${decisionLog.map((entry) => JSON.stringify(entry)).join("\n")}\n`, "utf8");
 fs.writeFileSync(path.join(outputDir, "report.md"), formatNexo2PilotMarkdown(report), "utf8");
+if (curriculum === "universal") {
+  const deckKnowledge = report.configuration.deckIds.map((deckId) => describeDeckKnowledge(buildDeckKnowledge(deckId, getDeck(deckId))));
+  fs.writeFileSync(path.join(outputDir, "deck-knowledge.json"), `${JSON.stringify({ schema: 1, curriculum, catalogSize: deckKnowledge.length, generatedAt: report.createdAt, decks: deckKnowledge }, null, 2)}\n`, "utf8");
+}
 
 process.stdout.write(`${JSON.stringify({
   outputDir,

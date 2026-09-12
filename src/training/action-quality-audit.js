@@ -1,3 +1,5 @@
+import { getCard } from "../engine/cards.js";
+
 const CRITICAL_REASONS = new Set([
   "FACEUP_SUMMON_DOES_NOT_ENABLE_FLIP_VALUE",
   "INTERACTION_HAS_NO_VISIBLE_OPPOSING_VALUE",
@@ -13,6 +15,27 @@ const COMPONENT_LABELS = Object.freeze({
   safety: "seguridad", coherence: "coherencia", sequence: "secuencia",
   prediction: "predicción rival", style: "plan del mazo", persona: "perfil",
 });
+
+function nameForHandCard(card, knowledge) {
+  if (card?.name) return String(card.name);
+  const code = Number(card?.runtimeCode ?? card?.code ?? card?.id ?? 0);
+  if (!code) return "Unknown";
+  const semantics = knowledge?.byRuntimeCode?.[String(code)];
+  if (semantics?.name) return String(semantics.name);
+  const dbCard = getCard(code);
+  return dbCard?.name ?? `Card #${code}`;
+}
+
+export function formatPhaseName(phaseNumber) {
+  const phase = Number(phaseNumber) || 0;
+  if (phase === 1) return "Draw Phase";
+  if (phase === 2) return "Standby Phase";
+  if (phase === 4) return "Main Phase 1";
+  if ((phase & 248) !== 0) return "Battle Phase";
+  if (phase === 256) return "Main Phase 2";
+  if (phase === 512) return "End Phase";
+  return `Phase ${phase}`;
+}
 
 function increment(target, key, amount = 1) {
   const normalized = String(key ?? "unknown");
@@ -37,10 +60,11 @@ function explain(record) {
   const selected = record.selected;
   const subject = selected.cards?.length ? `${selected.role} con ${selected.cards.join(", ")}` : selected.role;
   const details = [`Eligió ${subject}`, `plan ${record.playstyle}`];
+  if (record.nexoHand?.length) details.push(`mano (${record.nexoHand.length}): [${record.nexoHand.join(", ")}]`);
   if (Number.isFinite(selected.projectedValue)) details.push(`valor público ${selected.projectedValue.toFixed(2)}`);
   const components = strongestComponents(selected);
   if (components.length) details.push(`factores: ${components.join(", ")}`);
-  if (record.guardrailsAvoided.length) details.push(`descartó ${record.guardrailsAvoided.length} alternativa(s) incoherente(s)`);
+  if (record.guardrailsAvoided.length) details.push(`descartó por guardrail: ${record.guardrailsAvoided.join(", ")}`);
   if (record.negativeReasons.length) details.push(`requiere revisión por ${record.negativeReasons.join(", ")}`);
   else if (record.scoreMargin !== null) details.push(`margen sobre la siguiente opción ${record.scoreMargin.toFixed(2)}`);
   return `${details.join("; ")}.`;
@@ -98,11 +122,16 @@ export function createActionQualityCollector({ metadata = {}, sampleLimit = 24, 
       const classification = classify(reasoning);
       const selected = reasoning?.selected ?? { role: "unknown", cards: [], semanticRoles: [], reasons: [] };
       const guardrailsAvoided = (reasoning?.rejected ?? []).map((entry) => entry.guardrail).filter(Boolean);
+      const ownHand = Array.isArray(context.observation?.ownHand)
+        ? context.observation.ownHand.map((c) => nameForHandCard(c, context.bot?.deckKnowledge))
+        : [];
       const record = {
         ...metadata,
         decision: Number(context.decisions) || audit.decisions + 1,
         turn: Number(context.observation?.turn) || 0,
         phase: Number(context.observation?.phase) || 0,
+        phaseName: formatPhaseName(context.observation?.phase),
+        nexoHand: ownHand,
         requestType: Number(reasoning?.requestType ?? trace?.messageType) || 0,
         playstyle: reasoning?.playstyle ?? context.bot?.style ?? "unknown",
         promptForced: reasoning?.promptForced === true || context.message?.forced === true,

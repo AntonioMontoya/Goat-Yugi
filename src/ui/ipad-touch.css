@@ -470,7 +470,7 @@ button:active,
   border: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background-image: url('../sprites/Sprite_Submenu12.png') !important;
+  background-image: url('./sprites/Sprite_Submenu12.webp') !important;
   background-position: center !important;
   background-size: contain !important;
   background-repeat: no-repeat !important;
@@ -484,26 +484,34 @@ button:active,
 }
 
 .ipad-edition .duel-phase-rail li.complete > span {
-  background-image: url('../sprites/Sprite_Submenu12.png') !important;
+  background-image: url('./sprites/Sprite_Submenu12.webp') !important;
   color: #b9e1db !important;
   filter: brightness(0.96) saturate(1.08) !important;
   border: 0 !important;
 }
 
 .ipad-edition .duel-phase-rail li.future > span {
-  background-image: url('../sprites/Sprite_Submenu12.png') !important;
+  background-image: url('./sprites/Sprite_Submenu12.webp') !important;
   color: #8fa0a3 !important;
   filter: brightness(0.7) !important;
   border: 0 !important;
 }
 
 .ipad-edition .duel-phase-rail li.current > span {
-  background-image: url('../sprites/Sprite_Submenu13.png') !important;
+  background-image: url('./sprites/Sprite_Submenu13.webp') !important;
   color: #fff3c8 !important;
   filter: brightness(1.12) saturate(1.1) drop-shadow(0 0 8px rgba(245, 193, 78, 0.55)) !important;
   border: 0 !important;
   transform: none !important;
-  box-shadow: none !important;
+}
+
+.ipad-edition .duel-phase-rail li.disabled > span {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.ipad-edition .duel-phase-pass-btn {
+  background: url('./sprites/Sprite_Hud10.webp') center / contain no-repeat !important;  box-shadow: none !important;
   animation: phase-plate-pulse 1.45s ease-in-out infinite alternate !important;
 }
 
@@ -517,7 +525,7 @@ button:active,
   border: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background: url('../sprites/Sprite_Hud10.png') center / contain no-repeat !important;
+  background: url('./sprites/Sprite_Hud10.webp') center / contain no-repeat !important;
   color: #ffeab5 !important;
   text-shadow: 0 2px 5px #000 !important;
   box-shadow: none !important;
@@ -1440,67 +1448,20 @@ button:active,
 }
 
 .ipad-edition .mode-card {
-  min-height: 120px;
-  padding: 16px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(215, 169, 76, 0.4);
+  min-height: 120px; padding: 16px; border-radius: 12px; border: 1.5px solid rgba(215, 169, 76, 0.4);
   background: linear-gradient(180deg, rgba(14, 23, 33, 0.95), rgba(7, 12, 18, 0.98));
 }
+.ipad-edition .mode-card.selected { border-color: var(--ipad-gold); box-shadow: 0 0 20px rgba(244, 189, 88, 0.35); }
+.ipad-edition .play-config { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 14px; }
+.ipad-edition .side-card { border-radius: 12px; padding: 14px; border: 1px solid rgba(215, 169, 76, 0.3); }
+.ipad-edition .primary-button { min-height: 48px; font-size: 16px; font-weight: 800; border-radius: 10px; }
+.ipad-edition .ghost-button { min-height: 44px; font-size: 14px; border-radius: 8px; }
 
-.ipad-edition .mode-card.selected {
-  border-color: var(--ipad-gold);
-  box-shadow: 0 0 20px rgba(244, 189, 88, 0.35);
-}
-
-.ipad-edition .play-config {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 14px;
-  margin-top: 14px;
-}
-
-.ipad-edition .side-card {
-  border-radius: 12px;
-  padding: 14px;
-  border: 1px solid rgba(215, 169, 76, 0.3);
-}
-
-.ipad-edition .primary-button {
-  min-height: 48px;
-  font-size: 16px;
-  font-weight: 800;
-  border-radius: 10px;
-}
-
-.ipad-edition .ghost-button {
-  min-height: 44px;
-  font-size: 14px;
-  border-radius: 8px;
-}
-
-/* --------------------------------------------------------------------------
-   Home Menu Touch Enhancements
-   -------------------------------------------------------------------------- */
+/* Home Menu Touch Enhancements */
 .ipad-edition .carousel-nav {
-  width: 54px !important;
-  height: 54px !important;
-  min-width: 54px !important;
-  min-height: 54px !important;
-  border-radius: 50% !important;
-  background: rgba(14, 28, 38, 0.95) !important;
-  border: 2px solid var(--ipad-gold) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  touch-action: manipulation !important;
+  width: 54px !important; height: 54px !important; min-width: 54px !important; min-height: 54px !important;
+  border-radius: 50% !important; background: rgba(14, 28, 38, 0.95) !important; border: 2px solid var(--ipad-gold) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important; display: flex !important; align-items: center !important;
+  justify-content: center !important; cursor: pointer !important; touch-action: manipulation !important;
 }
-
-.ipad-edition .sprite-menu-item {
-  cursor: pointer !important;
-  touch-action: manipulation !important;
-  -webkit-tap-highlight-color: transparent !important;
-}
-
-
+.ipad-edition .sprite-menu-item { cursor: pointer !important; touch-action: manipulation !important; -webkit-tap-highlight-color: transparent !important; }

@@ -279,7 +279,9 @@ export async function trainNexoPatch({
     const batch = await Promise.all(jobs.map(playPatchGame));
     for (const item of batch) {
       const reward = rewardFor(item.run, item.validity);
-      learner.learnFromEpisode(item.episode, reward);
+      if (item.validity?.valid) {
+        learner.learnFromEpisode(item.episode, reward);
+      }
       addMatch(trainingRaw, item.deckId, item.run, item.validity);
       trainingCandidateAudits.push(item.candidateAudit);
       trainingBaseAudits.push(item.baseAudit);
