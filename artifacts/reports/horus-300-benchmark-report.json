@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-horus",
+  "deckName": "Horus",
+  "tier": "Tier 3",
+  "baselineWR": 47,
+  "certifiedWR": 50.3,
+  "delta": 3.3,
+  "ic95": {
+    "low": 44.7,
+    "high": 56
+  },
+  "status": "Certificado",
+  "matchesCount": 300,
+  "wins": 151,
+  "losses": 149,
+  "draws": 0,
+  "vsNexo1": {
+    "wins": 72,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 79,
+    "total": 150
+  }
+}

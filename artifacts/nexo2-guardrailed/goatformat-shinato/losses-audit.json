@@ -1,0 +1,233 @@
+{
+  "deckId": "goatformat-shinato",
+  "name": "Shinato",
+  "totalLosses": 133,
+  "avgTurnsInLoss": 15.2,
+  "lossesVsNexo1": 70,
+  "lossesVsNexo2": 63,
+  "lossReasons": {
+    "UNKNOWN": 133
+  },
+  "sampledLosses": [
+    {
+      "matchId": 2,
+      "seed": 10113788,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 17,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 6,
+      "seed": 10145588,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 9,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 7,
+      "seed": 10153538,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 25,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 8,
+      "seed": 10161488,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 20,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 9,
+      "seed": 10169438,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 13,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 12,
+      "seed": 10692978,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 19,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 13,
+      "seed": 10700928,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 18,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 15,
+      "seed": 10716828,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 6,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 16,
+      "seed": 10724778,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 10,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 17,
+      "seed": 10732728,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 23,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 18,
+      "seed": 10740678,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 11,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 20,
+      "seed": 10756578,
+      "oppId": "goatformat-shinato",
+      "oppName": "goatformat-shinato (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 28,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 22,
+      "seed": 10272168,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 15,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 25,
+      "seed": 10296018,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 30,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 27,
+      "seed": 10311918,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 24,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 30,
+      "seed": 10335768,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 7,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 31,
+      "seed": 10843408,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 9,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 32,
+      "seed": 10851358,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 23,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 35,
+      "seed": 10875208,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 24,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 36,
+      "seed": 10883158,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 24,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    }
+  ]
+}

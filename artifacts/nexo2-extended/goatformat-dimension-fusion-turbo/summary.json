@@ -1,0 +1,111 @@
+{
+  "deckId": "goatformat-dimension-fusion-turbo",
+  "name": "Dimension Fusion Turbo",
+  "archetype": "Combo / GoatFormat",
+  "totalMatches": 150,
+  "wins": 92,
+  "losses": 58,
+  "draws": 0,
+  "winRate": 0.6133333333333333,
+  "confidence95": {
+    "low": 0.5334964294452139,
+    "high": 0.6875101123484232,
+    "margin": 0.07700684145160464,
+    "level": 0.95
+  },
+  "vsNexo1": {
+    "matches": 70,
+    "wins": 43,
+    "winRate": 0.6142857142857143,
+    "formatted": "43/70 (61.4%)"
+  },
+  "vsNexo2": {
+    "matches": 80,
+    "wins": 49,
+    "winRate": 0.6125,
+    "formatted": "49/80 (61.3%)"
+  },
+  "byOpponent": {
+    "goatformat-dimension-fusion-turbo": {
+      "name": "goatformat-dimension-fusion-turbo (Mirror)",
+      "total": 15,
+      "wins": 11,
+      "winRate": 0.7333333333333333,
+      "vsNexo1": "5/7 (71.4%)",
+      "vsNexo2": "6/8 (75.0%)"
+    },
+    "goat-control": {
+      "name": "Goat Control",
+      "total": 15,
+      "wins": 8,
+      "winRate": 0.5333333333333333,
+      "vsNexo1": "4/7 (57.1%)",
+      "vsNexo2": "4/8 (50.0%)"
+    },
+    "chaos-turbo": {
+      "name": "Chaos Turbo",
+      "total": 15,
+      "wins": 9,
+      "winRate": 0.6,
+      "vsNexo1": "4/7 (57.1%)",
+      "vsNexo2": "5/8 (62.5%)"
+    },
+    "warrior": {
+      "name": "Warrior / Anti-Meta",
+      "total": 15,
+      "wins": 10,
+      "winRate": 0.6666666666666666,
+      "vsNexo1": "4/7 (57.1%)",
+      "vsNexo2": "6/8 (75.0%)"
+    },
+    "chaos-control": {
+      "name": "Chaos Control",
+      "total": 15,
+      "wins": 10,
+      "winRate": 0.6666666666666666,
+      "vsNexo1": "4/7 (57.1%)",
+      "vsNexo2": "6/8 (75.0%)"
+    },
+    "goatformat-monarch": {
+      "name": "Monarch",
+      "total": 15,
+      "wins": 8,
+      "winRate": 0.5333333333333333,
+      "vsNexo1": "5/7 (71.4%)",
+      "vsNexo2": "3/8 (37.5%)"
+    },
+    "goatformat-zombie": {
+      "name": "Zombie",
+      "total": 15,
+      "wins": 12,
+      "winRate": 0.8,
+      "vsNexo1": "6/7 (85.7%)",
+      "vsNexo2": "6/8 (75.0%)"
+    },
+    "goatformat-drain-aggro": {
+      "name": "Drain Aggro",
+      "total": 15,
+      "wins": 8,
+      "winRate": 0.5333333333333333,
+      "vsNexo1": "5/7 (71.4%)",
+      "vsNexo2": "3/8 (37.5%)"
+    },
+    "goatformat-beatdown": {
+      "name": "Beatdown",
+      "total": 15,
+      "wins": 10,
+      "winRate": 0.6666666666666666,
+      "vsNexo1": "4/7 (57.1%)",
+      "vsNexo2": "6/8 (75.0%)"
+    },
+    "earth-aggro": {
+      "name": "Earth Aggro",
+      "total": 15,
+      "wins": 6,
+      "winRate": 0.4,
+      "vsNexo1": "2/7 (28.6%)",
+      "vsNexo2": "4/8 (50.0%)"
+    }
+  },
+  "savedAt": "2026-09-11T10:45:40.054Z"
+}

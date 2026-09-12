@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-p-a-c-m-a-n",
+  "deckName": "P.A.C.M.A.N.",
+  "tier": "Tier 3",
+  "baselineWR": 23,
+  "certifiedWR": 25.3,
+  "delta": 2.3,
+  "ic95": {
+    "low": 20.7,
+    "high": 30.5
+  },
+  "status": "Certificado",
+  "matchesCount": 300,
+  "wins": 76,
+  "losses": 204,
+  "draws": 20,
+  "vsNexo1": {
+    "wins": 36,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 40,
+    "total": 150
+  }
+}

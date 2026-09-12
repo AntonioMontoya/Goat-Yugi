@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-relinquished-control",
+  "deckName": "Relinquished",
+  "tier": "Tier 3",
+  "baselineWR": 35,
+  "certifiedWR": 35.7,
+  "delta": 0.7,
+  "ic95": {
+    "low": 30.5,
+    "high": 41.2
+  },
+  "status": "Certificado",
+  "matchesCount": 300,
+  "wins": 107,
+  "losses": 189,
+  "draws": 4,
+  "vsNexo1": {
+    "wins": 58,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 49,
+    "total": 150
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-guardian-control",
+  "deckName": "Guardian Control",
+  "tier": "Tier 3",
+  "baselineWR": 46.5,
+  "certifiedWR": 48.3,
+  "delta": 1.8,
+  "ic95": {
+    "low": 42.7,
+    "high": 54
+  },
+  "status": "Certificado",
+  "matchesCount": 300,
+  "wins": 145,
+  "losses": 155,
+  "draws": 0,
+  "vsNexo1": {
+    "wins": 71,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 74,
+    "total": 150
+  }
+}

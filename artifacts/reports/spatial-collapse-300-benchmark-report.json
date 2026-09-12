@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-spatial-collapse",
+  "deckName": "Spatial Collapse",
+  "tier": "Tier 3",
+  "baselineWR": 34.5,
+  "certifiedWR": 39.3,
+  "delta": 4.8,
+  "ic95": {
+    "low": 34,
+    "high": 45
+  },
+  "status": "Certificado",
+  "matchesCount": 300,
+  "wins": 118,
+  "losses": 141,
+  "draws": 41,
+  "vsNexo1": {
+    "wins": 54,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 64,
+    "total": 150
+  }
+}

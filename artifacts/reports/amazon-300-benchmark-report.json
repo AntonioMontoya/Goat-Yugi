@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-amazon",
+  "deckName": "Amazoness",
+  "tier": "Tier 3",
+  "baselineWR": 42.5,
+  "certifiedWR": 34.3,
+  "delta": -8.2,
+  "ic95": {
+    "low": 29.2,
+    "high": 39.9
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 103,
+  "losses": 197,
+  "draws": 0,
+  "vsNexo1": {
+    "wins": 46,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 57,
+    "total": 150
+  }
+}

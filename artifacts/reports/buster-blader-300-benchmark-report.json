@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-buster-blader",
+  "deckName": "Buster Blader",
+  "tier": "Tier 3",
+  "baselineWR": 46,
+  "certifiedWR": 38.3,
+  "delta": -7.7,
+  "ic95": {
+    "low": 33,
+    "high": 43.9
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 115,
+  "losses": 184,
+  "draws": 1,
+  "vsNexo1": {
+    "wins": 48,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 67,
+    "total": 150
+  }
+}

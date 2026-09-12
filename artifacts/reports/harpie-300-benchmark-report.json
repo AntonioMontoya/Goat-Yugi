@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-harpie",
+  "deckName": "Harpie",
+  "tier": "Tier 3",
+  "baselineWR": 50.5,
+  "certifiedWR": 39,
+  "delta": -11.5,
+  "ic95": {
+    "low": 33.7,
+    "high": 44.6
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 117,
+  "losses": 180,
+  "draws": 3,
+  "vsNexo1": {
+    "wins": 56,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 61,
+    "total": 150
+  }
+}

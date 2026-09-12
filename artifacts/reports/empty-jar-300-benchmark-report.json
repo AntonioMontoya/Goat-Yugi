@@ -1,0 +1,25 @@
+{
+  "deckId": "empty-jar",
+  "deckName": "Empty Jar",
+  "tier": "Tier 3",
+  "baselineWR": 14.5,
+  "certifiedWR": 12.7,
+  "delta": -1.8,
+  "ic95": {
+    "low": 9.4,
+    "high": 16.9
+  },
+  "status": "Certificado",
+  "matchesCount": 300,
+  "wins": 38,
+  "losses": 262,
+  "draws": 0,
+  "vsNexo1": {
+    "wins": 17,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 21,
+    "total": 150
+  }
+}

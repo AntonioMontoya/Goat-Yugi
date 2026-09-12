@@ -1,0 +1,25 @@
+{
+  "deckId": "panda-burn",
+  "deckName": "Panda Burn",
+  "tier": "Tier 3",
+  "baselineWR": 57.5,
+  "certifiedWR": 49,
+  "delta": -8.5,
+  "ic95": {
+    "low": 43.4,
+    "high": 54.6
+  },
+  "status": "Certificado",
+  "matchesCount": 300,
+  "wins": 147,
+  "losses": 144,
+  "draws": 9,
+  "vsNexo1": {
+    "wins": 73,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 74,
+    "total": 150
+  }
+}

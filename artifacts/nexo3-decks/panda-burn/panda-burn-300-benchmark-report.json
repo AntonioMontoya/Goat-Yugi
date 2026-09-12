@@ -1,0 +1,100 @@
+{
+  "deckId": "panda-burn",
+  "deckName": "Panda Burn",
+  "tier": "Tier 3",
+  "baselineWR": 57.5,
+  "certifiedWR": 44.7,
+  "delta": -12.8,
+  "ic95": {
+    "low": 39.1,
+    "high": 50.3
+  },
+  "status": "Pendiente",
+  "matchesCount": 300,
+  "wins": 134,
+  "losses": 166,
+  "draws": 0,
+  "opponentsBreakdown": {
+    "panda-burn": {
+      "name": "panda-burn (Mirror)",
+      "totalMatches": 30,
+      "totalWins": 12,
+      "wr": "40.0%",
+      "vsNexo1": "6/15 (40.0%)",
+      "vsNexo2": "6/15 (40.0%)"
+    },
+    "goat-control": {
+      "name": "Goat Control",
+      "totalMatches": 30,
+      "totalWins": 19,
+      "wr": "63.3%",
+      "vsNexo1": "10/15 (66.7%)",
+      "vsNexo2": "9/15 (60.0%)"
+    },
+    "chaos-turbo": {
+      "name": "Chaos Turbo",
+      "totalMatches": 30,
+      "totalWins": 11,
+      "wr": "36.7%",
+      "vsNexo1": "5/15 (33.3%)",
+      "vsNexo2": "6/15 (40.0%)"
+    },
+    "warrior": {
+      "name": "Warrior / Anti-Meta",
+      "totalMatches": 30,
+      "totalWins": 22,
+      "wr": "73.3%",
+      "vsNexo1": "11/15 (73.3%)",
+      "vsNexo2": "11/15 (73.3%)"
+    },
+    "chaos-control": {
+      "name": "Chaos Control",
+      "totalMatches": 30,
+      "totalWins": 12,
+      "wr": "40.0%",
+      "vsNexo1": "5/15 (33.3%)",
+      "vsNexo2": "7/15 (46.7%)"
+    },
+    "goatformat-monarch": {
+      "name": "Monarch",
+      "totalMatches": 30,
+      "totalWins": 14,
+      "wr": "46.7%",
+      "vsNexo1": "7/15 (46.7%)",
+      "vsNexo2": "7/15 (46.7%)"
+    },
+    "goatformat-zombie": {
+      "name": "Zombie",
+      "totalMatches": 30,
+      "totalWins": 13,
+      "wr": "43.3%",
+      "vsNexo1": "10/15 (66.7%)",
+      "vsNexo2": "3/15 (20.0%)"
+    },
+    "goatformat-drain-aggro": {
+      "name": "Drain Aggro",
+      "totalMatches": 30,
+      "totalWins": 13,
+      "wr": "43.3%",
+      "vsNexo1": "5/15 (33.3%)",
+      "vsNexo2": "8/15 (53.3%)"
+    },
+    "goatformat-beatdown": {
+      "name": "Beatdown",
+      "totalMatches": 30,
+      "totalWins": 7,
+      "wr": "23.3%",
+      "vsNexo1": "4/15 (26.7%)",
+      "vsNexo2": "3/15 (20.0%)"
+    },
+    "earth-aggro": {
+      "name": "Earth Aggro",
+      "totalMatches": 30,
+      "totalWins": 11,
+      "wr": "36.7%",
+      "vsNexo1": "5/15 (33.3%)",
+      "vsNexo2": "6/15 (40.0%)"
+    }
+  },
+  "timestamp": "2026-09-11T07:33:09.271Z"
+}

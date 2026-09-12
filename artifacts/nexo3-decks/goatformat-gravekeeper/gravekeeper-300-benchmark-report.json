@@ -1,0 +1,129 @@
+{
+  "deckId": "goatformat-gravekeeper",
+  "deckName": "Gravekeeper",
+  "tier": "Tier 2",
+  "baselineWR": 42,
+  "sampleSize": 300,
+  "wins": 113,
+  "losses": 187,
+  "draws": 0,
+  "winRate": 37.7,
+  "delta": -4.3,
+  "ci95": [
+    32.4,
+    43.3
+  ],
+  "vsNexo1": {
+    "games": 150,
+    "wins": 53,
+    "winRate": 35.3
+  },
+  "vsNexo2": {
+    "games": 150,
+    "wins": 60,
+    "winRate": 40
+  },
+  "matchups": [
+    {
+      "oppId": "goatformat-gravekeeper",
+      "oppName": "goatformat-gravekeeper (Mirror)",
+      "games": 30,
+      "wins": 12,
+      "losses": 18,
+      "draws": 0,
+      "winRate": 40,
+      "avgTurns": 19.4
+    },
+    {
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "games": 30,
+      "wins": 16,
+      "losses": 14,
+      "draws": 0,
+      "winRate": 53.3,
+      "avgTurns": 16.5
+    },
+    {
+      "oppId": "chaos-turbo",
+      "oppName": "Chaos Turbo",
+      "games": 30,
+      "wins": 16,
+      "losses": 14,
+      "draws": 0,
+      "winRate": 53.3,
+      "avgTurns": 22.6
+    },
+    {
+      "oppId": "warrior",
+      "oppName": "Warrior / Anti-Meta",
+      "games": 30,
+      "wins": 19,
+      "losses": 11,
+      "draws": 0,
+      "winRate": 63.3,
+      "avgTurns": 27.6
+    },
+    {
+      "oppId": "chaos-control",
+      "oppName": "Chaos Control",
+      "games": 30,
+      "wins": 17,
+      "losses": 13,
+      "draws": 0,
+      "winRate": 56.7,
+      "avgTurns": 19.7
+    },
+    {
+      "oppId": "goatformat-monarch",
+      "oppName": "Monarch",
+      "games": 30,
+      "wins": 13,
+      "losses": 17,
+      "draws": 0,
+      "winRate": 43.3,
+      "avgTurns": 16.1
+    },
+    {
+      "oppId": "goatformat-zombie",
+      "oppName": "Zombie",
+      "games": 30,
+      "wins": 8,
+      "losses": 22,
+      "draws": 0,
+      "winRate": 26.7,
+      "avgTurns": 17.6
+    },
+    {
+      "oppId": "goatformat-drain-aggro",
+      "oppName": "Drain Aggro",
+      "games": 30,
+      "wins": 4,
+      "losses": 26,
+      "draws": 0,
+      "winRate": 13.3,
+      "avgTurns": 14.1
+    },
+    {
+      "oppId": "goatformat-beatdown",
+      "oppName": "Beatdown",
+      "games": 30,
+      "wins": 7,
+      "losses": 23,
+      "draws": 0,
+      "winRate": 23.3,
+      "avgTurns": 25.4
+    },
+    {
+      "oppId": "goatformat-lockdown-burn",
+      "oppName": "Lockdown Burn",
+      "games": 30,
+      "wins": 1,
+      "losses": 29,
+      "draws": 0,
+      "winRate": 3.3,
+      "avgTurns": 18.4
+    }
+  ],
+  "timestamp": "2026-09-11T00:45:34.758Z"
+}

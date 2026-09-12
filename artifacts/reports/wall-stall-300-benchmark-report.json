@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-wall-stall",
+  "deckName": "Wall Stall",
+  "tier": "Tier 3",
+  "baselineWR": 42,
+  "certifiedWR": 28,
+  "delta": -14,
+  "ic95": {
+    "low": 23.2,
+    "high": 33.3
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 84,
+  "losses": 216,
+  "draws": 0,
+  "vsNexo1": {
+    "wins": 41,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 43,
+    "total": 150
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-direct-attack",
+  "deckName": "Direct Attack",
+  "tier": "Tier 3",
+  "baselineWR": 30.5,
+  "certifiedWR": 26.3,
+  "delta": -4.2,
+  "ic95": {
+    "low": 21.7,
+    "high": 31.6
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 79,
+  "losses": 218,
+  "draws": 3,
+  "vsNexo1": {
+    "wins": 38,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 41,
+    "total": 150
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-blue-eyes-white-dragon",
+  "deckName": "Blue-Eyes Dragon",
+  "tier": "Tier 3",
+  "baselineWR": 43.5,
+  "certifiedWR": 42.7,
+  "delta": -0.8,
+  "ic95": {
+    "low": 37.2,
+    "high": 48.3
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 128,
+  "losses": 171,
+  "draws": 1,
+  "vsNexo1": {
+    "wins": 63,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 65,
+    "total": 150
+  }
+}

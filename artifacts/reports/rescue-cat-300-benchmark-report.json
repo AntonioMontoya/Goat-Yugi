@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-rescue-cat",
+  "deckName": "Rescue Cat",
+  "tier": "Tier 3",
+  "baselineWR": 42,
+  "certifiedWR": 29.7,
+  "delta": -12.3,
+  "ic95": {
+    "low": 24.8,
+    "high": 35.1
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 89,
+  "losses": 209,
+  "draws": 2,
+  "vsNexo1": {
+    "wins": 41,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 48,
+    "total": 150
+  }
+}

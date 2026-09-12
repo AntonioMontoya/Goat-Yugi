@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-creator",
+  "deckName": "The Creator",
+  "tier": "Tier 3",
+  "baselineWR": 41,
+  "certifiedWR": 33.3,
+  "delta": -7.7,
+  "ic95": {
+    "low": 28.2,
+    "high": 38.8
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 100,
+  "losses": 200,
+  "draws": 0,
+  "vsNexo1": {
+    "wins": 46,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 54,
+    "total": 150
+  }
+}

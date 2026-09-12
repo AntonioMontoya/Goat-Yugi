@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-banish-turbo",
+  "deckName": "Banish Turbo",
+  "tier": "Tier 3",
+  "baselineWR": 40.5,
+  "certifiedWR": 33.3,
+  "delta": -7.2,
+  "ic95": {
+    "low": 28.2,
+    "high": 38.8
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 100,
+  "losses": 199,
+  "draws": 1,
+  "vsNexo1": {
+    "wins": 49,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 51,
+    "total": 150
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "deckId": "goatformat-lockdown-burn",
+  "deckName": "Lockdown Burn",
+  "tier": "Tier 3",
+  "sampleSize": 300,
+  "baselineWR": 70.5,
+  "wins": 224,
+  "losses": 72,
+  "draws": 4,
+  "winRate": 74.7,
+  "ci95": {
+    "low": 69.5,
+    "high": 79.3
+  },
+  "deltaVsBaseline": 4.2,
+  "certified": true,
+  "elapsedSeconds": 89.8,
+  "matchupBreakdown": {
+    "goatformat-lockdown-burn": {
+      "name": "goatformat-lockdown-burn (Mirror)",
+      "total": 30,
+      "wins": 16,
+      "losses": 13,
+      "draws": 1,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 9
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 7
+      },
+      "winRate": "53.3%",
+      "wrNexo1": "60.0%",
+      "wrNexo2": "46.7%"
+    },
+    "goat-control": {
+      "name": "Goat Control",
+      "total": 30,
+      "wins": 22,
+      "losses": 7,
+      "draws": 1,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 11
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 11
+      },
+      "winRate": "73.3%",
+      "wrNexo1": "73.3%",
+      "wrNexo2": "73.3%"
+    },
+    "chaos-turbo": {
+      "name": "Chaos Turbo",
+      "total": 30,
+      "wins": 23,
+      "losses": 6,
+      "draws": 1,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 12
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 11
+      },
+      "winRate": "76.7%",
+      "wrNexo1": "80.0%",
+      "wrNexo2": "73.3%"
+    },
+    "warrior": {
+      "name": "Warrior / Anti-Meta",
+      "total": 30,
+      "wins": 27,
+      "losses": 3,
+      "draws": 0,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 15
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 12
+      },
+      "winRate": "90.0%",
+      "wrNexo1": "100.0%",
+      "wrNexo2": "80.0%"
+    },
+    "chaos-control": {
+      "name": "Chaos Control",
+      "total": 30,
+      "wins": 25,
+      "losses": 4,
+      "draws": 1,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 13
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 12
+      },
+      "winRate": "83.3%",
+      "wrNexo1": "86.7%",
+      "wrNexo2": "80.0%"
+    },
+    "goatformat-monarch": {
+      "name": "Monarch",
+      "total": 30,
+      "wins": 22,
+      "losses": 8,
+      "draws": 0,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 11
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 11
+      },
+      "winRate": "73.3%",
+      "wrNexo1": "73.3%",
+      "wrNexo2": "73.3%"
+    },
+    "goatformat-zombie": {
+      "name": "Zombie",
+      "total": 30,
+      "wins": 26,
+      "losses": 4,
+      "draws": 0,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 13
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 13
+      },
+      "winRate": "86.7%",
+      "wrNexo1": "86.7%",
+      "wrNexo2": "86.7%"
+    },
+    "goatformat-drain-aggro": {
+      "name": "Drain Aggro",
+      "total": 30,
+      "wins": 21,
+      "losses": 9,
+      "draws": 0,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 10
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 11
+      },
+      "winRate": "70.0%",
+      "wrNexo1": "66.7%",
+      "wrNexo2": "73.3%"
+    },
+    "goatformat-beatdown": {
+      "name": "Beatdown",
+      "total": 30,
+      "wins": 20,
+      "losses": 10,
+      "draws": 0,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 10
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 10
+      },
+      "winRate": "66.7%",
+      "wrNexo1": "66.7%",
+      "wrNexo2": "66.7%"
+    },
+    "earth-aggro": {
+      "name": "Earth Aggro",
+      "total": 30,
+      "wins": 22,
+      "losses": 8,
+      "draws": 0,
+      "vsNexo1": {
+        "total": 15,
+        "wins": 11
+      },
+      "vsNexo2": {
+        "total": 15,
+        "wins": 11
+      },
+      "winRate": "73.3%",
+      "wrNexo1": "73.3%",
+      "wrNexo2": "73.3%"
+    }
+  },
+  "timestamp": "2026-09-11T00:51:47.902Z"
+}

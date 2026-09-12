@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-clown-control",
+  "deckName": "Clown Control",
+  "tier": "Tier 3",
+  "baselineWR": 28.5,
+  "certifiedWR": 24.7,
+  "delta": -3.8,
+  "ic95": {
+    "low": 20.1,
+    "high": 29.8
+  },
+  "status": "Certificado (Techo)",
+  "matchesCount": 300,
+  "wins": 74,
+  "losses": 195,
+  "draws": 31,
+  "vsNexo1": {
+    "wins": 34,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 40,
+    "total": 150
+  }
+}

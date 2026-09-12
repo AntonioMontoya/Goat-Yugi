@@ -1,0 +1,233 @@
+{
+  "deckId": "goatformat-reversal-quiz-otk",
+  "name": "Reversal Quiz OTK",
+  "totalLosses": 196,
+  "avgTurnsInLoss": 13.1,
+  "lossesVsNexo1": 98,
+  "lossesVsNexo2": 98,
+  "lossReasons": {
+    "UNKNOWN": 196
+  },
+  "sampledLosses": [
+    {
+      "matchId": 1,
+      "seed": 9515838,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 17,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 2,
+      "seed": 9523788,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 19,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 3,
+      "seed": 9531738,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 16,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 4,
+      "seed": 9539688,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 19,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 5,
+      "seed": 9547638,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 16,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 7,
+      "seed": 9563538,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 18,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 8,
+      "seed": 9571488,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 32,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 9,
+      "seed": 9579438,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 26,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 11,
+      "seed": 10095028,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 18,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 12,
+      "seed": 10102978,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 27,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 13,
+      "seed": 10110928,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 13,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 14,
+      "seed": 10118878,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 18,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 15,
+      "seed": 10126828,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 25,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 16,
+      "seed": 10134778,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 16,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 17,
+      "seed": 10142728,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": false,
+      "turns": 28,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 18,
+      "seed": 10150678,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 25,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 20,
+      "seed": 10166578,
+      "oppId": "goatformat-reversal-quiz-otk",
+      "oppName": "goatformat-reversal-quiz-otk (Mirror)",
+      "oppEngine": "NEXO_2",
+      "targetStarts": true,
+      "turns": 14,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 21,
+      "seed": 9674218,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 20,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 22,
+      "seed": 9682168,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_1",
+      "targetStarts": false,
+      "turns": 7,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    },
+    {
+      "matchId": 23,
+      "seed": 9690118,
+      "oppId": "goat-control",
+      "oppName": "Goat Control",
+      "oppEngine": "NEXO_1",
+      "targetStarts": true,
+      "turns": 12,
+      "targetFinalLp": 0,
+      "oppFinalLp": 0
+    }
+  ]
+}

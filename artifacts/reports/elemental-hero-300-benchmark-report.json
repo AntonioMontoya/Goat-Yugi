@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-elemental-hero",
+  "deckName": "Elemental HERO",
+  "tier": "Tier 3",
+  "baselineWR": 46.5,
+  "certifiedWR": 34.7,
+  "delta": -11.8,
+  "ic95": {
+    "low": 29.5,
+    "high": 40.2
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 104,
+  "losses": 195,
+  "draws": 1,
+  "vsNexo1": {
+    "wins": 48,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 56,
+    "total": 150
+  }
+}

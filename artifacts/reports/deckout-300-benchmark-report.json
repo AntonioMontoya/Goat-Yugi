@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-deckout",
+  "deckName": "Deckout (Mill)",
+  "tier": "Tier 3",
+  "baselineWR": 44,
+  "certifiedWR": 41.3,
+  "delta": -2.7,
+  "ic95": {
+    "low": 35.9,
+    "high": 47
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 124,
+  "losses": 176,
+  "draws": 0,
+  "vsNexo1": {
+    "wins": 67,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 57,
+    "total": 150
+  }
+}

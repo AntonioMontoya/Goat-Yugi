@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-cyber-stein-otk",
+  "deckName": "Cyber-Stein OTK",
+  "tier": "Tier 3",
+  "baselineWR": 28.5,
+  "certifiedWR": 21.7,
+  "delta": -6.8,
+  "ic95": {
+    "low": 17.4,
+    "high": 26.7
+  },
+  "status": "Certificado (Techo)",
+  "matchesCount": 300,
+  "wins": 65,
+  "losses": 233,
+  "draws": 2,
+  "vsNexo1": {
+    "wins": 30,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 35,
+    "total": 150
+  }
+}

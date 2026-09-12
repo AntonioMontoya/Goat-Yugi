@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-destiny-board",
+  "deckName": "Destiny Board",
+  "tier": "Tier 3",
+  "baselineWR": 30,
+  "certifiedWR": 11.3,
+  "delta": -18.7,
+  "ic95": {
+    "low": 8.2,
+    "high": 15.4
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 34,
+  "losses": 242,
+  "draws": 24,
+  "vsNexo1": {
+    "wins": 18,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 16,
+    "total": 150
+  }
+}

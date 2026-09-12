@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-cat-control",
+  "deckName": "Cat Control",
+  "tier": "Tier 3",
+  "baselineWR": 35.5,
+  "certifiedWR": 23,
+  "delta": -12.5,
+  "ic95": {
+    "low": 18.6,
+    "high": 28.1
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 69,
+  "losses": 217,
+  "draws": 14,
+  "vsNexo1": {
+    "wins": 33,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 36,
+    "total": 150
+  }
+}

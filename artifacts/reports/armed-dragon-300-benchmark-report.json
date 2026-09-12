@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-armed-dragon",
+  "deckName": "Armed Dragon",
+  "tier": "Tier 3",
+  "baselineWR": 43,
+  "certifiedWR": 43.3,
+  "delta": 0.3,
+  "ic95": {
+    "low": 37.8,
+    "high": 49
+  },
+  "status": "Certificado",
+  "matchesCount": 300,
+  "wins": 130,
+  "losses": 169,
+  "draws": 1,
+  "vsNexo1": {
+    "wins": 71,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 59,
+    "total": 150
+  }
+}

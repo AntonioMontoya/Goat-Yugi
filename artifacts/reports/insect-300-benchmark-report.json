@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-insect",
+  "deckName": "Insect Aggro",
+  "tier": "Tier 3",
+  "baselineWR": 47,
+  "certifiedWR": 30.7,
+  "delta": -16.3,
+  "ic95": {
+    "low": 25.7,
+    "high": 36.1
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 92,
+  "losses": 206,
+  "draws": 2,
+  "vsNexo1": {
+    "wins": 45,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 47,
+    "total": 150
+  }
+}

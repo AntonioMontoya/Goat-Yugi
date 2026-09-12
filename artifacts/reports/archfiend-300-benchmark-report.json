@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-archfiend",
+  "deckName": "Archfiend",
+  "tier": "Tier 3",
+  "baselineWR": 44,
+  "certifiedWR": 39.3,
+  "delta": -4.7,
+  "ic95": {
+    "low": 34,
+    "high": 45
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 118,
+  "losses": 179,
+  "draws": 3,
+  "vsNexo1": {
+    "wins": 66,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 52,
+    "total": 150
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "deckId": "goatformat-spell-counter-control",
+  "deckName": "Spell Counter",
+  "tier": "Tier 3",
+  "baselineWR": 42,
+  "certifiedWR": 33,
+  "delta": -9,
+  "ic95": {
+    "low": 27.9,
+    "high": 38.5
+  },
+  "status": "Calibrado",
+  "matchesCount": 300,
+  "wins": 99,
+  "losses": 198,
+  "draws": 3,
+  "vsNexo1": {
+    "wins": 44,
+    "total": 150
+  },
+  "vsNexo2": {
+    "wins": 55,
+    "total": 150
+  }
+}
