@@ -16,7 +16,7 @@ export async function preloadDuelImages({
   getCard,
   backImagePath = typeof window !== "undefined" && document.body?.classList?.contains("ipad-edition")
     ? "./goat-card-images/Back_Image.webp"
-    : "./goat-card-images/Back_Image.webp",
+    : "./goat-card-images/Back_Image.jpg",
 }) {
   if (typeof window === "undefined" || typeof Image === "undefined") return;
 

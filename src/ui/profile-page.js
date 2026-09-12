@@ -122,7 +122,7 @@ export function renderProfilePage({ app, esc, getCard, builderDeckById, playable
   return `<section class="page profile-page" aria-labelledby="profile-title">
     <div class="profile-hero-card">
       <div class="profile-hero-backdrop" aria-hidden="true"></div>
-      <img src="./sprites/Sprite_Ornamentacion9.webp" class="profile-banner-crest" alt="" aria-hidden="true" />
+      <img src="/sprites/Sprite_Ornamentacion9.png" class="profile-banner-crest" alt="" aria-hidden="true" />
       
       <div class="profile-identity">
         <div class="profile-rank-emblem-slot">
@@ -161,7 +161,7 @@ export function renderProfilePage({ app, esc, getCard, builderDeckById, playable
     <div class="profile-content-grid">
       <div class="profile-panel profile-stats-panel">
         <div class="panel-header">
-          <img src="./sprites/Sprite_Submenu5.webp" alt="" class="panel-icon" aria-hidden="true" />
+          <img src="/sprites/Sprite_Submenu5.png" alt="" class="panel-icon" aria-hidden="true" />
           <h2>Estadísticas Generales</h2>
         </div>
         <div class="stats-overview-grid">
@@ -207,7 +207,7 @@ export function renderProfilePage({ app, esc, getCard, builderDeckById, playable
 
       <div class="profile-panel profile-history-panel">
         <div class="panel-header">
-          <img src="./sprites/Sprite_Submenu6.webp" alt="" class="panel-icon" aria-hidden="true" />
+          <img src="/sprites/Sprite_Submenu6.png" alt="" class="panel-icon" aria-hidden="true" />
           <h2>Historial de Duelos</h2>
         </div>
         <div class="profile-matches-container">
@@ -244,7 +244,7 @@ export function renderOnboardingModal({ app, esc, playableDecks, getCard }) {
   return `<div class="modal-backdrop onboarding-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
     <div class="onboarding-modal-panel">
       <div class="onboarding-tablet-crest">
-        <img src="./sprites/Sprite_Menu3.webp" alt="" class="onboarding-crest-img" />
+        <img src="/sprites/Sprite_Menu3.png" alt="" class="onboarding-crest-img" />
       </div>
       <div class="onboarding-header">
         <span class="eyebrow">BIENVENIDO A GOAT LOCAL LAB</span>

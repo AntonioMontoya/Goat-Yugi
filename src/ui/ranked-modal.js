@@ -6,11 +6,11 @@ import { getRepresentativeCardForDeck, getDeckCardImagePath } from "../ranking/r
  */
 export function rankSpriteFile(tier) {
   const norm = String(tier ?? "").trim().toLowerCase();
-  if (norm === "bronce") return "Bronce.webp";
-  if (norm === "oro") return "Oro.webp";
-  if (norm === "esmeralda" || norm === "esperalda") return "Esmeralda.webp";
-  if (norm === "diamante") return "Diamante.webp";
-  return "Unranked.webp";
+  if (norm === "bronce") return "Bronce.png";
+  if (norm === "oro") return "Oro.png";
+  if (norm === "esmeralda" || norm === "esperalda") return "Esmeralda.png";
+  if (norm === "diamante") return "Diamante.png";
+  return "Unranked.png";
 }
 
 /**
@@ -182,7 +182,7 @@ export function renderRankedOverlays({ app, esc, builderDeckById, playableDecks,
             <!-- Rival Fake Online -->
             <div class="versus-card opponent-side">
               <div class="card-avatar-box enemy-lord-box">
-                <img class="versus-enemy-lord-img" src="/sprites/${esc(opp.sprite ?? "EnemyLord.webp")}" alt="${esc(opp.name)}" />
+                <img class="versus-enemy-lord-img" src="/sprites/${esc(opp.sprite ?? "EnemyLord.png")}" alt="${esc(opp.name)}" />
                 <div class="avatar-ring-overlay">${renderRankBadge(opp.opponentTier, opp.opponentDivision, "small", { esc })}</div>
               </div>
               <div class="card-info">
@@ -392,7 +392,7 @@ export function enterRankedDuel({ app, startDuel, navigate }) {
       mode: "ladder",
       deckId: playerDeckId,
       startTime: Date.now(),
-      opponentSprite: opp.sprite ?? "EnemyLord.webp",
+      opponentSprite: opp.sprite ?? "EnemyLord.png",
       isPromotion: Boolean(opp.isPromotion),
     };
   }
@@ -408,7 +408,7 @@ export function enterRankedDuel({ app, startDuel, navigate }) {
       opponentDivision: opp.opponentDivision,
       mode: "ladder",
       isRankedMatch: true,
-      opponentSprite: opp.sprite ?? "EnemyLord.webp",
+      opponentSprite: opp.sprite ?? "EnemyLord.png",
       isPromotion: Boolean(opp.isPromotion),
     },
     fresh: true,

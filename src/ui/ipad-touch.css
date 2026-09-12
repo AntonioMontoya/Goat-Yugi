@@ -470,7 +470,7 @@ button:active,
   border: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background-image: url('./sprites/Sprite_Submenu12.webp') !important;
+  background-image: url('/sprites/Sprite_Submenu12.png') !important;
   background-position: center !important;
   background-size: contain !important;
   background-repeat: no-repeat !important;
@@ -484,21 +484,21 @@ button:active,
 }
 
 .ipad-edition .duel-phase-rail li.complete > span {
-  background-image: url('./sprites/Sprite_Submenu12.webp') !important;
+  background-image: url('/sprites/Sprite_Submenu12.png') !important;
   color: #b9e1db !important;
   filter: brightness(0.96) saturate(1.08) !important;
   border: 0 !important;
 }
 
 .ipad-edition .duel-phase-rail li.future > span {
-  background-image: url('./sprites/Sprite_Submenu12.webp') !important;
+  background-image: url('/sprites/Sprite_Submenu12.png') !important;
   color: #8fa0a3 !important;
   filter: brightness(0.7) !important;
   border: 0 !important;
 }
 
 .ipad-edition .duel-phase-rail li.current > span {
-  background-image: url('./sprites/Sprite_Submenu13.webp') !important;
+  background-image: url('/sprites/Sprite_Submenu13.png') !important;
   color: #fff3c8 !important;
   filter: brightness(1.12) saturate(1.1) drop-shadow(0 0 8px rgba(245, 193, 78, 0.55)) !important;
   border: 0 !important;
@@ -511,7 +511,8 @@ button:active,
 }
 
 .ipad-edition .duel-phase-pass-btn {
-  background: url('./sprites/Sprite_Hud10.webp') center / contain no-repeat !important;  box-shadow: none !important;
+  background: url('/sprites/Sprite_Hud10.png') center / contain no-repeat !important;
+  box-shadow: none !important;
   animation: phase-plate-pulse 1.45s ease-in-out infinite alternate !important;
 }
 
@@ -525,7 +526,7 @@ button:active,
   border: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background: url('./sprites/Sprite_Hud10.webp') center / contain no-repeat !important;
+  background: url('/sprites/Sprite_Hud10.png') center / contain no-repeat !important;
   color: #ffeab5 !important;
   text-shadow: 0 2px 5px #000 !important;
   box-shadow: none !important;

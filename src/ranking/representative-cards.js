@@ -198,5 +198,5 @@ export function getRepresentativeCardForDeck(deck, getCard) {
 export function getDeckCardImagePath(card) {
   if (!card) return "./goat-card-images/back.png";
   const name = card.imageFile ?? card.name;
-  return `./goat-card-images/${encodeURIComponent(name.endsWith(".webp") || name.endsWith(".png") ? name : `${name}.webp`)}`;
+  return `./goat-card-images/${encodeURIComponent(name.endsWith(".jpg") || name.endsWith(".png") ? name : `${name}.jpg`)}`;
 }

@@ -299,7 +299,7 @@ function duelMotionFor(instance, motion = app.duelMotion) {
 }
 function rankMarkup() {
   const view = ladderView(app.ladder);
-  if (view.inPlacements) return `<div class="rank-chip tier-unranked"><img class="rank-chip-sprite" src="./sprites/Unranked.webp" alt="Unranked" /><span><strong>Unranked</strong><small>${view.placements?.gamesPlayed ?? 0}/10</small></span></div>`;
+  if (view.inPlacements) return `<div class="rank-chip tier-unranked"><img class="rank-chip-sprite" src="/sprites/Unranked.png" alt="Unranked" /><span><strong>Unranked</strong><small>${view.placements?.gamesPlayed ?? 0}/10</small></span></div>`;
   const tierName = view.tier ?? view.league ?? "Bronce";
   const roman = view.divisionRoman ?? DIVISION_ROMAN[view.division] ?? "V";
   return `<div class="rank-chip tier-${esc(tierName.toLowerCase())}"><img class="rank-chip-sprite" src="/sprites/${esc(rankSpriteFile(tierName))}" alt="${esc(tierName)}" /><span><strong>${esc(tierName)} ${esc(roman)}</strong><small>${view.lp} LP · ${view.rating} rating</small></span></div>`;
@@ -753,15 +753,15 @@ function renderOcgcoreDuel(view = app.duel.view()) {
   const playerTag = isRanked ? ` <span class="duel-rank-tag">${esc(pRank.tier)}${pRank.inPlacements ? "" : ` ${esc(pRank.divisionRoman)}`}</span>` : "";
   const opponentAvatar = isRanked ? `<div class="avatar opponent-avatar duel-rank-avatar">${renderRankBadge(oppTier, oppDiv, "small", { esc })}</div>` : `<span class="avatar opponent-avatar">${manual ? "2" : esc(opponentName.slice(0, 1).toUpperCase())}</span>`;
   const opponentTag = isRanked ? ` <span class="duel-rank-tag">${esc(oppTier)} ${esc(oppDivRoman)}</span>` : "";
-  const oppSprite = app.pendingLadder?.opponentSprite ?? app.ladder?.activeRankedMatch?.opponentSprite ?? "EnemyLord.webp";
+  const oppSprite = app.pendingLadder?.opponentSprite ?? app.ladder?.activeRankedMatch?.opponentSprite ?? "EnemyLord.png";
   const oppArch = String(oppSprite).toLowerCase();
   const archCls = oppArch.includes("arquero") ? "archetype-arquero" : oppArch.includes("guerrero") ? "archetype-guerrero" : oppArch.includes("monje") ? "archetype-monje" : oppArch.includes("sacerdotisa") ? "archetype-sacerdotisa" : "archetype-default";
   const enemyLordBackdrop = isRanked ? `<div class="duel-enemy-lord-backdrop ${archCls}" aria-hidden="true"><div class="rival-particles-field"><span class="rival-dust d1"></span><span class="rival-dust d2"></span><span class="rival-dust d3"></span><span class="rival-dust d4"></span><span class="rival-dust d5"></span><span class="rival-dust d6"></span><span class="rival-dust d7"></span><span class="rival-dust d8"></span></div><img class="duel-enemy-lord-bg-img" src="/sprites/${esc(oppSprite)}" alt="" /></div>` : "";
   return `<section class="page duel-page">
      ${renderDuelTopbar({ view, model: interaction, manual, title, subtitle, sandbox: Boolean(app.activeSandboxScenario), fullscreenLabel: fullscreenLabel(), boardTilt: app.boardTilt, duelMenuOpen: app.duelMenuOpen, esc, botProfile: app.duelBotProfile })}
      <div class="duel-layout"><div class="table-frame ${app.boardTilt ? "tilted" : ""} ${app.inspectedCard ? "has-inspector" : ""}">
-       <img src="./sprites/Sprite_Pilar.webp" class="duel-pillar pillar-left" alt="" />
-       <img src="./sprites/Sprite_Pilar.webp" class="duel-pillar pillar-right" alt="" />
+       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-left" alt="" />
+       <img src="/sprites/Sprite_Pilar.png" class="duel-pillar pillar-right" alt="" />
        <div class="duel-board ${isRanked ? "has-enemy-lord" : ""} ${app.duelPresentation ? `feedback-${esc(app.duelPresentation.kind)} tier-${esc(app.duelPresentation.tier || "notable")}` : ""}">
          ${enemyLordBackdrop}<div class="hand-strip opponent-hand">${playerHandMarkup(playerTwo, app.selectedCardUid, manual, userActions, affordanceInteraction)}</div>
          <div class="opponent-row player-row is-opponent"><div class="player-meta">${opponentAvatar}<div><strong>${esc(playerName(playerTwo, manual))}${opponentTag}</strong><small>${esc(playerTwoDeck.name)}</small></div>${lifePointMarkup(playerTwo)}</div><div class="hand-count">HAND <b>${playerTwo.handCount}</b><span class="deck-count">DECK ${playerTwo.deckCount}</span></div></div>

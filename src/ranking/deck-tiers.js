@@ -223,14 +223,14 @@ function pickDeckFromPool(pool, recentDeckIds = []) {
 export const BOT_ARCHETYPES = ["Guerrero", "Arquero", "Monje", "Sacerdotisa"];
 
 export function getRankedOpponentSprite({ tier = "Bronce", division = 5, isPromotion = false, archetype = "Guerrero" } = {}) {
-  if (isPromotion) return "EnemyLord.webp";
+  if (isPromotion) return "EnemyLord.png";
   const normTier = String(tier).trim().toLowerCase();
   const divNum = Number(division) || 5;
   const valid = BOT_ARCHETYPES.includes(archetype) ? archetype : "Guerrero";
   if (normTier === "diamante" && (divNum === 1 || divNum === 2 || divNum === 3)) {
-    return `${valid}_Diamante.webp`;
+    return `${valid}_Diamante.png`;
   }
-  return `${valid}.webp`;
+  return `${valid}.png`;
 }
 
 /**
