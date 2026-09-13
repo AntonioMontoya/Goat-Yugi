@@ -67,6 +67,7 @@ export function startSandboxDuel({
   app.selectedCardUid = null;
   app.duelMotion = null;
   app.duelActionOptionsOpen = false;
+  app.duelPriorityPromptKey = null;
   app.sortOrder = { key: null, order: [] };
   app.multiChoice = { key: null, indices: [] };
   app.counterAllocation = { key: null, counters: [] };

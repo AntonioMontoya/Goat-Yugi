@@ -105,6 +105,7 @@ const app = {
   resultDismissed: false,
   duelActionOptionsOpen: false,
   duelPhaseConfirmation: null,
+  duelPriorityPromptKey: null,
   duelEventLog: { open: false, search: "", filter: "all", scrollTop: 0 },
   summonFlowKind: null,
   cardSelection: { key: null, indices: [] },
@@ -362,6 +363,7 @@ function installTrainingWorkerControl() {
 function render() {
   actionRegistry.clear();
   const renderedDuelView = app.mode === "duel" && app.duel ? (app.duel.kind === "ocgcore" ? app.duel.view() : observe(app.duel, 0)) : null;
+  syncDuelPriorityConfirmation(renderedDuelView);
   const systemReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
   document.documentElement.classList.toggle("reduced-motion", app.settings.motionLevel !== "full" || systemReducedMotion);
   document.documentElement.classList.toggle("motion-off", app.settings.motionLevel === "off");
@@ -523,6 +525,7 @@ function recordDuelTransition(action, before, after) {
   if (app.inspectedCard?.uid) { const u = duelInstanceByUid(after, app.inspectedCard.uid); if (u?.instance?.cardId) app.inspectedCard = { ...u.instance, ownerName: playerName(u.player, Boolean(app.duelManual || after?.manual)) }; }
   app.duelActionOptionsOpen = false;
   app.duelPhaseConfirmation = null;
+  app.duelPriorityPromptKey = null;
   app.cardSelection = { key: null, indices: [] };
   app.sortOrder = { key: null, order: [] };
   app.multiChoice = { key: null, indices: [] };
@@ -584,7 +587,7 @@ function renderCompactFallbackDuel(view = observe(app.duel, 0)) {
 
 function phaseStripMarkup(view, userActions, manual = false, model = null) {
   const interaction = model ?? createDuelInteractionModel({ ...view, actions: userActions }, { manual });
-  return renderPhaseRail({ view, model: interaction, esc, registerAction: (action) => registerAction(actionRegistry, action) });
+  return renderPhaseRail({ view, model: interaction, esc, priorityPromptOpen: Boolean(app.duelPhaseConfirmation?.priorityKey), registerAction: (action) => registerAction(actionRegistry, action) });
 }
 
 function responseActionsMarkup(view, actions, manual = false, model = null) {
@@ -627,6 +630,43 @@ function responseActionsMarkup(view, actions, manual = false, model = null) {
     return renderCardSelectionModal({ view, actions: responses, state: app.cardSelection, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) });
   }
   return renderDecisionBar({ view, model: interaction, actions: responses, esc, registerAction: (action) => registerAction(actionRegistry, action) });
+}
+
+function freePriorityPrompt(view) {
+  const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
+  if (!interaction.freePriority || !interaction.declineAction || !interaction.optionalActions.length) return null;
+  const key = [
+    "free-priority",
+    view?.turn ?? "",
+    view?.phase ?? "",
+    view?.pendingType ?? "",
+    view?.priorityPlayer ?? "",
+    view?.turnPlayer ?? "",
+    view?.decisionCount ?? "",
+    view?.timingWindow?.kind ?? "",
+    view?.timingWindow?.sourceEventIndex ?? "",
+  ].join(":");
+  return { key, action: { ...interaction.declineAction, label: "Pasar prioridad" } };
+}
+
+function syncDuelPriorityConfirmation(view) {
+  if (app.mode !== "duel" || app.duel?.kind !== "ocgcore" || app.duelStart?.open) return;
+  const prompt = freePriorityPrompt(view);
+  if (!prompt) {
+    app.duelPriorityPromptKey = null;
+    if (app.duelPhaseConfirmation?.priorityKey) app.duelPhaseConfirmation = null;
+    return;
+  }
+  if (app.duelPriorityPromptKey === prompt.key) return;
+  app.duelPriorityPromptKey = prompt.key;
+  app.duelPhaseConfirmation = { action: prompt.action, label: "Pasar prioridad", priorityKey: prompt.key };
+}
+
+function dismissDuelPhaseConfirmation() {
+  const pending = app.duelPhaseConfirmation;
+  if (pending?.priorityKey) app.duelPriorityPromptKey = pending.priorityKey;
+  app.duelPhaseConfirmation = null;
+  render();
 }
 
 function isDirectFieldSelectionView(view) {
@@ -806,6 +846,7 @@ async function resumeSavedDuel(savedState) {
   app.duelLoading = true;
   app.duelError = null;
   app.duelStart = null;
+  app.duelPriorityPromptKey = null;
   setDuelPresentation(null);
   if (app.duel?.destroy) app.duel.destroy();
   app.duel = null;
@@ -930,6 +971,7 @@ function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckI
   app.duelMotion = null;
   app.duelActionOptionsOpen = false;
   app.duelPhaseConfirmation = null;
+  app.duelPriorityPromptKey = null;
   app.sortOrder = { key: null, order: [] };
   app.multiChoice = { key: null, indices: [] };
   app.counterAllocation = { key: null, counters: [] };
@@ -1223,7 +1265,7 @@ function bindEvents() {
     document.querySelectorAll(".board-card-button.selected, .hand-card-button.selected").forEach((card) => card.classList.remove("selected"));
   });
   onAll("[data-action-options-reveal]", "click", () => { app.duelActionOptionsOpen = true; render(); });
-  on(document.querySelector("[data-phase-advance-cancel]"), "click", () => { app.duelPhaseConfirmation = null; render(); });
+  on(document.querySelector("[data-phase-advance-cancel]"), "click", () => { dismissDuelPhaseConfirmation(); });
   on(document.querySelector("[data-phase-advance-confirm]"), "click", () => { const pending = app.duelPhaseConfirmation; app.duelPhaseConfirmation = null; if (pending?.action) executeDuelAction(pending.action); else render(); });
   on(document.querySelector("[data-duel-retry]"), "click", () => { if (app.activeSandboxScenario) startSandboxDuel(app.activeSandboxScenario); else startDuel(); });
   const filterEventLog = () => { const query = document.querySelector("[data-event-search]")?.value.trim().toLocaleLowerCase("es") ?? ""; const kind = document.querySelector("[data-event-filter]")?.value ?? "all"; app.duelEventLog.search = query; app.duelEventLog.filter = kind; document.querySelectorAll("[data-event-entry]").forEach((row) => { row.hidden = Boolean(query && !row.dataset.eventSearchText.includes(query)) || (kind !== "all" && row.dataset.eventKind !== kind); }); };
@@ -1250,9 +1292,15 @@ function bindEvents() {
     const button = event.currentTarget;
     const action = actionRegistry.get(button.dataset.actionId);
     if (!action || !app.duel) return;
-    const interaction = createDuelInteractionModel(currentDuelView(), { manual: Boolean(app.duelManual || currentDuelView()?.manual) });
+    const view = currentDuelView();
+    const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
     if (button.classList.contains("phase-command") && interaction.optionalActions.length) {
-      app.duelPhaseConfirmation = { action, label: button.getAttribute("aria-label") ?? action.label };
+      const priorityPrompt = interaction.freePriority ? freePriorityPrompt(view) : null;
+      app.duelPhaseConfirmation = {
+        action,
+        label: button.getAttribute("aria-label") ?? action.label,
+        ...(priorityPrompt ? { priorityKey: priorityPrompt.key } : {}),
+      };
       clearAutomaticPhaseTimer();
       render();
       return;
@@ -1465,8 +1513,7 @@ window.addEventListener("keydown", (event) => {
     render();
     document.querySelector("[data-menu-toggle]")?.focus();
   } else if (app.duelPhaseConfirmation) {
-    app.duelPhaseConfirmation = null;
-    render();
+    dismissDuelPhaseConfirmation();
   } else if (app.selectedCardUid !== null || app.inspectedCard !== null) {
     app.selectedCardUid = null;
     app.inspectedCard = null;

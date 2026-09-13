@@ -1,11 +1,11 @@
 import { DUEL_PHASES, isPhaseAction, phaseIndex, phaseLabel, phaseStepId } from "./duel-presentation.js";
 import { actionAffordance, actionsForCard, interactionStatus, playerFacingActionLabel } from "./duel-interaction.js";
 
-function registerButton(action, className, { esc, registerAction, label = null } = {}) {
+function registerButton(action, className, { esc, registerAction, label = null, icon = null } = {}) {
   const actionId = registerAction(action);
   const affordance = actionAffordance(action);
   const copy = label ?? playerFacingActionLabel(action);
-  return `<button type="button" class="${className}" data-action-id="${esc(actionId)}" aria-label="${esc(copy)}"><span>${esc(affordance.icon)}</span><b>${esc(copy)}</b></button>`;
+  return `<button type="button" class="${className}" data-action-id="${esc(actionId)}" aria-label="${esc(copy)}"><span>${esc(icon ?? affordance.icon)}</span><b>${esc(copy)}</b></button>`;
 }
 
 export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox = false, fullscreenLabel, boardTilt = false, duelMenuOpen = false, esc, botProfile = null }) {
@@ -23,7 +23,7 @@ export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox
   </header>`;
 }
 
-export function renderPhaseRail({ view, model, esc, registerAction }) {
+export function renderPhaseRail({ view, model, esc, registerAction, priorityPromptOpen = false }) {
   const current = phaseStepId(view?.phase);
   const currentIndex = phaseIndex(current);
   const direct = model.phaseActions;
@@ -40,9 +40,11 @@ export function renderPhaseRail({ view, model, esc, registerAction }) {
         ? `<small class="phase-locked">Decide en la ventana de acciones</small>`
         : direct.length
           ? registerButton(preferred, "phase-command", { esc, registerAction })
-          : priorityPass
-            ? registerButton(priorityPass, "phase-command", { esc, registerAction, label: "Pasar prioridad" })
-            : `<small class="phase-locked">${model.mode === "open" ? "Sin cambio disponible" : "Completa la decisión actual"}</small>`;
+          : priorityPass && priorityPromptOpen
+            ? `<small class="phase-locked">Confirma el paso de prioridad</small>`
+            : priorityPass
+              ? registerButton(priorityPass, "phase-command", { esc, registerAction, label: "Pasar prioridad", icon: "→" })
+              : `<small class="phase-locked">${model.mode === "open" ? "Sin cambio disponible" : "Completa la decisión actual"}</small>`;
   return `<nav class="duel-phase-rail" data-testid="phase-hud" aria-label="Fases del turno"><strong>FASES</strong><ol style="--phase-index:${currentIndex}">${DUEL_PHASES.map(([id, label], index) => `<li class="${id === current ? "current" : index < currentIndex ? "complete" : "future"}" data-phase="${esc(id)}" aria-label="${esc(label)}"${id === current ? ` aria-current="step"` : ""}><span>${esc(label.toUpperCase())}</span></li>`).join("")}</ol><div class="phase-rail-actions"><em>SIGUIENTE</em>${commands}</div></nav>`;
 }
 
