@@ -85,6 +85,12 @@
 .duel-menu-panel > button { padding: 8px 9px; border: 1px solid rgba(158, 190, 194, .16); border-radius: 4px; background: rgba(18, 32, 41, .82); color: #c9d8d9; text-align: left; cursor: pointer; font-size: 9px; }
 .duel-menu-panel > button:hover,
 .duel-menu-panel > button:focus-visible { border-color: var(--duel-gold); color: #ffe0a1; outline: none; }
+.duel-menu-sound { margin: 2px 0; padding: 8px 9px 7px; border: 1px solid rgba(244, 189, 88, .22); border-radius: 5px; background: linear-gradient(145deg, rgba(52, 35, 17, .45), rgba(14, 24, 31, .76)); }
+.duel-menu-sound-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #ffd786; font: 800 8px var(--mono); letter-spacing: .12em; }
+.duel-menu-sound-head output { color: #f5c66d; font: 700 9px var(--mono); letter-spacing: .04em; }
+.duel-menu-volume-row { display: grid; gap: 5px; margin-top: 7px; color: #c9d8d9; font-size: 9px; }
+.duel-menu-volume-row input[type="range"] { width: 100%; height: 16px; accent-color: var(--duel-gold); cursor: pointer; }
+.duel-menu-sound > small { display: block; margin-top: 3px; color: #82999e; font: 8px var(--mono); line-height: 1.25; }
 .duel-debug-details { padding: 6px 8px; color: #6f858b; font: 9px var(--mono); }
 .duel-debug-details summary { cursor: pointer; }
 .duel-debug-details code,

@@ -8,7 +8,9 @@ function registerButton(action, className, { esc, registerAction, label = null, 
   return `<button type="button" class="${className}" data-action-id="${esc(actionId)}" aria-label="${esc(copy)}"><span>${esc(icon ?? affordance.icon)}</span><b>${esc(copy)}</b></button>`;
 }
 
-export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox = false, fullscreenLabel, boardTilt = false, duelMenuOpen = false, esc, botProfile = null }) {
+export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox = false, fullscreenLabel, boardTilt = false, duelMenuOpen = false, esc, botProfile = null, volume = 35 }) {
+  const parsedVolume = Number(volume);
+  const volumePercent = Number.isFinite(parsedVolume) ? Math.max(0, Math.min(100, Math.round(parsedVolume))) : 35;
   const status = interactionStatus(model, view, { manual });
   return `<header class="duel-compact-head">
     <div class="duel-title-lockup"><span class="duel-mark">GOAT</span><div><strong>${esc(title)}</strong><small>${esc(subtitle)}</small></div></div>
@@ -16,6 +18,7 @@ export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox
     <div class="duel-head-meta"><span>TURNO <b>${String(view?.turn ?? 0).padStart(2, "0")}</b></span><span>${esc(phaseLabel(view?.phase))}</span><span class="priority-owner">${esc(model.priorityName)}</span></div>
     <div class="duel-menu" data-open="${duelMenuOpen ? "true" : "false"}"><button type="button" class="duel-menu-toggle" data-duel-menu-toggle aria-label="Abrir menú del duelo" aria-expanded="${duelMenuOpen ? "true" : "false"}">•••</button><div class="duel-menu-panel">
       ${sandbox ? `<button type="button" data-action="restart-sandbox-duel">Reiniciar escenario</button><button type="button" data-action="edit-sandbox-scenario">Editar escenario</button>` : ""}
+      <section class="duel-menu-sound" data-testid="duel-sound-section" aria-label="Sonido durante la partida"><div class="duel-menu-sound-head"><span>SONIDO DURANTE LA PARTIDA</span><output data-duel-volume-output aria-live="polite">${volumePercent} %</output></div><label class="duel-menu-volume-row"><span>Volumen general</span><input type="range" min="0" max="100" step="1" value="${volumePercent}" data-duel-volume aria-label="Volumen general durante la partida" /></label><small>Música y efectos · se aplica al instante</small></section>
       <button type="button" data-action="new-duel">Reiniciar duelo</button>
       <button type="button" data-action="exit-to-home">Salir al menú principal</button>
       <details class="duel-debug-details"><summary>Diagnóstico</summary><code>${esc(view?.pendingType ?? "SIN DECISIÓN")} · ${esc(view?.timingWindow?.kind ?? "sin ventana")}</code><small>${Number(view?.decisionCount ?? 0)} decisiones OCGCore</small>${botProfile ? `<small style="display:block;margin-top:4px;color:var(--text-muted, #888)">Bot: <b>${esc(botProfile.name)}</b> [${esc(botProfile.modelOrigin ?? "base")}] · Hash: <code>${esc(String(botProfile.modelHash ?? "n/a").slice(0, 10))}</code></small>` : ""}</details>
