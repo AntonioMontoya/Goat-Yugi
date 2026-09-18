@@ -1,6 +1,6 @@
 import { rankSpriteFile, renderRankBadge } from "./ranked-modal.js";
 import { getRepresentativeCardForDeck, getDeckCardImagePath } from "../ranking/representative-cards.js";
-import { DIVISION_ROMAN, getDeckTierNumber, getDeckTierLabel } from "../ranking/deck-tiers.js";
+import { DIVISION_ROMAN } from "../ranking/deck-tiers.js";
 import { DECK_PRESETS } from "../decks/decks.js";
 
 /**
@@ -225,54 +225,31 @@ export function renderProfilePage({ app, esc, getCard, builderDeckById, playable
  */
 export function renderOnboardingModal({ app, esc, playableDecks, getCard }) {
   if (!app.onboardingOpen) return "";
-  const presets = typeof playableDecks === "function" ? playableDecks() : (playableDecks ?? []);
+  const presets = playableDecks();
   const currentDeckId = app.onboardingDeckId ?? "chaos-turbo";
-
-  const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
-  for (const d of presets) {
-    const t = getDeckTierNumber(d.id);
-    if (tierCounts[t] !== undefined) tierCounts[t]++;
-  }
 
   const deckOptions = presets.map((deck) => {
     const isSelected = deck.id === currentDeckId;
-    const tierNum = getDeckTierNumber(deck.id);
-    const tierLabel = getDeckTierLabel(tierNum);
     const repCard = getRepresentativeCardForDeck(deck, getCard);
     const cardImg = getDeckCardImagePath(repCard);
-    const repCardName = repCard?.name ?? "Insignia";
-
-    return `<button type="button" 
-      class="onboarding-deck-card ${isSelected ? "selected" : ""}" 
-      data-action="onboarding-select-deck" 
-      data-deck-id="${deck.id}"
-      data-deck-name="${esc(deck.name.toLowerCase())}"
-      data-rep-name="${esc(repCardName.toLowerCase())}"
-      data-deck-tier="${tierNum}">
-      <div class="onboarding-card-thumb-wrap">
-        <img src="${cardImg}" alt="${esc(deck.name)}" class="onboarding-card-thumb" loading="lazy" />
-        <span class="deck-tier-tag tier-${tierNum}">${esc(tierLabel)}</span>
-      </div>
+    return `<button type="button" class="onboarding-deck-card ${isSelected ? "selected" : ""}" data-action="onboarding-select-deck" data-deck-id="${deck.id}">
+      <img src="${cardImg}" alt="${esc(deck.name)}" class="onboarding-card-thumb" />
       <div class="onboarding-deck-text">
         <strong>${esc(deck.name)}</strong>
-        <small>★ ${esc(repCardName)}</small>
-        <span class="onboarding-deck-cards-count">${deck.main?.length ?? 40} cartas</span>
+        <small>${esc(repCard?.name ?? "")}</small>
       </div>
-      ${isSelected ? '<span class="onboarding-selected-pill">✓ ELEGIDO</span>' : ''}
     </button>`;
   }).join("");
 
   return `<div class="modal-backdrop onboarding-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
     <div class="onboarding-modal-panel">
-      <div class="onboarding-top-bar">
-        <div class="onboarding-tablet-crest">
-          <img src="./sprites/Sprite_Menu3.png" alt="" class="onboarding-crest-img" />
-        </div>
-        <div class="onboarding-header">
-          <span class="eyebrow">BIENVENIDO A GOAT LOCAL LAB</span>
-          <h2 id="onboarding-title">Inscripción del Duelista</h2>
-          <p>Inscribe tu nombre en la sagrada Tabla de los Duelistas y escoge tu mazo predilecto para comenzar tu andadura.</p>
-        </div>
+      <div class="onboarding-tablet-crest">
+        <img src="./sprites/Sprite_Menu3.png" alt="" class="onboarding-crest-img" />
+      </div>
+      <div class="onboarding-header">
+        <span class="eyebrow">BIENVENIDO A GOAT LOCAL LAB</span>
+        <h2 id="onboarding-title">Inscripción del Duelista</h2>
+        <p>Inscribe tu nombre en la sagrada Tabla de los Duelistas y escoge el mazo predilecto con el que comenzarás tus 10 partidas de calibración.</p>
       </div>
 
       <div class="onboarding-field">
@@ -280,28 +257,16 @@ export function renderOnboardingModal({ app, esc, playableDecks, getCard }) {
         <input type="text" id="onboarding-name-input" maxlength="20" placeholder="Escribe tu nombre..." value="${esc(app.onboardingDraftName !== undefined ? app.onboardingDraftName : (app.ladder?.player?.name === "Duelista" ? "" : (app.ladder?.player?.name ?? "")))}" autocomplete="off" />
       </div>
 
-      <div class="onboarding-field onboarding-decks-field">
-        <div class="onboarding-decks-head">
-          <label>Mazo Insignia Predilecto (${presets.length} disponibles):</label>
-          <div class="onboarding-search-wrap">
-            <input type="text" id="onboarding-deck-search" placeholder="Buscar mazo o carta insignia..." autocomplete="off" />
-          </div>
-        </div>
-        <div class="onboarding-tier-tabs" role="tablist">
-          <button type="button" class="onboarding-tier-tab active" data-onboarding-tier="all">Todos (${presets.length})</button>
-          <button type="button" class="onboarding-tier-tab" data-onboarding-tier="1">Tier 1 (${tierCounts[1]})</button>
-          <button type="button" class="onboarding-tier-tab" data-onboarding-tier="2">Tier 2 (${tierCounts[2]})</button>
-          <button type="button" class="onboarding-tier-tab" data-onboarding-tier="3">Tier 3 (${tierCounts[3]})</button>
-          <button type="button" class="onboarding-tier-tab" data-onboarding-tier="4">Tier 4 (${tierCounts[4]})</button>
-        </div>
-        <div class="onboarding-decks-grid" id="onboarding-deck-grid">
+      <div class="onboarding-field">
+        <label>Mazo Insignia Predilecto:</label>
+        <div class="onboarding-decks-grid">
           ${deckOptions}
         </div>
       </div>
 
       <div class="onboarding-actions">
         <button type="button" class="btn-onboarding-submit" data-action="onboarding-confirm">
-          Comenzar Aventura ➔
+          Comenzar Aventura
         </button>
       </div>
     </div>
@@ -324,40 +289,4 @@ function renderNameEditModal({ app, esc, name }) {
       </div>
     </div>
   </div>`;
-}
-
-export function bindOnboardingEvents({ on }) {
-  const searchInput = document.querySelector("#onboarding-deck-search");
-  const cards = document.querySelectorAll(".onboarding-deck-card");
-  const tabs = document.querySelectorAll(".onboarding-tier-tab");
-  if (!searchInput && !tabs.length) return;
-
-  let activeTier = "all";
-
-  const filterCards = () => {
-    const query = (searchInput?.value ?? "").trim().toLowerCase();
-    cards.forEach((card) => {
-      const name = card.dataset.deckName || "";
-      const rep = card.dataset.repName || "";
-      const tier = card.dataset.deckTier || "";
-
-      const matchesSearch = !query || name.includes(query) || rep.includes(query);
-      const matchesTier = activeTier === "all" || tier === activeTier;
-
-      card.style.display = matchesSearch && matchesTier ? "" : "none";
-    });
-  };
-
-  if (searchInput) {
-    on(searchInput, "input", filterCards);
-  }
-
-  tabs.forEach((tab) => {
-    on(tab, "click", () => {
-      tabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-      activeTier = tab.dataset.onboardingTier || "all";
-      filterCards();
-    });
-  });
 }

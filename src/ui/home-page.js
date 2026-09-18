@@ -46,6 +46,6 @@ export function renderHomePage({ app = null, escapeHtml, savedDuel = null }) {
       </div>
       <img src="./sprites/Sprite_Ornamentacion9.png" class="carousel-rule carousel-rule-bottom" alt="" aria-hidden="true" />
     </div>
-    <div class="home-controls" aria-label="Controles del menú"><span><kbd>←</kbd><kbd>→</kbd> ${app?.settings?.touchControls ? "o Deslizar" : "Elegir"}</span><span><kbd>Enter</kbd> ${app?.settings?.touchControls ? "o Tocar" : "Abrir"}</span></div>
+    <div class="home-controls" aria-label="Controles del menú"><span><kbd>←</kbd><kbd>→</kbd> Elegir</span><span><kbd>Enter</kbd> Abrir</span></div>
   </section>`;
 }

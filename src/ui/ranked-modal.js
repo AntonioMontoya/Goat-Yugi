@@ -627,10 +627,7 @@ export function bindRankedPickerEvents({ on }) {
 
   if (searchInput) {
     on(searchInput, "input", filterCards);
-    const isTouch = window.matchMedia?.("(pointer: coarse)")?.matches || "ontouchstart" in window;
-    if (!isTouch) {
-      setTimeout(() => { if (document.activeElement !== searchInput) searchInput.focus(); }, 60);
-    }
+    setTimeout(() => { if (document.activeElement !== searchInput) searchInput.focus(); }, 60);
   }
 
   tabs.forEach((tab) => {

@@ -76,10 +76,15 @@ export function cardLocation(instance) {
 export function renderDuelCardInspector({ snapshot, getCard, cardMarkup, esc }) {
   if (!snapshot?.cardId) return "";
   const card = getCard(snapshot.cardId);
-  if (!card) return "";
   const type = [card.kind, card.race, card.attribute].filter(Boolean).join(" · ");
+  const currentAtk = Number.isFinite(Number(snapshot.attack)) ? Number(snapshot.attack) : (Number.isFinite(Number(snapshot.atk)) ? Number(snapshot.atk) : card.atk);
+  const currentDef = Number.isFinite(Number(snapshot.defense)) ? Number(snapshot.defense) : (Number.isFinite(Number(snapshot.def)) ? Number(snapshot.def) : card.def);
+  const atkModified = Number.isFinite(Number(card.atk)) && Number.isFinite(currentAtk) && currentAtk !== card.atk;
+  const defModified = Number.isFinite(Number(card.def)) && Number.isFinite(currentDef) && currentDef !== card.def;
+  const atkDiffClass = atkModified ? (currentAtk > card.atk ? "stat-boosted" : "stat-reduced") : "";
+  const defDiffClass = defModified ? (currentDef > card.def ? "stat-boosted" : "stat-reduced") : "";
   const stats = card.kind === "MONSTER" || card.kind === "TOKEN"
-    ? `<span class="inspector-stats"><b>ATK <strong>${esc(card.atk)}</strong></b>${Number.isFinite(Number(card.def)) ? `<b>DEF <strong>${esc(card.def)}</strong></b>` : ""}</span>`
+    ? `<span class="inspector-stats"><b class="${atkDiffClass}">ATK <strong>${esc(currentAtk ?? card.atk)}</strong>${atkModified ? `<small class="base-stat-ref">(${esc(card.atk)})</small>` : ""}</b>${Number.isFinite(Number(card.def)) ? `<b class="${defDiffClass}">DEF <strong>${esc(currentDef ?? card.def)}</strong>${defModified ? `<small class="base-stat-ref">(${esc(card.def)})</small>` : ""}</b>` : ""}</span>`
     : "";
   return `<aside class="duel-card-inspector" data-testid="card-inspector" aria-label="Detalles de ${esc(card.name)}">
     <header><span><small>INSPECTOR DE CARTA</small><strong>${esc(card.name)}</strong></span><button type="button" data-card-inspector-close aria-label="Cerrar inspector">×</button></header>

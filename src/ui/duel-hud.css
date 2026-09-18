@@ -577,6 +577,9 @@
 }
 .duel-active .inspector-stats > b { color: #9eb5b8; font: 800 9px var(--mono); }
 .duel-active .inspector-stats > b > strong { margin-left: 5px; color: #ffd273; font: 900 19px var(--display); letter-spacing: .03em; }
+.duel-active .inspector-stats > b.stat-boosted > strong { color: #4ade80; text-shadow: 0 0 8px rgba(74, 222, 128, .4); }
+.duel-active .inspector-stats > b.stat-reduced > strong { color: #f87171; text-shadow: 0 0 8px rgba(248, 113, 113, .4); }
+.duel-active .inspector-stats .base-stat-ref { margin-left: 4px; color: #a0b3b5; font-size: 10px; font-weight: 400; }
 
 .reduced-motion .response-alert-ornament,
 .motion-off .response-alert-ornament,

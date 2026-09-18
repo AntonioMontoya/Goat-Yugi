@@ -88,6 +88,8 @@ function cardInstance(info, controller, location, sequence, { hidden = false, ha
     attribute: info.attribute,
     attack: info.attack,
     defense: info.defense,
+    atk: info.attack,
+    def: info.defense,
     public: Boolean(info.isPublic),
   };
 }

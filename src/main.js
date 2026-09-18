@@ -23,11 +23,11 @@ import { loadBotRegistry, saveBotRegistry } from "./storage/bot-registry.js";
 import { cardForCode, createOcgcoreSession } from "./engine/ocgcore-session.js";
 import { OCGCORE_ASSET_SOURCE, OCGCORE_CARD_ENTRIES, OCGCORE_MISSING_SCRIPTS } from "./data/ocgcore-assets.js";
 import { bindMenuKeyboard, hashForMode, menuMarkup, modeFromHash } from "./ui/navigation.js";
-import { initSpriteMenu, destroySpriteMenu } from "./ui/sprite-menu.js"; import { renderHomePage } from "./ui/home-page.js"; import { installMenuScrollNavigation } from "./ui/menu-scroll.js"; import { renderProfilePage, renderOnboardingModal, bindOnboardingEvents } from "./ui/profile-page.js";
+import { initSpriteMenu, destroySpriteMenu } from "./ui/sprite-menu.js"; import { renderHomePage } from "./ui/home-page.js"; import { installMenuScrollNavigation } from "./ui/menu-scroll.js"; import { renderProfilePage, renderOnboardingModal } from "./ui/profile-page.js";
 import { initSubmenuAtmosphere } from "./ui/submenu-atmosphere.js";
 import { initDuelAtmosphere } from "./ui/duel-atmosphere.js";
 import { morphDom } from "./ui/dom-morph.js";
-import { createActionRegistry, registerAction } from "./ui/action-registry.js"; import { builderCardTileMarkup } from "./ui/deck-builder-cards.js"; import { decorateDeckLibrary } from "./ui/deck-library.js"; import { decorateDuelPiles } from "./ui/duel-piles.js";
+import { createActionRegistry, registerAction } from "./ui/action-registry.js"; import { builderCardTileMarkup } from "./ui/deck-builder-cards.js"; import { decorateDeckLibrary } from "./ui/deck-library.js"; import { decorateDuelPiles } from "./ui/duel-piles.js"; import { cardFieldStatsMarkup } from "./ui/card-field-stats.js";
 import { createDefaultScenarioState, loadSavedScenarios, persistSavedScenarios, renderSandboxPage } from "./ui/sandbox.js";
 import { startSandboxDuel as startSandboxDuelDriver, bindSandboxEvents } from "./ui/sandbox-driver.js";
 import { bindCardViewerEvents, createDefaultCardViewerState, renderCardViewerPage } from "./ui/lazy-card-viewer.js";
@@ -256,7 +256,7 @@ function statusPill(status) {
   const text = status === VALIDATION_STATUS.SUPPORTED ? "LISTO" : status === VALIDATION_STATUS.EXPERIMENTAL ? "EXPERIMENTAL" : status;
   return `<span class="status-pill status-${String(status).toLowerCase()}">${esc(text)}</span>`;
 }
-function cardMarkup(instance, { hidden = false, compact = false, motion = false, imageLoading = null } = {}) {
+function cardMarkup(instance, { hidden = false, compact = false, motion = false, imageLoading = null, showFieldStats = false } = {}) {
   if (!instance) return `<div class="field-slot empty"><span>—</span></div>`;
   const card = instance.cardId === null ? null : getCard(instance.cardId);
   const monsterLike = card
@@ -273,15 +273,17 @@ function cardMarkup(instance, { hidden = false, compact = false, motion = false,
     ${monsterLike ? `<div class="card-stats">${card.atk} <span>/</span> ${card.def}</div>` : `<div class="card-type">${esc(card.spellType ?? card.trapType ?? card.kind)}</div>`}
     <div class="card-text">${esc(card.text)}</div>
   </div>`;
-  return `<div class="card ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" data-card-uid="${esc(cardUid)}" title="${esc(card.name)}">
+  const fieldStats = showFieldStats && monsterLike && instance.faceUp !== false ? cardFieldStatsMarkup(instance, card, { esc }) : "";
+  const statsClass = fieldStats ? "has-field-stats" : "";
+  return `<div class="card ${statsClass} ${imageBacked ? "image-card" : ""} ${String(card.kind).toLowerCase()} ${instance.faceUp ? "face-up" : "face-down"} ${defense ? "defense-position" : "attack-position"} ${compact ? "compact" : ""} ${motion ? "card-place" : ""}" data-card-uid="${esc(cardUid)}" title="${esc(card.name)}">
     ${imageBacked ? `<img class="card-image" src="${esc(cardImagePath(card))}" alt="${esc(card.name)}" loading="${esc(imageLoading ?? "eager")}" decoding="async" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false;" />` : ""}
-    ${fallback}
+    ${fallback}${fieldStats}
   </div>`;
 }
 function zoneMarkup(instances, { hidden = false, motion = false, playerId = null, zone = null, actions = [], model = null } = {}) {
   return instances.map((instance, sequence) => {
     if (instance) {
-      const visual = cardMarkup(instance, { hidden, motion: duelMotionFor(instance, motion) });
+      const visual = cardMarkup(instance, { hidden, motion: duelMotionFor(instance, motion), showFieldStats: zone === "monster" });
       const directSelection = actions.find((action) => action.selectionCards?.length === 1 && action.selectionCards.some((candidate) =>
         Number(candidate.controller) === Number(instance.controller)
         && Number(candidate.location) === Number(instance.location)
@@ -609,64 +611,34 @@ function responseActionsMarkup(view, actions, manual = false, model = null) {
   if (interaction.mode === "resolving" || interaction.mode === "result") return "";
   if (interaction.mode === "response") return renderResponseTray({ view, model: interaction, revealed: app.duelActionOptionsOpen, cardForCode, cardMarkup, esc, registerAction: (action) => registerAction(actionRegistry, action) });
   const responses = actions.filter((action) => !isPhaseAction(action));
-  if (view.sort?.cards?.length) {
-    app.sortOrder = syncSortState(app.sortOrder, view);
-    return renderSortCardModal({ view, state: app.sortOrder, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) });
-  }
+  if (view.sort?.cards?.length) { app.sortOrder = syncSortState(app.sortOrder, view); return renderSortCardModal({ view, state: app.sortOrder, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) }); }
   if (view.announcement?.options?.length) return renderCardAnnouncementModal({ view, esc });
-  if (view.multiChoice?.options?.length) {
-    app.multiChoice = syncMultiChoiceState(app.multiChoice, view);
-    return renderMultiChoiceModal({ view, state: app.multiChoice, esc, registerAction: (action) => registerAction(actionRegistry, action) });
-  }
-  if (view.counterSelection?.cards?.length) {
-    app.counterAllocation = syncCounterState(app.counterAllocation, view);
-    return renderCounterAllocationModal({ view, state: app.counterAllocation, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) });
-  }
+  if (view.multiChoice?.options?.length) { app.multiChoice = syncMultiChoiceState(app.multiChoice, view); return renderMultiChoiceModal({ view, state: app.multiChoice, esc, registerAction: (action) => registerAction(actionRegistry, action) }); }
+  if (view.counterSelection?.cards?.length) { app.counterAllocation = syncCounterState(app.counterAllocation, view); return renderCounterAllocationModal({ view, state: app.counterAllocation, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) }); }
   if (!responses.length) return "";
   if (view.pendingType === "SELECT_POSITION") return renderSummonPositionModal({ view, prompt: interaction.prompt, responses, context: app.summonFlowKind, esc, registerAction: (action) => registerAction(actionRegistry, action) });
   const hasCardChoices = responses.some((action) => Array.isArray(action.selectionCards));
-  const materialChoice = isFusionMaterialSelection(view)
-    || view.selection?.mode === "sum"
-    || Number(view.selection?.minimum) > 1
-    || Number(view.selection?.maximum) > 1;
-  if (materialChoice && view.selection?.candidates?.length) {
-    app.cardSelection = syncCardSelection(app.cardSelection, view);
-    return renderCardSelectionModal({ view, actions: responses, state: app.cardSelection, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) });
-  }
+  const materialChoice = isFusionMaterialSelection(view) || view.selection?.mode === "sum" || Number(view.selection?.minimum) > 1 || Number(view.selection?.maximum) > 1;
+  if (materialChoice && view.selection?.candidates?.length) { app.cardSelection = syncCardSelection(app.cardSelection, view); return renderCardSelectionModal({ view, actions: responses, state: app.cardSelection, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) }); }
   const fieldChoices = responses.filter((action) => action.selectionCards?.length === 1 && action.selectionCards.every((card) => [4, 8].includes(Number(card.location))));
   if (fieldChoices.length && fieldChoices.length === responses.filter((action) => action.selectionCards?.length).length) {
     return renderDecisionBar({ view, model: interaction, actions: responses, directField: true, esc, registerAction: (action) => registerAction(actionRegistry, action) });
   }
-  if (hasCardChoices && view.selection?.candidates?.length) {
-    app.cardSelection = syncCardSelection(app.cardSelection, view);
-    return renderCardSelectionModal({ view, actions: responses, state: app.cardSelection, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) });
-  }
+  if (hasCardChoices && view.selection?.candidates?.length) { app.cardSelection = syncCardSelection(app.cardSelection, view); return renderCardSelectionModal({ view, actions: responses, state: app.cardSelection, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) }); }
   return renderDecisionBar({ view, model: interaction, actions: responses, esc, registerAction: (action) => registerAction(actionRegistry, action) });
 }
 
 function freePriorityPrompt(view) {
   const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
   if (!interaction.freePriority || !interaction.declineAction || !interaction.optionalActions.length) return null;
-  const key = [
-    "free-priority",
-    view?.turn ?? "",
-    view?.phase ?? "",
-    view?.pendingType ?? "",
-    view?.priorityPlayer ?? "",
-    view?.turnPlayer ?? "",
-    view?.decisionCount ?? "",
-    view?.timingWindow?.kind ?? "",
-    view?.timingWindow?.sourceEventIndex ?? "",
-  ].join(":");
+  const key = ["free-priority", view?.turn ?? "", view?.phase ?? "", view?.pendingType ?? "", view?.priorityPlayer ?? "", view?.turnPlayer ?? "", view?.decisionCount ?? "", view?.timingWindow?.kind ?? "", view?.timingWindow?.sourceEventIndex ?? ""].join(":");
   return { key, action: { ...interaction.declineAction, label: "Pasar prioridad" } };
 }
 
 function syncDuelPriorityConfirmation(view) {
   if (app.mode !== "duel" || app.duel?.kind !== "ocgcore" || app.duelStart?.open) return;
   app.duelPriorityPromptKey = null;
-  if (app.duelPhaseConfirmation?.priorityKey) {
-    app.duelPhaseConfirmation = null;
-  }
+  if (app.duelPhaseConfirmation?.priorityKey) app.duelPhaseConfirmation = null;
 }
 
 function dismissDuelPhaseConfirmation() {
@@ -674,55 +646,6 @@ function dismissDuelPhaseConfirmation() {
   if (pending?.priorityKey) app.duelPriorityPromptKey = pending.priorityKey;
   app.duelPhaseConfirmation = null;
   render();
-}
-
-function isDirectFieldSelectionView(view) {
-  const candidates = view?.selection?.candidates ?? [];
-  return view?.pendingType === "SELECT_CARD"
-    && Number(view.selection?.minimum) === 1
-    && Number(view.selection?.maximum) === 1
-    && candidates.length > 0
-    && candidates.every((card) => [4, 8].includes(Number(card.location)));
-}
-
-function pileMarkup(player, kind) {
-  const grave = player.graveyard ?? player.grave ?? [];
-  const isGrave = kind === "grave"; const isExtra = kind === "extra";
-  const count = isGrave ? grave.length : isExtra ? player.extraCount ?? player.extraDeck?.length ?? 0 : player.deckCount ?? player.deck?.length ?? 0;
-  const top = isGrave ? grave.at(-1) : null;
-  const preview = top?.cardId ? getCard(top.cardId) : isExtra ? getCard(player.extraDeck?.find((card) => card?.cardId)?.cardId) : null;
-  const name = preview?.name ?? null;
-  const label = isGrave ? "GY" : isExtra ? "FUSION / EXTRA" : "DECK"; const aria = isGrave ? "Cementerio" : isExtra ? "Fusion o Extra Deck" : "Deck";
-  const isInteractive = isGrave || isExtra; const tag = isInteractive ? "button" : "div"; const attributes = isInteractive ? ` type="button" data-pile="${kind}" data-player-id="${player.id}"` : "";
-  const fallback = isGrave ? "Vacío" : isExtra ? (count ? "Cartas disponibles" : "Vacío") : "Boca abajo";
-  return `<${tag} class="field-pile ${kind}"${attributes} aria-label="${aria}: ${count} cartas"><span>${label}</span><b class="pile-count-badge">${count}</b><small>${name ? esc(name) : fallback}</small></${tag}>`;
-}
-
-function duelistFieldMarkup(player, actions, { opponent = false, priority = false, model = null } = {}) {
-  const classes = `zone-line duelist-field ${opponent ? "opponent-zones" : "player-zones"} ${priority ? "has-priority" : ""}`;
-  const monsterOptions = { motion: app.duelMotion, playerId: player.id, zone: "monster", actions, model };
-  const spellOptions = { motion: app.duelMotion, playerId: player.id, zone: "spell", actions, model };
-  return `<div class="${classes}">
-    <div class="field-aux-column"><div class="field-zone-box"><span>CAMPO</span><div class="field-zone-slot">${zoneMarkup(player.fieldZone ?? [null], { motion: app.duelMotion, actions, model })}</div></div>${pileMarkup(player, "extra")}</div>
-    <div class="field-zone-row monster-row"><span class="zone-row-label">MONSTRUOS</span><div class="zone-slots">${zoneMarkup(player.monsterZone, monsterOptions)}</div></div>
-    <div class="field-zone-row spell-row"><span class="zone-row-label">MAGIAS / TRAMPAS</span><div class="zone-slots zone-backrow">${zoneMarkup(player.spellTrapZone, spellOptions)}</div></div>
-    <div class="field-piles field-pile-column">${pileMarkup(player, "grave")}${pileMarkup(player, "deck")}</div>
-  </div>`;
-}
-
-function eventFeedMarkup(view) {
-  return renderEventDrawer(view, { esc, state: app.duelEventLog });
-}
-
-function presentationMarkup(view = null) { return renderEventCue(app.duelPresentation, { motionLevel: app.settings.motionLevel, elapsed: app.duelPresentation ? Date.now() - app.duelPresentationStartedAt : 0, cardForCode, cardMarkup, esc }); }
-
-function duelBotName(view = null) {
-  return view?.bot?.name ?? app.duelBotProfile?.name ?? "Astra";
-}
-
-function turnStatusMarkup(view, manual = false) {
-  const model = createDuelInteractionModel(view, { manual });
-  return `<div class="turn-status mode-${esc(model.mode)}"><span class="turn-status-orb"></span><div><strong>${esc(model.priorityName)} puede actuar</strong><small>Turno ${view.turn ?? "—"} · ${esc(phaseLabel(view.phase))}</small></div></div>`;
 }
 
 function seriesMarkup() {
@@ -738,27 +661,18 @@ function seriesMarkup() {
   return `<div class="series-panel side-card"><div class="side-title"><span>MATCH BO${match.bestOf}</span><span class="tiny-label">SERIE ${score}</span></div><p>Partida ${match.gameNumber} terminada. Puedes intercambiar cartas antes de continuar.</p><div class="series-swap"><div><strong>ENTRA DESDE SIDE</strong><div class="series-card-list">${side.map((cardId) => `<button type="button" class="text-button ${selectedIn === cardId ? "selected" : ""}" data-series-side-in="${cardId}">${esc(cardLabel(cardId))}</button>`).join("") || `<span class="muted">Sin Side Deck</span>`}</div></div><div><strong>SALE DEL MAIN</strong><div class="series-card-list">${main.slice(0, 24).map((cardId) => `<button type="button" class="text-button ${selectedOut === cardId ? "selected" : ""}" data-series-side-out="${cardId}">${esc(cardLabel(cardId))}</button>`).join("")}</div></div></div>    <div class="series-actions"><button class="ghost-button" data-action="apply-series-swap" ${selectedIn === undefined || selectedOut === undefined ? "disabled" : ""}>Aplicar cambio</button><button class="primary-button" data-action="next-series-game">Siguiente partida</button><button class="text-button" data-action="end-series">Abandonar serie</button></div></div>`;
 }
 
-function duelResultMarkupProxy(view) {
-  return duelResultMarkup(view, { app, esc, duelBotName });
-}
-
-function playerName(player, manual) {
-  return manual ? `JUGADOR ${player.id + 1}` : player.id === 0 ? "TÚ" : duelBotName();
-}
-
+function duelResultMarkupProxy(view) { return duelResultMarkup(view, { app, esc, duelBotName }); }
+function playerName(player, manual) { return manual ? `JUGADOR ${player.id + 1}` : player.id === 0 ? "TÚ" : duelBotName(); }
 function lifePointMarkup(player) {
   const motion = app.lifeMotion.find((entry) => entry.playerId === player.id);
   const state = motion ? (motion.delta < 0 ? "life-loss" : "life-gain") : "";
   const delta = motion ? `${motion.delta > 0 ? "+" : "−"}${Math.abs(motion.delta).toLocaleString("es-ES")}` : "";
   const lpPercent = Math.max(0, Math.min(100, (player.lp / 8000) * 100));
-  const barClass = player.lp <= 2000 ? 'lp-bar-critical' : '';
+  const barClass = player.lp <= 2000 ? "lp-bar-critical" : "";
   return `<div class="lp ${state}"><span>LP</span><b>${player.lp.toLocaleString("es-ES")}</b>${motion ? `<em class="lp-delta">${esc(delta)}</em>` : ""}<div class="lp-bar-track"><div class="lp-bar-fill ${barClass}" style="width:${lpPercent}%"></div></div></div>`;
 }
-
 function cardActionsFor(actions, instance) {
-  return actions.filter((action) => action.cardUid
-    ? sameCardUid(action.cardUid, instance.uid)
-    : action.cardCode !== undefined && instance.runtimeCode !== undefined && String(action.cardCode) === String(instance.runtimeCode));
+  return actions.filter((action) => action.cardUid ? sameCardUid(action.cardUid, instance.uid) : action.cardCode !== undefined && instance.runtimeCode !== undefined && String(action.cardCode) === String(instance.runtimeCode));
 }
 
 function playerHandMarkup(player, selectedUid, manual, actions = [], model = null) {
@@ -824,21 +738,10 @@ function renderResearch() { return renderResearchPage({ CARDS, OCGCORE_CARD_ENTR
 async function resumeSavedDuel(savedState) {
   const loadEpoch = beginDuelLoad(app);
   app.duelAudioSessionKey = `duel:${savedState.seed}:resume`; app.lastDuelResultCueKey = null; duelAudio.startDuelMusic(app.duelAudioSessionKey);
-  clearDuelBotTimer();
-  clearAutomaticPhaseTimer();
+  clearDuelBotTimer(); clearAutomaticPhaseTimer();
   if (lifeMotionTimer) window.clearTimeout(lifeMotionTimer);
-  lifeMotionTimer = null;
-  app.lifeMotion = [];
-  app.selectedCardUid = null;
-  app.inspectedCard = null;
-  app.activeSandboxScenario = null;
-  app.activeSandboxDecks = null;
-  app.duelDeckId = savedState.duelDeckId;
-  app.opponentDeckId = savedState.opponentDeckId;
-  app.playMode = savedState.playMode ?? "bot";
-  app.playBotId = savedState.playBotId ?? UNIVERSAL_BOT_ID;
-  app.pendingLadder = savedState.pendingLadder ?? null;
-  app.duelManual = savedState.duelManual ?? false;
+  lifeMotionTimer = null; app.lifeMotion = []; app.selectedCardUid = null; app.inspectedCard = null; app.activeSandboxScenario = null; app.activeSandboxDecks = null;
+  app.duelDeckId = savedState.duelDeckId; app.opponentDeckId = savedState.opponentDeckId; app.playMode = savedState.playMode ?? "bot"; app.playBotId = savedState.playBotId ?? UNIVERSAL_BOT_ID; app.pendingLadder = savedState.pendingLadder ?? null; app.duelManual = savedState.duelManual ?? false;
 
   const deck = builderDeckById(app.duelDeckId);
   const opponentDeck = builderDeckById(app.opponentDeckId);
@@ -932,18 +835,10 @@ function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckI
   if (fresh) clearActiveDuelState();
   app.duelEventLog = { open: false, search: "", filter: "all", scrollTop: 0 };
   const loadEpoch = beginDuelLoad(app);
-  clearDuelBotTimer();
-  clearAutomaticPhaseTimer();
+  clearDuelBotTimer(); clearAutomaticPhaseTimer();
   if (lifeMotionTimer) window.clearTimeout(lifeMotionTimer);
-  lifeMotionTimer = null;
-  app.lifeMotion = [];
-  app.selectedCardUid = null;
-  app.inspectedCard = null;
-  app.duelMenuOpen = false;
-  app.activeSandboxScenario = null;
-  app.activeSandboxDecks = null;
-  app.duelDeckId = deckId;
-  app.opponentDeckId = opponentDeckId;
+  lifeMotionTimer = null; app.lifeMotion = []; app.selectedCardUid = null; app.inspectedCard = null; app.duelMenuOpen = false;
+  app.activeSandboxScenario = null; app.activeSandboxDecks = null; app.duelDeckId = deckId; app.opponentDeckId = opponentDeckId;
   const deck = deckOverride ? structuredClone(deckOverride) : builderDeckById(deckId);
   const opponentDeck = opponentDeckOverride ? structuredClone(opponentDeckOverride) : builderDeckById(opponentDeckId);
   if (ladder && ladder.mode !== "practice" && !ladder.match && !ladder.isRankedMatch) {
@@ -972,18 +867,10 @@ function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckI
       // A user-created ladder entry may not have a catalog profile yet.
     }
   }
-  app.duelLoading = true;
-  app.duelError = null;
-  app.selectedCardUid = null;
-  app.duelMotion = null;
-  app.duelActionOptionsOpen = false;
-  app.duelPhaseConfirmation = null;
-  app.duelPriorityPromptKey = null;
-  app.sortOrder = { key: null, order: [] };
-  app.multiChoice = { key: null, indices: [] };
-  app.counterAllocation = { key: null, counters: [] };
-  app.duelFeedbackSeen = new Set();
-  app.resultDismissed = false;
+  app.duelLoading = true; app.duelError = null; app.selectedCardUid = null; app.duelMotion = null; app.duelActionOptionsOpen = false;
+  app.duelPhaseConfirmation = null; app.duelPriorityPromptKey = null; app.sortOrder = { key: null, order: [] };
+  app.multiChoice = { key: null, indices: [] }; app.counterAllocation = { key: null, counters: [] };
+  app.duelFeedbackSeen = new Set(); app.resultDismissed = false;
   const startingPlayer = flipCoinStartingPlayer();
   app.duelStart = { open: true, winner: startingPlayer, side: startingPlayer === 0 ? "CARA" : "CRUZ", configured: false };
   setDuelPresentation(null);
@@ -1322,7 +1209,7 @@ function bindEvents() {
   on(document.querySelector("[data-motion-level]"), "change", (event) => { app.settings.motionLevel = event.target.value; app.settings.reducedMotion = app.settings.motionLevel !== "full"; persistSettings(); render(); });
   onAll("[data-setting]", "change", (event) => { const input = event.currentTarget; app.settings[input.dataset.setting] = input.checked; app.boardTilt = app.settings.boardTilt; persistSettings(); render(); });
   onAll("[data-sfx-volume], [data-duel-volume]", "input", (event) => { setAudioVolume(event.currentTarget.value); });
-  on(document.querySelector("[data-settings-reset]"), "click", () => { app.settings = { motionLevel: "full", reducedMotion: false, confirmActions: true, boardTilt: false, sfxEnabled: true, sfxVolume: 35, compactMenus: true, touchControls: true, highContrast: false, largeText: false }; app.boardTilt = false; persistSettings(); app.toast = "Preferencias restauradas."; render(); });
+  on(document.querySelector("[data-settings-reset]"), "click", () => { app.settings = { motionLevel: "full", reducedMotion: false, confirmActions: true, boardTilt: false, sfxEnabled: true, sfxVolume: 35, compactMenus: true, touchControls: false, highContrast: false, largeText: false }; app.boardTilt = false; persistSettings(); app.toast = "Preferencias restauradas."; render(); });
   onAll("[data-action-id]", "click", (event) => {
     const button = event.currentTarget;
     const action = actionRegistry.get(button.dataset.actionId);
@@ -1350,7 +1237,6 @@ function bindEvents() {
   });
   onAll("[data-action]", "click", (event) => handleAction(event.currentTarget.dataset.action, event.currentTarget));
   bindRankedPickerEvents({ on });
-  bindOnboardingEvents({ on });
   bindDeckBuilderEvents({ app, render, validateDeck, copyLimit, cardLabel, builderZoneLabel, persistBuilderDraft, builderDeckById, on, onAll });
 
   // Eventos del Modo Prueba / Sandbox delegados a sandbox-driver
@@ -1404,7 +1290,7 @@ function handleSecondaryAction(action, element = null) {
   if (action === "close-ranked-result") { app.rankedResultModal = { open: false }; navigate("ladder"); render(); return; }
   if (action === "open-play-deck-picker") { app.deckPickerContext = "play"; app.rankedDeckPicker = { open: true }; render(); return; }
   if (action === "open-ranked-deck-picker") { app.deckPickerContext = "ranked"; app.rankedDeckPicker = { open: true }; render(); return; }
-  if (action === "close-ranked-deck-picker") { app.rankedDeckPicker = { open: false }; render(); return; }
+  if (action === "close-ranked-deck-picker") { app.rankedDeckPicker = { open: false }; delete app.deckPickerContext; render(); return; }
   if (action === "select-ranked-deck") {
     const deckId = element?.dataset?.deckId;
     if (deckId) {
@@ -1413,18 +1299,17 @@ function handleSecondaryAction(action, element = null) {
         app.duelDeckId = deckId;
         persistPlaySelection();
         app.rankedDeckPicker = { open: false };
-        app.toast = `Mazo seleccionado para duelo: ${builderDeckById(deckId).name}.`;
-        render();
+        delete app.deckPickerContext;
+        app.toast = `Mazo seleccionado para Partida Normal: ${builderDeckById(deckId).name}.`;
       } else {
-        if (app.ladder?.player) app.ladder.player.rankedDeckId = deckId;
+        app.ladder.player.rankedDeckId = deckId;
         app.duelDeckId = deckId;
-        app.playDeckId = deckId;
-        persistPlaySelection();
-        if (app.ladder) saveLocalState(app.ladder);
+        saveLocalState(app.ladder);
         app.rankedDeckPicker = { open: false };
+        delete app.deckPickerContext;
         app.toast = `Mazo seleccionado para Ranked: ${builderDeckById(deckId).name}.`;
-        render();
       }
+      render();
     }
     return;
   }
@@ -1493,15 +1378,8 @@ function abandonActiveRankedMatchIfNeeded() {
         card.classList.toggle("selected", isTarget);
         let pill = card.querySelector(".onboarding-selected-pill");
         if (isTarget) {
-          if (!pill) {
-            pill = document.createElement("span");
-            pill.className = "onboarding-selected-pill";
-            pill.textContent = "✓ ELEGIDO";
-            card.appendChild(pill);
-          }
-        } else {
-          pill?.remove();
-        }
+          if (!pill) { pill = document.createElement("span"); pill.className = "onboarding-selected-pill"; pill.textContent = "✓ ELEGIDO"; card.appendChild(pill); }
+        } else { pill?.remove(); }
       });
     }
     return;
@@ -1510,18 +1388,10 @@ function abandonActiveRankedMatchIfNeeded() {
     const inputEl = document.getElementById("onboarding-name-input");
     const val = (inputEl ? inputEl.value : (app.onboardingDraftName ?? "")).trim() || "Duelista";
     const selectedDeck = app.onboardingDeckId ?? "chaos-turbo";
-    app.ladder.player.name = val;
-    app.ladder.player.nameSet = true;
-    app.ladder.player.rankedDeckId = selectedDeck;
-    app.playDeckId = selectedDeck;
-    app.duelDeckId = selectedDeck;
-    persistPlaySelection();
-    delete app.onboardingDraftName;
-    saveLocalState(app.ladder);
-    app.onboardingOpen = false;
-    app.toast = `¡Bienvenido, ${val}! Tu leyenda ha comenzado.`;
-    render();
-    return;
+    app.ladder.player.name = val; app.ladder.player.nameSet = true; app.ladder.player.rankedDeckId = selectedDeck;
+    app.playDeckId = selectedDeck; app.duelDeckId = selectedDeck; persistPlaySelection();
+    delete app.onboardingDraftName; saveLocalState(app.ladder); app.onboardingOpen = false;
+    app.toast = `¡Bienvenido, ${val}! Tu leyenda ha comenzado.`; render(); return;
   }
   if (action === "open-play") { abandonActiveRankedMatchIfNeeded(); navigate("play"); return; } if (action === "open-sandbox") { abandonActiveRankedMatchIfNeeded(); navigate("sandbox"); return; } if (action === "open-decks") { abandonActiveRankedMatchIfNeeded(); navigate("deck-builder"); return; } if (action === "open-settings") { abandonActiveRankedMatchIfNeeded(); navigate("settings"); return; } if (action === "toggle-fullscreen") { void toggleFullscreen(); return; }
   if (action === "start-universal-duel") {
@@ -1581,39 +1451,17 @@ const unlockDuelAudio = () => { void duelAudio.unlock(); };
 window.addEventListener("pointerdown", unlockDuelAudio, { once: true, passive: true, capture: true });
 window.addEventListener("keydown", unlockDuelAudio, { once: true, capture: true });
 window.addEventListener("keydown", (event) => {
-  const tagName = event.target?.tagName;
-  if (["INPUT", "TEXTAREA", "SELECT"].includes(tagName)) return;
+  if (["INPUT", "TEXTAREA", "SELECT"].includes(event.target?.tagName)) return;
   if (event.key === "Escape") {
-    if (app.duelMenuOpen) {
-      app.duelMenuOpen = false;
-      render();
-      document.querySelector("[data-duel-menu-toggle]")?.focus?.({ preventScroll: true });
-      return;
-    }
-    if (app.menuOpen) {
-      app.menuOpen = false;
-      render();
-      document.querySelector("[data-menu-toggle]")?.focus();
-      return;
-    }
-    if (app.duelPhaseConfirmation) {
-      dismissDuelPhaseConfirmation();
-      return;
-    }
-    if (app.selectedCardUid !== null || app.inspectedCard !== null) {
-      app.selectedCardUid = null;
-      app.inspectedCard = null;
-      render();
-      return;
-    }
+    if (app.duelMenuOpen) { app.duelMenuOpen = false; render(); document.querySelector("[data-duel-menu-toggle]")?.focus?.({ preventScroll: true }); return; }
+    if (app.menuOpen) { app.menuOpen = false; render(); document.querySelector("[data-menu-toggle]")?.focus(); return; }
+    if (app.duelPhaseConfirmation) { dismissDuelPhaseConfirmation(); return; }
+    if (app.selectedCardUid !== null || app.inspectedCard !== null) { app.selectedCardUid = null; app.inspectedCard = null; render(); return; }
     if (app.mode === "duel" && app.duel) {
       const view = currentDuelView();
       if (view) {
         const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
-        if (interaction.declineAction) {
-          executeDuelAction(interaction.declineAction);
-          return;
-        }
+        if (interaction.declineAction) { executeDuelAction(interaction.declineAction); return; }
       }
     }
     return;
@@ -1623,36 +1471,19 @@ window.addEventListener("keydown", (event) => {
       const view = currentDuelView();
       if (!view) return;
       const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
-      if (interaction.freePriority && interaction.declineAction) {
-        event.preventDefault();
-        executeDuelAction(interaction.declineAction);
-        return;
-      }
-      if (interaction.advanceAction) {
-        event.preventDefault();
-        executeDuelAction(interaction.advanceAction);
-        return;
-      }
+      if (interaction.freePriority && interaction.declineAction) { event.preventDefault(); executeDuelAction(interaction.declineAction); return; }
+      if (interaction.advanceAction) { event.preventDefault(); executeDuelAction(interaction.advanceAction); return; }
     }
   }
 });
-window.addEventListener("error", (event) => {
-  console.error("[GOAT Lab Global Error]", event.error || event.message);
-});
-window.addEventListener("unhandledrejection", (event) => {
-  console.warn("[GOAT Lab Unhandled Rejection]", event.reason);
-});
+window.addEventListener("error", (event) => console.error("[GOAT Lab Global Error]", event.error || event.message));
+window.addEventListener("unhandledrejection", (event) => console.warn("[GOAT Lab Unhandled Rejection]", event.reason));
 document.addEventListener("visibilitychange", () => {
   duelAudio.setHidden(document.hidden);
-  if (document.hidden) {
-    if (app.mode === "duel" && app.duel) saveActiveDuelState();
-  } else {
-    if (app.mode === "duel") render();
-  }
+  if (document.hidden) { if (app.mode === "duel" && app.duel) saveActiveDuelState(); }
+  else if (app.mode === "duel") render();
 });
-const handleGameQuit = () => {
-  if (app.mode === "duel" && app.duel) saveActiveDuelState();
-};
+const handleGameQuit = () => { if (app.mode === "duel" && app.duel) saveActiveDuelState(); };
 window.addEventListener("pagehide", handleGameQuit);
 window.addEventListener("beforeunload", handleGameQuit);
 if (!window.location.hash) window.history.replaceState({ mode: app.mode }, "", hashForMode(app.mode)); render();
