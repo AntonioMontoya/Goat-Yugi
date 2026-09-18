@@ -44,6 +44,7 @@ export function renderPlayLobbyPage({
   const playerDeckCard = `
     <div class="side-card deck-pick casual-deck-showcase-panel">
       <div class="side-title"><span>MAZO JUGADOR 1</span><span class="tiny-label">${selectedDeck.main?.length ?? 40} CARTAS</span></div>
+      <select id="play-deck" aria-label="Seleccionar mazo del jugador uno">${deckSelectMarkup(app.playDeckId)}</select>
       <div class="hero-deck-showcase in-lobby">
         <div class="hero-deck-art-frame">
           <img class="hero-deck-thumb" src="${esc(currentDeckArt)}" alt="${esc(currentRepCard?.name ?? selectedDeck.name)}" loading="lazy" />
@@ -55,8 +56,8 @@ export function renderPlayLobbyPage({
             <span class="deck-cards-count">${selectedDeck.main?.length ?? 40} cartas</span>
           </div>
           <span class="hero-deck-meta-rep">★ ${esc(currentRepCard?.name ?? "Insignia")}</span>
-          <button type="button" class="ghost-button mini hero-deck-switch-btn" data-action="open-ranked-deck-picker">
-            🔄 Cambiar mazo
+          <button type="button" class="ghost-button mini hero-deck-switch-btn" data-action="open-play-deck-picker">
+            🔄 Catálogo visual
           </button>
         </div>
       </div>

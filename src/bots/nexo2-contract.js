@@ -49,9 +49,9 @@ export function isNexo2MatchupAllowed(playerDeckId, opponentDeckId) {
 }
 
 export function nexo2DeckLabel(deckId) {
-  if (isNexo2Deck(deckId)) return "Mazo del catálogo universal Nexo 2";
-  if (isNexo2OpponentDeck(deckId)) return "Mazo de enfrentamiento Nexo 2";
-  return "Fuera del piloto Nexo 2";
+  if (isNexo2Deck(deckId)) return "Mazo del catálogo universal Nexo 3";
+  if (isNexo2OpponentDeck(deckId)) return "Mazo de enfrentamiento Nexo 3";
+  return "Fuera del piloto Nexo 3";
 }
 
 export {

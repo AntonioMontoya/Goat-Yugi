@@ -107,10 +107,40 @@ button:active,
 .response-option:active,
 .menu-card:active,
 .mode-card:active {
-  transform: scale(0.96) !important;
+  transform: scale(0.96);
   filter: brightness(1.25);
   transition: transform 60ms ease-out;
 }
+
+/* Preserve alignment for buttons centered with translateX(-50%) or flipped with scaleX(-1) */
+.play-page .start-card .primary-button.wide:active,
+.play-page .start-card .primary-button:active {
+  transform: translateX(-50%) scale(0.96) !important;
+}
+
+.carousel-prev:active {
+  transform: scaleX(-1) scale(0.96) !important;
+}
+
+.sprite-menu-item[data-slot="0"]:active {
+  transform: translateX(-50%) scale(0.96) !important;
+}
+
+.sprite-carousel-shell,
+.sprite-carousel {
+  touch-action: pan-y pinch-zoom;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.sprite-carousel {
+  cursor: grab;
+}
+
+.sprite-carousel:active {
+  cursor: grabbing;
+}
+
 
 /* --------------------------------------------------------------------------
    Duel Topbar & Header Remaster for iPad
@@ -1466,3 +1496,53 @@ button:active,
   justify-content: center !important; cursor: pointer !important; touch-action: manipulation !important;
 }
 .ipad-edition .sprite-menu-item { cursor: pointer !important; touch-action: manipulation !important; -webkit-tap-highlight-color: transparent !important; }
+
+/* --------------------------------------------------------------------------
+   Touch Controls Mode (.touch-controls) - Ergonomic Polish across all menus
+   -------------------------------------------------------------------------- */
+.touch-controls button,
+.touch-controls select,
+.touch-controls .nav-item,
+.touch-controls .builder-zone-tab {
+  min-height: 48px;
+  touch-action: manipulation;
+}
+
+.touch-controls .setting-row {
+  padding: 16px 8px;
+  min-height: 56px;
+}
+
+.touch-controls .setting-row input[type="checkbox"] {
+  width: 50px;
+  height: 28px;
+  cursor: pointer;
+  accent-color: var(--ipad-gold);
+}
+
+.touch-controls input[type="range"] {
+  height: 36px;
+  touch-action: manipulation;
+}
+
+.touch-controls input[type="range"]::-webkit-slider-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ipad-gold);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+.touch-controls .builder-card-quick-btn {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 18px !important;
+}
+
+.touch-controls select {
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+

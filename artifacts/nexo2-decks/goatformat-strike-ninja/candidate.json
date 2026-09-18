@@ -1,7 +1,7 @@
 {
   "id": "nexo2-pilot",
   "botId": "nexo2-pilot",
-  "name": "Nexo 2 [goatformat-strike-ninja]",
+  "name": "Nexo 3 [goatformat-strike-ninja]",
   "algorithm": "ocgcore-public-belief-policy-value-v1",
   "deckId": "goatformat-strike-ninja",
   "profile": "goatformat-strike-ninja",

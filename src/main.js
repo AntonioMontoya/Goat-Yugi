@@ -23,7 +23,7 @@ import { loadBotRegistry, saveBotRegistry } from "./storage/bot-registry.js";
 import { cardForCode, createOcgcoreSession } from "./engine/ocgcore-session.js";
 import { OCGCORE_ASSET_SOURCE, OCGCORE_CARD_ENTRIES, OCGCORE_MISSING_SCRIPTS } from "./data/ocgcore-assets.js";
 import { bindMenuKeyboard, hashForMode, menuMarkup, modeFromHash } from "./ui/navigation.js";
-import { initSpriteMenu, destroySpriteMenu } from "./ui/sprite-menu.js"; import { renderHomePage } from "./ui/home-page.js"; import { installMenuScrollNavigation } from "./ui/menu-scroll.js"; import { renderProfilePage, renderOnboardingModal } from "./ui/profile-page.js";
+import { initSpriteMenu, destroySpriteMenu } from "./ui/sprite-menu.js"; import { renderHomePage } from "./ui/home-page.js"; import { installMenuScrollNavigation } from "./ui/menu-scroll.js"; import { renderProfilePage, renderOnboardingModal, bindOnboardingEvents } from "./ui/profile-page.js";
 import { initSubmenuAtmosphere } from "./ui/submenu-atmosphere.js";
 import { initDuelAtmosphere } from "./ui/duel-atmosphere.js";
 import { morphDom } from "./ui/dom-morph.js";
@@ -663,15 +663,10 @@ function freePriorityPrompt(view) {
 
 function syncDuelPriorityConfirmation(view) {
   if (app.mode !== "duel" || app.duel?.kind !== "ocgcore" || app.duelStart?.open) return;
-  const prompt = freePriorityPrompt(view);
-  if (!prompt) {
-    app.duelPriorityPromptKey = null;
-    if (app.duelPhaseConfirmation?.priorityKey) app.duelPhaseConfirmation = null;
-    return;
+  app.duelPriorityPromptKey = null;
+  if (app.duelPhaseConfirmation?.priorityKey) {
+    app.duelPhaseConfirmation = null;
   }
-  if (app.duelPriorityPromptKey === prompt.key) return;
-  app.duelPriorityPromptKey = prompt.key;
-  app.duelPhaseConfirmation = { action: prompt.action, label: "Pasar prioridad", priorityKey: prompt.key };
 }
 
 function dismissDuelPhaseConfirmation() {
@@ -930,7 +925,7 @@ function startDuel({ deckId = app.duelDeckId, opponentDeckId = app.opponentDeckI
   if (requestedBotId === NEXO2_BOT_ID && !ladder?.isRankedMatch && !isNexo2MatchupAllowed(deckId, opponentDeckId)) {
     app.playBotId = UNIVERSAL_BOT_ID;
     persistPlaySelection();
-    app.toast = `Nexo 2 necesita dos mazos del catálogo universal (${NEXO2_ALL_DECK_IDS.length} disponibles).`;
+    app.toast = `Nexo 3 necesita dos mazos del catálogo universal (${NEXO2_ALL_DECK_IDS.length} disponibles).`;
     if (app.mode === "play") render();
     return;
   }
@@ -1213,7 +1208,7 @@ function bindEvents() {
     const nextDeckId = event.target.value;
     if (app.playBotId === NEXO2_BOT_ID && !isNexo2OpponentDeck(nextDeckId)) {
       forceNexo2PilotDecks();
-      app.toast = `Nexo 2 permite ${NEXO2_ALL_OPPONENT_DECK_IDS.length} mazos rivales del catálogo.`;
+      app.toast = `Nexo 3 permite ${NEXO2_ALL_OPPONENT_DECK_IDS.length} mazos rivales del catálogo.`;
     } else app.playDeckId = nextDeckId;
     app.duelDeckId = app.playDeckId;
     persistPlaySelection();
@@ -1223,7 +1218,7 @@ function bindEvents() {
     const nextDeckId = event.target.value;
     if (app.playBotId === NEXO2_BOT_ID && !isNexo2Deck(nextDeckId)) {
       forceNexo2PilotDecks();
-      app.toast = `Nexo 2 puede utilizar los ${NEXO2_ALL_DECK_IDS.length} mazos del catálogo.`;
+      app.toast = `Nexo 3 puede utilizar los ${NEXO2_ALL_DECK_IDS.length} mazos del catálogo.`;
     } else app.playOpponentDeckId = nextDeckId;
     app.opponentDeckId = app.playOpponentDeckId;
     persistPlaySelection();
@@ -1235,8 +1230,8 @@ function bindEvents() {
       const changed = forceNexo2PilotDecks();
       app.playBotId = requested;
       app.toast = changed
-        ? `Nexo 2 seleccionado: puedes usar cualquiera de los ${NEXO2_ALL_DECK_IDS.length} mazos contra cualquiera del catálogo.`
-        : `Nexo 2 seleccionado. Elige dos mazos del catálogo universal (${NEXO2_ALL_DECK_IDS.length}).`;
+        ? `Nexo 3 seleccionado: puedes usar cualquiera de los ${NEXO2_ALL_DECK_IDS.length} mazos contra cualquiera del catálogo.`
+        : `Nexo 3 seleccionado. Elige dos mazos del catálogo universal (${NEXO2_ALL_DECK_IDS.length}).`;
     } else app.playBotId = requested;
     persistPlaySelection();
     render();
@@ -1276,6 +1271,34 @@ function bindEvents() {
     document.querySelector("[data-testid='card-inspector']")?.remove();
     document.querySelectorAll(".board-card-button.selected, .hand-card-button.selected").forEach((card) => card.classList.remove("selected"));
   });
+  on(document.querySelector(".duel-page"), "contextmenu", (event) => {
+    if (app.mode !== "duel" || !app.duel) return;
+    event.preventDefault();
+    if (app.selectedCardUid !== null || app.inspectedCard !== null) {
+      app.selectedCardUid = null;
+      app.inspectedCard = null;
+      document.querySelectorAll("[data-testid='card-action-popover']").forEach((popover) => popover.remove());
+      document.querySelector("[data-testid='card-inspector']")?.remove();
+      document.querySelectorAll(".board-card-button.selected, .hand-card-button.selected").forEach((card) => card.classList.remove("selected"));
+      render();
+      return;
+    }
+    if (app.duelPhaseConfirmation) {
+      dismissDuelPhaseConfirmation();
+      return;
+    }
+    const view = currentDuelView();
+    if (!view) return;
+    const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
+    if (interaction.declineAction) {
+      executeDuelAction(interaction.declineAction);
+      return;
+    }
+    if (interaction.freePriority && interaction.advanceAction) {
+      executeDuelAction(interaction.advanceAction);
+      return;
+    }
+  });
   onAll("[data-action-options-reveal]", "click", () => { app.duelActionOptionsOpen = true; render(); });
   on(document.querySelector("[data-phase-advance-cancel]"), "click", () => { dismissDuelPhaseConfirmation(); });
   on(document.querySelector("[data-phase-advance-confirm]"), "click", () => { const pending = app.duelPhaseConfirmation; app.duelPhaseConfirmation = null; if (pending?.action) executeDuelAction(pending.action); else render(); });
@@ -1299,14 +1322,15 @@ function bindEvents() {
   on(document.querySelector("[data-motion-level]"), "change", (event) => { app.settings.motionLevel = event.target.value; app.settings.reducedMotion = app.settings.motionLevel !== "full"; persistSettings(); render(); });
   onAll("[data-setting]", "change", (event) => { const input = event.currentTarget; app.settings[input.dataset.setting] = input.checked; app.boardTilt = app.settings.boardTilt; persistSettings(); render(); });
   onAll("[data-sfx-volume], [data-duel-volume]", "input", (event) => { setAudioVolume(event.currentTarget.value); });
-  on(document.querySelector("[data-settings-reset]"), "click", () => { app.settings = { motionLevel: "full", reducedMotion: false, confirmActions: true, boardTilt: false, sfxEnabled: true, sfxVolume: 35, compactMenus: true, touchControls: false, highContrast: false, largeText: false }; app.boardTilt = false; persistSettings(); app.toast = "Preferencias restauradas."; render(); });
+  on(document.querySelector("[data-settings-reset]"), "click", () => { app.settings = { motionLevel: "full", reducedMotion: false, confirmActions: true, boardTilt: false, sfxEnabled: true, sfxVolume: 35, compactMenus: true, touchControls: true, highContrast: false, largeText: false }; app.boardTilt = false; persistSettings(); app.toast = "Preferencias restauradas."; render(); });
   onAll("[data-action-id]", "click", (event) => {
     const button = event.currentTarget;
     const action = actionRegistry.get(button.dataset.actionId);
     if (!action || !app.duel) return;
     const view = currentDuelView();
     const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
-    if (button.classList.contains("phase-command") && interaction.optionalActions.length) {
+    const isDeclineOrPass = action.actionKind === "decline" || action.coreResponse?.index === null;
+    if (button.classList.contains("phase-command") && interaction.optionalActions.length && !interaction.freePriority && !isDeclineOrPass) {
       const priorityPrompt = interaction.freePriority ? freePriorityPrompt(view) : null;
       app.duelPhaseConfirmation = {
         action,
@@ -1326,6 +1350,7 @@ function bindEvents() {
   });
   onAll("[data-action]", "click", (event) => handleAction(event.currentTarget.dataset.action, event.currentTarget));
   bindRankedPickerEvents({ on });
+  bindOnboardingEvents({ on });
   bindDeckBuilderEvents({ app, render, validateDeck, copyLimit, cardLabel, builderZoneLabel, persistBuilderDraft, builderDeckById, on, onAll });
 
   // Eventos del Modo Prueba / Sandbox delegados a sandbox-driver
@@ -1377,14 +1402,29 @@ function handleSecondaryAction(action, element = null) {
   if (action === "accept-ranked-match") { acceptRankedMatch({ app, render }); return; }
   if (action === "enter-ranked-duel") { enterRankedDuel({ app, startDuel, navigate }); return; }
   if (action === "close-ranked-result") { app.rankedResultModal = { open: false }; navigate("ladder"); render(); return; }
-  if (action === "open-ranked-deck-picker") { app.rankedDeckPicker = { open: true }; render(); return; }
+  if (action === "open-play-deck-picker") { app.deckPickerContext = "play"; app.rankedDeckPicker = { open: true }; render(); return; }
+  if (action === "open-ranked-deck-picker") { app.deckPickerContext = "ranked"; app.rankedDeckPicker = { open: true }; render(); return; }
   if (action === "close-ranked-deck-picker") { app.rankedDeckPicker = { open: false }; render(); return; }
   if (action === "select-ranked-deck") {
     const deckId = element?.dataset?.deckId;
     if (deckId) {
-      app.ladder.player.rankedDeckId = deckId; app.duelDeckId = deckId; app.playDeckId = deckId;
-      persistPlaySelection(); saveLocalState(app.ladder); app.rankedDeckPicker = { open: false };
-      app.toast = `Mazo seleccionado para Ranked: ${builderDeckById(deckId).name}.`; render();
+      if (app.deckPickerContext === "play") {
+        app.playDeckId = deckId;
+        app.duelDeckId = deckId;
+        persistPlaySelection();
+        app.rankedDeckPicker = { open: false };
+        app.toast = `Mazo seleccionado para duelo: ${builderDeckById(deckId).name}.`;
+        render();
+      } else {
+        if (app.ladder?.player) app.ladder.player.rankedDeckId = deckId;
+        app.duelDeckId = deckId;
+        app.playDeckId = deckId;
+        persistPlaySelection();
+        if (app.ladder) saveLocalState(app.ladder);
+        app.rankedDeckPicker = { open: false };
+        app.toast = `Mazo seleccionado para Ranked: ${builderDeckById(deckId).name}.`;
+        render();
+      }
     }
     return;
   }
@@ -1445,13 +1485,43 @@ function abandonActiveRankedMatchIfNeeded() {
   }
   if (action === "onboarding-select-deck") {
     const inputEl = document.getElementById("onboarding-name-input"); if (inputEl) app.onboardingDraftName = inputEl.value;
-    const dId = element?.dataset?.deckId; if (dId) { app.onboardingDeckId = dId; render(); } return;
+    const dId = element?.dataset?.deckId;
+    if (dId) {
+      app.onboardingDeckId = dId;
+      document.querySelectorAll(".onboarding-deck-card").forEach((card) => {
+        const isTarget = card.dataset.deckId === dId;
+        card.classList.toggle("selected", isTarget);
+        let pill = card.querySelector(".onboarding-selected-pill");
+        if (isTarget) {
+          if (!pill) {
+            pill = document.createElement("span");
+            pill.className = "onboarding-selected-pill";
+            pill.textContent = "✓ ELEGIDO";
+            card.appendChild(pill);
+          }
+        } else {
+          pill?.remove();
+        }
+      });
+    }
+    return;
   }
   if (action === "onboarding-confirm") {
     const inputEl = document.getElementById("onboarding-name-input");
     const val = (inputEl ? inputEl.value : (app.onboardingDraftName ?? "")).trim() || "Duelista";
-    app.ladder.player.name = val; app.ladder.player.nameSet = true; app.ladder.player.rankedDeckId = app.onboardingDeckId ?? "chaos-turbo"; delete app.onboardingDraftName;
-    saveLocalState(app.ladder); app.onboardingOpen = false; app.toast = `¡Bienvenido, ${val}! Tu leyenda ha comenzado.`; render(); return;
+    const selectedDeck = app.onboardingDeckId ?? "chaos-turbo";
+    app.ladder.player.name = val;
+    app.ladder.player.nameSet = true;
+    app.ladder.player.rankedDeckId = selectedDeck;
+    app.playDeckId = selectedDeck;
+    app.duelDeckId = selectedDeck;
+    persistPlaySelection();
+    delete app.onboardingDraftName;
+    saveLocalState(app.ladder);
+    app.onboardingOpen = false;
+    app.toast = `¡Bienvenido, ${val}! Tu leyenda ha comenzado.`;
+    render();
+    return;
   }
   if (action === "open-play") { abandonActiveRankedMatchIfNeeded(); navigate("play"); return; } if (action === "open-sandbox") { abandonActiveRankedMatchIfNeeded(); navigate("sandbox"); return; } if (action === "open-decks") { abandonActiveRankedMatchIfNeeded(); navigate("deck-builder"); return; } if (action === "open-settings") { abandonActiveRankedMatchIfNeeded(); navigate("settings"); return; } if (action === "toggle-fullscreen") { void toggleFullscreen(); return; }
   if (action === "start-universal-duel") {
@@ -1511,25 +1581,59 @@ const unlockDuelAudio = () => { void duelAudio.unlock(); };
 window.addEventListener("pointerdown", unlockDuelAudio, { once: true, passive: true, capture: true });
 window.addEventListener("keydown", unlockDuelAudio, { once: true, capture: true });
 window.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape") return;
   const tagName = event.target?.tagName;
   if (["INPUT", "TEXTAREA", "SELECT"].includes(tagName)) return;
-  if (app.duelMenuOpen) {
-    app.duelMenuOpen = false;
-    render();
-    document.querySelector("[data-duel-menu-toggle]")?.focus?.({ preventScroll: true });
+  if (event.key === "Escape") {
+    if (app.duelMenuOpen) {
+      app.duelMenuOpen = false;
+      render();
+      document.querySelector("[data-duel-menu-toggle]")?.focus?.({ preventScroll: true });
+      return;
+    }
+    if (app.menuOpen) {
+      app.menuOpen = false;
+      render();
+      document.querySelector("[data-menu-toggle]")?.focus();
+      return;
+    }
+    if (app.duelPhaseConfirmation) {
+      dismissDuelPhaseConfirmation();
+      return;
+    }
+    if (app.selectedCardUid !== null || app.inspectedCard !== null) {
+      app.selectedCardUid = null;
+      app.inspectedCard = null;
+      render();
+      return;
+    }
+    if (app.mode === "duel" && app.duel) {
+      const view = currentDuelView();
+      if (view) {
+        const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
+        if (interaction.declineAction) {
+          executeDuelAction(interaction.declineAction);
+          return;
+        }
+      }
+    }
     return;
   }
-  if (app.menuOpen) {
-    app.menuOpen = false;
-    render();
-    document.querySelector("[data-menu-toggle]")?.focus();
-  } else if (app.duelPhaseConfirmation) {
-    dismissDuelPhaseConfirmation();
-  } else if (app.selectedCardUid !== null || app.inspectedCard !== null) {
-    app.selectedCardUid = null;
-    app.inspectedCard = null;
-    render();
+  if (event.key === " " || event.code === "Space") {
+    if (app.mode === "duel" && app.duel) {
+      const view = currentDuelView();
+      if (!view) return;
+      const interaction = createDuelInteractionModel(view, { manual: Boolean(app.duelManual || view?.manual) });
+      if (interaction.freePriority && interaction.declineAction) {
+        event.preventDefault();
+        executeDuelAction(interaction.declineAction);
+        return;
+      }
+      if (interaction.advanceAction) {
+        event.preventDefault();
+        executeDuelAction(interaction.advanceAction);
+        return;
+      }
+    }
   }
 });
 window.addEventListener("error", (event) => {

@@ -62,6 +62,66 @@ function codeOf(card) {
   return Number(card?.runtimeCode ?? card?.code ?? 0);
 }
 
+// OCGCore uses LOCATION_MZONE=4 and LOCATION_SZONE=8.  A field slot is
+// stable while a public card is turned face-down, so it is enough to retain
+// the identity by controller, location and sequence.  This memory is only
+// updated from cards that were actually public; an initially set monster
+// remains unknown.
+const PUBLIC_FIELD_LOCATIONS = new Set([4, 8]);
+
+function opponentFieldSlotKey(card) {
+  const location = Number(card?.location);
+  const controller = Number(card?.controller);
+  if (!PUBLIC_FIELD_LOCATIONS.has(location) || !Number.isFinite(controller)) return null;
+  const sequence = Number(card?.sequence);
+  return `${controller}:${location}:${Number.isFinite(sequence) ? sequence : 0}`;
+}
+
+function opponentFieldCards(observation = {}) {
+  return [...(observation.opponentMonsters ?? []), ...(observation.opponentBackrow ?? [])].filter(Boolean);
+}
+
+/** Retains public opponent identities across a later face-down transition. */
+export function updateOpponentFieldMemory(previous = {}, observation = {}) {
+  const next = { ...previous };
+  const occupied = new Set();
+  for (const card of opponentFieldCards(observation)) {
+    const key = opponentFieldSlotKey(card);
+    if (!key) continue;
+    occupied.add(key);
+    const code = codeOf(card);
+    const publicNow = card.known !== false && (card.faceUp !== false || card.public === true);
+    if (publicNow && code > 0) next[key] = { runtimeCode: code, name: card.name ?? null };
+  }
+  for (const key of Object.keys(next)) if (key.includes(":") && !occupied.has(key)) delete next[key];
+  return next;
+}
+
+/** Re-attaches only identities already exposed in public information. */
+export function restoreRememberedOpponentFieldCards(observation = {}, memory = {}) {
+  const restore = (cards = []) => cards.map((card) => {
+    const key = opponentFieldSlotKey(card);
+    const remembered = key ? memory[key] : null;
+    const code = codeOf(remembered);
+    if (!remembered || code <= 0 || card?.known !== false) return card;
+    return {
+      ...card,
+      runtimeCode: code,
+      name: remembered.name ?? card.name ?? cardNameLookup().get(code) ?? null,
+      known: true,
+      remembered: true,
+      // The identity is known from history, but the card is still face-down
+      // and must not be treated as currently face-up/public on the table.
+      public: false,
+    };
+  });
+  return {
+    ...observation,
+    opponentMonsters: restore(observation.opponentMonsters),
+    opponentBackrow: restore(observation.opponentBackrow),
+  };
+}
+
 function visibleOpponentCards(observation = {}) {
   return [
     ...(observation.opponentMonsters ?? []),

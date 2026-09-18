@@ -26,12 +26,12 @@ export function persistSavedDecks(decks) {
 }
 
 export function loadSettings() {
-  const defaults = { motionLevel: "full", reducedMotion: false, confirmActions: true, boardTilt: false, sfxEnabled: true, sfxVolume: 35, compactMenus: true, touchControls: false, highContrast: false, largeText: false };
+  const defaults = { motionLevel: "full", reducedMotion: false, confirmActions: true, boardTilt: false, sfxEnabled: true, sfxVolume: 35, compactMenus: true, touchControls: true, highContrast: false, largeText: false };
   if (typeof localStorage === "undefined") return defaults;
   try {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
     const motionLevel = ["full", "reduced", "off"].includes(stored?.motionLevel) ? stored.motionLevel : stored?.reducedMotion === true ? "reduced" : "full";
-    return { motionLevel, reducedMotion: motionLevel !== "full", confirmActions: stored?.confirmActions !== false, boardTilt: stored?.boardTilt === true, sfxEnabled: stored?.sfxEnabled !== false, sfxVolume: Number.isFinite(Number(stored?.sfxVolume)) ? Math.max(0, Math.min(100, Number(stored.sfxVolume))) : 35, compactMenus: stored?.compactMenus !== false, touchControls: stored?.touchControls === true, highContrast: stored?.highContrast === true, largeText: stored?.largeText === true };
+    return { motionLevel, reducedMotion: motionLevel !== "full", confirmActions: stored?.confirmActions !== false, boardTilt: stored?.boardTilt === true, sfxEnabled: stored?.sfxEnabled !== false, sfxVolume: Number.isFinite(Number(stored?.sfxVolume)) ? Math.max(0, Math.min(100, Number(stored.sfxVolume))) : 35, compactMenus: stored?.compactMenus !== false, touchControls: stored?.touchControls !== undefined ? stored.touchControls === true : true, highContrast: stored?.highContrast === true, largeText: stored?.largeText === true };
   } catch { return defaults; }
 }
 

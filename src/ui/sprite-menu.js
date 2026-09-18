@@ -3,7 +3,7 @@ import { ParticleSystem } from "./particles.js";
 import { SPRITE_MENU_ITEMS, hashForMode, modeFromHash } from "./navigation.js";
 
 let particles = null;
-let selectedIndex = Math.max(0, SPRITE_MENU_ITEMS.findIndex((item) => item.mode === "play"));
+let selectedIndex = Math.max(0, SPRITE_MENU_ITEMS.findIndex((item) => item.mode === "ladder"));
 let keyHandler = null;
 let menuGestureCleanup = null;
 
@@ -53,7 +53,7 @@ export function initSpriteMenu(app, rerender, leaveFullscreen) {
     particles.init();
   }
 
-  selectedIndex = Math.max(0, SPRITE_MENU_ITEMS.findIndex((item) => item.mode === "play"));
+  selectedIndex = Math.max(0, SPRITE_MENU_ITEMS.findIndex((item) => item.mode === "ladder"));
   updateCarouselVisuals();
   keyHandler = (event) => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -72,8 +72,22 @@ export function initSpriteMenu(app, rerender, leaveFullscreen) {
   };
   document.addEventListener("keydown", keyHandler);
 
+  const carousel = document.querySelector(".sprite-carousel-shell");
+  const carouselTrack = carousel?.querySelector(".sprite-carousel");
+
+  let pointerStart = null;
+  let isDragging = false;
+  let preventItemClick = false;
+  let wheelAccumulator = 0;
+  let wheelTimer = null;
+
   document.querySelectorAll(".sprite-menu-item").forEach((item, index) => {
-    item.addEventListener("click", () => {
+    item.addEventListener("click", (e) => {
+      if (preventItemClick) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       if (selectedIndex === index) openSelected({ app, rerender, leaveFullscreen });
       else {
         selectedIndex = index;
@@ -84,33 +98,110 @@ export function initSpriteMenu(app, rerender, leaveFullscreen) {
   document.getElementById("btn-prev")?.addEventListener("click", () => selectOffset(-1, { focus: true }));
   document.getElementById("btn-next")?.addEventListener("click", () => selectOffset(1, { focus: true }));
 
-  const carousel = document.querySelector(".sprite-carousel-shell");
-  let pointerStart = null;
-  let wheelLocked = false;
-  const onPointerDown = (event) => { pointerStart = { x: event.clientX, y: event.clientY, id: event.pointerId }; };
-  const onPointerUp = (event) => {
+  const onPointerDown = (event) => {
+    if (event.button !== undefined && event.button !== 0 && event.pointerType === "mouse") return;
+    if (event.target?.closest?.(".carousel-nav")) return;
+    pointerStart = {
+      x: event.clientX,
+      y: event.clientY,
+      lastX: event.clientX,
+      lastTime: Date.now(),
+      id: event.pointerId
+    };
+    isDragging = false;
+  };
+
+  const onPointerMove = (event) => {
     if (!pointerStart || pointerStart.id !== event.pointerId) return;
     const dx = event.clientX - pointerStart.x;
     const dy = event.clientY - pointerStart.y;
+
+    if (!isDragging) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.1) {
+        isDragging = true;
+        preventItemClick = true;
+        try { carousel?.setPointerCapture(event.pointerId); } catch (_) {}
+      }
+    }
+
+    if (isDragging && carouselTrack) {
+      pointerStart.lastX = event.clientX;
+      pointerStart.lastTime = Date.now();
+      carouselTrack.style.transition = "none";
+      carouselTrack.style.transform = `translateX(${dx * 0.75}px)`;
+    }
+  };
+
+  const onPointerUp = (event) => {
+    if (!pointerStart || pointerStart.id !== event.pointerId) return;
+    const dx = event.clientX - pointerStart.x;
+    const dt = Math.max(1, Date.now() - pointerStart.lastTime);
+    const vx = (event.clientX - pointerStart.lastX) / dt;
+    const wasDragging = isDragging;
+
+    if (carousel?.hasPointerCapture?.(event.pointerId)) {
+      try { carousel.releasePointerCapture(event.pointerId); } catch (_) {}
+    }
+
     pointerStart = null;
-    if (Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy) * 1.2) selectOffset(dx > 0 ? -1 : 1, { focus: true });
+    isDragging = false;
+
+    if (carouselTrack) {
+      carouselTrack.style.transition = "transform 0.28s cubic-bezier(0.2, 0.82, 0.22, 1)";
+      carouselTrack.style.transform = "";
+    }
+
+    if (wasDragging) {
+      if (dx < -36 || vx < -0.22) {
+        selectOffset(1, { focus: true });
+      } else if (dx > 36 || vx > 0.22) {
+        selectOffset(-1, { focus: true });
+      }
+      setTimeout(() => { preventItemClick = false; }, 80);
+    }
   };
+
+  const onPointerCancel = (event) => {
+    if (carouselTrack) {
+      carouselTrack.style.transition = "";
+      carouselTrack.style.transform = "";
+    }
+    pointerStart = null;
+    isDragging = false;
+    setTimeout(() => { preventItemClick = false; }, 80);
+  };
+
   const onWheel = (event) => {
-    if (wheelLocked || Math.max(Math.abs(event.deltaX), Math.abs(event.deltaY)) < 18) return;
-    event.preventDefault();
-    wheelLocked = true;
     const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    selectOffset(delta > 0 ? 1 : -1, { focus: true });
-    window.setTimeout(() => { wheelLocked = false; }, 380);
+    if (Math.abs(delta) < 4) return;
+    event.preventDefault();
+    wheelAccumulator += delta;
+    if (Math.abs(wheelAccumulator) >= 36) {
+      const step = wheelAccumulator > 0 ? 1 : -1;
+      wheelAccumulator = 0;
+      selectOffset(step, { focus: true });
+    }
+    clearTimeout(wheelTimer);
+    wheelTimer = window.setTimeout(() => { wheelAccumulator = 0; }, 160);
   };
+
   carousel?.addEventListener("pointerdown", onPointerDown);
+  carousel?.addEventListener("pointermove", onPointerMove);
   carousel?.addEventListener("pointerup", onPointerUp);
-  carousel?.addEventListener("pointercancel", () => { pointerStart = null; });
+  carousel?.addEventListener("pointercancel", onPointerCancel);
   carousel?.addEventListener("wheel", onWheel, { passive: false });
+
   menuGestureCleanup = () => {
     carousel?.removeEventListener("pointerdown", onPointerDown);
+    carousel?.removeEventListener("pointermove", onPointerMove);
     carousel?.removeEventListener("pointerup", onPointerUp);
+    carousel?.removeEventListener("pointercancel", onPointerCancel);
     carousel?.removeEventListener("wheel", onWheel);
+    clearTimeout(wheelTimer);
+    if (carouselTrack) {
+      carouselTrack.style.transition = "";
+      carouselTrack.style.transform = "";
+    }
   };
 }
 

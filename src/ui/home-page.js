@@ -41,11 +41,11 @@ export function renderHomePage({ app = null, escapeHtml, savedDuel = null }) {
       <button type="button" class="carousel-nav carousel-next" id="btn-next" aria-label="Siguiente"></button>
       <div class="sprite-menu-info" aria-live="polite">
         <span class="selected-mode-kicker">SELECCIÓN ACTUAL</span>
-        <h2 id="sprite-menu-title">JUGAR</h2>
-        <p id="sprite-menu-desc">Prepara un duelo local o enfréntate a un bot.</p>
+        <h2 id="sprite-menu-title">RANKED</h2>
+        <p id="sprite-menu-desc">Competición local y registro de rango.</p>
       </div>
       <img src="./sprites/Sprite_Ornamentacion9.png" class="carousel-rule carousel-rule-bottom" alt="" aria-hidden="true" />
     </div>
-    <div class="home-controls" aria-label="Controles del menú"><span><kbd>←</kbd><kbd>→</kbd> Elegir</span><span><kbd>Enter</kbd> Abrir</span></div>
+    <div class="home-controls" aria-label="Controles del menú"><span><kbd>←</kbd><kbd>→</kbd> ${app?.settings?.touchControls ? "o Deslizar" : "Elegir"}</span><span><kbd>Enter</kbd> ${app?.settings?.touchControls ? "o Tocar" : "Abrir"}</span></div>
   </section>`;
 }

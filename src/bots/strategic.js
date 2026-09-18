@@ -1,7 +1,7 @@
 import { chooseCoreBotResponse } from "../engine/ocgcore-backend.js";
 import { candidateResponses } from "./legal-candidates.js";
 import { actionCardEntries, buildDeckKnowledge, deckSnapshot, scoreDeckStrategy, strategyActionRole } from "./deck-strategy.js";
-import { inferOpponentDeck, opponentEvidenceCards, updateOpponentEvidence } from "./opponent-model.js";
+import { inferOpponentDeck, opponentEvidenceCards, restoreRememberedOpponentFieldCards, updateOpponentEvidence, updateOpponentFieldMemory } from "./opponent-model.js";
 import { Nexo2PolicyNetwork, nexo2FeatureVector, policyProbabilities } from "./nexo2-policy.js";
 import { computeResidualPolicyDistribution, selectResidualAction } from "../training/nexo2-policy-contract.js";
 import { publicBeliefRollout } from "./public-belief-search.js";
@@ -64,6 +64,8 @@ export class StrategicBot {
     this.decisions = 0;
     this.opponentModel = null;
     this.opponentEvidence = {};
+    this.opponentFieldMemory = {};
+    this.lastObservation = null;
     this.legacyNegativeInference = legacyNegativeInference === true;
     this.negativeInferenceTracker = createNegativeInferenceTracker({ legacy: this.legacyNegativeInference });
   }
@@ -71,7 +73,10 @@ export class StrategicBot {
   chooseResponse(message, context = {}) {
     this.decisions += 1;
     this.lastReasoning = null;
-    const observation = normalizeGoatObservation({ ...(context.observation ?? {}), decisions: Number(context.observation?.decisions) || this.decisions }, message);
+    const rawObservation = normalizeGoatObservation({ ...(context.observation ?? {}), decisions: Number(context.observation?.decisions) || this.decisions }, message);
+    this.opponentFieldMemory = updateOpponentFieldMemory(this.opponentFieldMemory, rawObservation);
+    const observation = restoreRememberedOpponentFieldCards(rawObservation, this.opponentFieldMemory);
+    this.lastObservation = structuredClone(observation);
     this.opponentEvidence = updateOpponentEvidence(this.opponentEvidence, observation);
     this.opponentModel = inferOpponentDeck({ ...observation, opponentSeenCards: opponentEvidenceCards(this.opponentEvidence) });
     this.negativeInferenceTracker = updateNegativeInference(this.negativeInferenceTracker, observation, message, null);

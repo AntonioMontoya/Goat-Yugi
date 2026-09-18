@@ -1,7 +1,7 @@
 {
   "id": "nexo2-pilot",
   "botId": "nexo2-pilot",
-  "name": "Nexo 2 [goat-control]",
+  "name": "Nexo 3 [goat-control]",
   "algorithm": "ocgcore-public-belief-policy-value-v1",
   "deckId": "goat-control",
   "profile": "goat-control",

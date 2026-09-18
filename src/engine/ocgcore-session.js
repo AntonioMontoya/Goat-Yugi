@@ -527,6 +527,19 @@ function timingWindowFor(message, session) {
   if (session.phase === "DRAW" && lastDraw) {
     return { kind: "post-draw", phase: session.phase, sourcePlayer: lastDraw.player, drawEventIndex: lastDraw.index };
   }
+  const lastAttackIndex = events.map((event) => event.type).lastIndexOf("ATTACK");
+  if (session.phase === "BATTLE" && lastAttackIndex >= 0) {
+    const postAttackEvents = events.slice(lastAttackIndex + 1).filter((event) => ["DAMAGE", "RECOVER", "LPUPDATE", "MOVE", "NEW_PHASE"].includes(event.type));
+    if (postAttackEvents.length === 0) {
+      const lastAttack = events[lastAttackIndex];
+      return {
+        kind: "attack-response",
+        phase: session.phase,
+        sourcePlayer: lastAttack.player,
+        attackEventIndex: lastAttack.index,
+      };
+    }
+  }
   const lastEvent = events.at(-1) ?? null;
   return {
     kind: "phase-priority",
@@ -1110,6 +1123,37 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
               this.decisionCount += 1;
               guard += 1;
               continue;
+            }
+            const isBattleIdlePriority = !this.manual
+              && request.type === OcgMessageType.SELECT_CHAIN
+              && !request.forced
+              && this.phase === "BATTLE"
+              && timingWindow?.kind === "phase-priority"
+              && player === this.turnPlayer;
+            if (isBattleIdlePriority) {
+              const decline = requestActions.find((action) => action.coreResponse?.index === null);
+              if (decline) {
+                this.duel.respond(decline.coreResponse);
+                this.decisionCount += 1;
+                guard += 1;
+                continue;
+              }
+            }
+            const isOwnAttackDeclaration = !this.manual
+              && request.type === OcgMessageType.SELECT_CHAIN
+              && !request.forced
+              && this.phase === "BATTLE"
+              && timingWindow?.kind === "attack-response"
+              && timingWindow?.sourcePlayer === this.turnPlayer
+              && player === this.turnPlayer;
+            if (isOwnAttackDeclaration) {
+              const decline = requestActions.find((action) => action.coreResponse?.index === null);
+              if (decline) {
+                this.duel.respond(decline.coreResponse);
+                this.decisionCount += 1;
+                guard += 1;
+                continue;
+              }
             }
             this.pending = request;
             this.botPending = false;

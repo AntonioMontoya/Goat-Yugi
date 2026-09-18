@@ -148,13 +148,15 @@ export function getBotSpec(botId = UNIVERSAL_BOT_ID) {
 
 export function botDescriptor(botOrSpec = {}) {
   const source = botOrSpec?.manifest && typeof botOrSpec.manifest === "function" ? botOrSpec.manifest() : botOrSpec;
+  const sourceId = source.botId ?? source.id ?? "bot";
+  const isNexo3 = sourceId === NEXO2_BOT_ID || sourceId === "nexo3" || source.algorithm === NEXO2_ALGORITHM;
   const weightsPayload = source.neuralModel ?? source.policyWeights ?? source.featureWeights ?? {};
   const hash = botOrSpec?.hashWeights
     ? botOrSpec.hashWeights()
     : configHash(weightsPayload);
   return {
     id: source.botId ?? source.id ?? "bot",
-    name: source.name ?? "Bot",
+    name: isNexo3 ? "Nexo 3" : source.name ?? "Bot",
     style: source.style ?? "Heurística",
     deckId: source.deckId ?? source.profile ?? null,
     profile: source.profile ?? source.deckId ?? "generic",
@@ -396,7 +398,8 @@ export function createBotForDeck({ botId = UNIVERSAL_BOT_ID, deckId = null, deck
     }
   }
   if (["ocgcore-public-strategic-v3", "ocgcore-public-strategic-v4", NEXO2_ALGORITHM].includes(effectiveSource.algorithm)) {
-    const bot = new StrategicBot({ ...effectiveSource, id: effectiveSource.id ?? botId, botId: effectiveSource.botId ?? effectiveSource.id ?? botId, deckId: resolvedDeckId, profile: resolvedProfile, deck, seed });
+    const runtimeSource = isNexoFlagship ? { ...effectiveSource, name: "Nexo 3" } : effectiveSource;
+    const bot = new StrategicBot({ ...runtimeSource, id: runtimeSource.id ?? botId, botId: runtimeSource.botId ?? runtimeSource.id ?? botId, deckId: resolvedDeckId, profile: resolvedProfile, deck, seed });
     bot.modelOrigin = modelOrigin;
     return bot;
   }
@@ -470,4 +473,3 @@ export {
   registerNexo3DeckModel,
   clearNexo3DeckModels,
 } from "./nexo3-deck-models.js";
-

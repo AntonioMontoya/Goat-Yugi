@@ -1,7 +1,7 @@
 export const MENU_ITEMS = Object.freeze([
   Object.freeze({ mode: "home", label: "Inicio", icon: "HOME", sprite: "Sprite_Menu", desc: "Volver al menú principal." }),
-  Object.freeze({ mode: "play", label: "Juego Casual", icon: "PLAY", sprite: "Sprite_Menu6", desc: "Duelos casuales contra la IA o en la misma mesa." }),
   Object.freeze({ mode: "ladder", label: "Ranked", icon: "RANK", sprite: "Sprite_Menu5", desc: "Competición local y registro de rango." }),
+  Object.freeze({ mode: "play", label: "Juego Casual", icon: "PLAY", sprite: "Sprite_Menu6", desc: "Duelos casuales contra la IA o en la misma mesa." }),
   Object.freeze({ mode: "profile", label: "Perfil", icon: "USER", sprite: "Sprite_Menu3", desc: "Registro de duelista, estadísticas, rango y mazo insignia." }),
   Object.freeze({ mode: "sandbox", label: "Modo Prueba", icon: "LAB", sprite: "Sprite_Menu8", desc: "Experimentación mágica: define cartas, posiciones y LP exactos." }),
   Object.freeze({ mode: "card-viewer", label: "Cartas", icon: "CARD", sprite: "Sprite_Menu4", desc: "Explorar la colección completa y consultar rulings." }),

@@ -1,11 +1,12 @@
 import { DUEL_PHASES, isPhaseAction, phaseIndex, phaseLabel, phaseStepId } from "./duel-presentation.js";
 import { actionAffordance, actionsForCard, interactionStatus, playerFacingActionLabel } from "./duel-interaction.js";
 
-function registerButton(action, className, { esc, registerAction, label = null, icon = null } = {}) {
+function registerButton(action, className, { esc, registerAction, label = null, icon = null, ariaLabel = null } = {}) {
   const actionId = registerAction(action);
   const affordance = actionAffordance(action);
   const copy = label ?? playerFacingActionLabel(action);
-  return `<button type="button" class="${className}" data-action-id="${esc(actionId)}" aria-label="${esc(copy)}"><span>${esc(icon ?? affordance.icon)}</span><b>${esc(copy)}</b></button>`;
+  const aria = ariaLabel ?? copy;
+  return `<button type="button" class="${className}" data-action-id="${esc(actionId)}" aria-label="${esc(aria)}"><span>${esc(icon ?? affordance.icon)}</span><b>${esc(copy)}</b></button>`;
 }
 
 export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox = false, fullscreenLabel, boardTilt = false, duelMenuOpen = false, esc, botProfile = null, volume = 35 }) {
@@ -26,13 +27,24 @@ export function renderDuelTopbar({ view, model, manual, title, subtitle, sandbox
   </header>`;
 }
 
+export function freePriorityLabel(phase) {
+  const current = phaseStepId(phase);
+  if (current === "DRAW") return "Pasar a Standby";
+  if (current === "STANDBY") return "Pasar a Main 1";
+  if (current === "END") return "Terminar turno";
+  if (current === "BATTLE") return "Continuar batalla";
+  if (current === "MAIN_1" || current === "MAIN_2") return "Continuar fase";
+  return "Pasar prioridad";
+}
+
 export function renderPhaseRail({ view, model, esc, registerAction, priorityPromptOpen = false }) {
   const current = phaseStepId(view?.phase);
   const currentIndex = phaseIndex(current);
   const direct = model.phaseActions;
   const preferred = model.advanceAction ?? direct[0];
+  const passLabel = freePriorityLabel(view?.phase);
   const priorityPass = model.freePriority && model.declineAction
-    ? { ...model.declineAction, label: "Pasar prioridad" }
+    ? { ...model.declineAction, label: passLabel }
     : null;
   const automatedOcgcore = view?.kind === "ocgcore";
   const commands = automatedOcgcore && view?.botPending
@@ -46,7 +58,7 @@ export function renderPhaseRail({ view, model, esc, registerAction, priorityProm
           : priorityPass && priorityPromptOpen
             ? `<small class="phase-locked">Confirma el paso de prioridad</small>`
             : priorityPass
-              ? registerButton(priorityPass, "phase-command", { esc, registerAction, label: "Pasar prioridad", icon: "→" })
+              ? registerButton(priorityPass, "phase-command", { esc, registerAction, label: passLabel, ariaLabel: `${passLabel} · Pasar prioridad`, icon: "→" })
               : `<small class="phase-locked">${model.mode === "open" ? "Sin cambio disponible" : "Completa la decisión actual"}</small>`;
   return `<nav class="duel-phase-rail" data-testid="phase-hud" aria-label="Fases del turno"><strong>FASES</strong><ol style="--phase-index:${currentIndex}">${DUEL_PHASES.map(([id, label], index) => `<li class="${id === current ? "current" : index < currentIndex ? "complete" : "future"}" data-phase="${esc(id)}" aria-label="${esc(label)}"${id === current ? ` aria-current="step"` : ""}><span>${esc(label.toUpperCase())}</span></li>`).join("")}</ol><div class="phase-rail-actions"><em>SIGUIENTE</em>${commands}</div></nav>`;
 }

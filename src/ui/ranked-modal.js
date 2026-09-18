@@ -508,7 +508,10 @@ export function renderRankedSurrenderModal({ app, esc }) {
 }
 
 export function renderRankedDeckPickerModal({ app, esc, playableDecks, getCard }) {
-  const currentDeckId = app.ladder?.player?.rankedDeckId ?? app.duelDeckId ?? "chaos-turbo";
+  const isCasual = app.deckPickerContext === "play";
+  const currentDeckId = isCasual
+    ? (app.playDeckId ?? app.duelDeckId ?? "chaos-turbo")
+    : (app.ladder?.player?.rankedDeckId ?? app.duelDeckId ?? "chaos-turbo");
   const allDecks = typeof playableDecks === "function" ? playableDecks() : (playableDecks ?? []);
 
   const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
@@ -558,9 +561,9 @@ export function renderRankedDeckPickerModal({ app, esc, playableDecks, getCard }
       <div class="ranked-modal-card ranked-deck-picker-card">
         <div class="deck-picker-header">
           <div class="deck-picker-title-box">
-            <span class="eyebrow gold">SELECCIÓN DE MAZO COMPETITIVO</span>
-            <h3>Elige tu mazo para la temporada</h3>
-            <p>Selecciona el mazo con el que disputarás tus partidas clasificatorias.</p>
+            <span class="eyebrow gold">${isCasual ? "SELECCIÓN DE MAZO · PARTIDA CASUAL" : "SELECCIÓN DE MAZO COMPETITIVO"}</span>
+            <h3>${isCasual ? "Elige tu mazo para el duelo" : "Elige tu mazo para la temporada"}</h3>
+            <p>${isCasual ? "Selecciona el mazo con el que jugarás tu enfrentamiento amistoso o contra la IA." : "Selecciona el mazo con el que disputarás tus partidas clasificatorias."}</p>
           </div>
           <button type="button" class="ghost-button mini close-picker-btn" data-action="close-ranked-deck-picker" aria-label="Cerrar selección de mazo">✕ Cerrar</button>
         </div>
@@ -624,7 +627,10 @@ export function bindRankedPickerEvents({ on }) {
 
   if (searchInput) {
     on(searchInput, "input", filterCards);
-    setTimeout(() => { if (document.activeElement !== searchInput) searchInput.focus(); }, 60);
+    const isTouch = window.matchMedia?.("(pointer: coarse)")?.matches || "ontouchstart" in window;
+    if (!isTouch) {
+      setTimeout(() => { if (document.activeElement !== searchInput) searchInput.focus(); }, 60);
+    }
   }
 
   tabs.forEach((tab) => {

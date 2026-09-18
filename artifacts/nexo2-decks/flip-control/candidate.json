@@ -1,7 +1,7 @@
 {
   "id": "nexo2-pilot",
   "botId": "nexo2-pilot",
-  "name": "Nexo 2 [flip-control]",
+  "name": "Nexo 3 [flip-control]",
   "algorithm": "ocgcore-public-belief-policy-value-v1",
   "deckId": "flip-control",
   "profile": "flip-control",
