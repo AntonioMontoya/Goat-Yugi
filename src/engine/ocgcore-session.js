@@ -1126,13 +1126,13 @@ export async function createOcgcoreSession({ deckA, deckB, fusionA = [], fusionB
               guard += 1;
               continue;
             }
-            const isBattleIdlePriority = !this.manual
+            const isTurnPlayerIdlePriority = !this.manual
               && request.type === OcgMessageType.SELECT_CHAIN
               && !request.forced
-              && this.phase === "BATTLE"
+              && ["MAIN_1", "BATTLE", "MAIN_2"].includes(this.phase)
               && timingWindow?.kind === "phase-priority"
               && player === this.turnPlayer;
-            if (isBattleIdlePriority) {
+            if (isTurnPlayerIdlePriority) {
               const decline = requestActions.find((action) => action.coreResponse?.index === null);
               if (decline) {
                 this.duel.respond(decline.coreResponse);
