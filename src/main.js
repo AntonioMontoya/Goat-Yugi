@@ -505,10 +505,7 @@ function refreshDuelPresentationSurface() {
   scheduleOcgcoreBotStep();
   scheduleAutomaticPhaseAdvance();
 }
-function clearDuelBotTimer() {
-  if (duelBotTimer) window.clearTimeout(duelBotTimer);
-  duelBotTimer = null;
-}
+function clearDuelBotTimer() { if (duelBotTimer) window.clearTimeout(duelBotTimer); duelBotTimer = null; }
 function scheduleOcgcoreBotStep() {
   if (duelBotTimer || app.mode !== "duel" || app.duel?.kind !== "ocgcore") return;
   if (app.duelStart?.open) return;
@@ -621,9 +618,7 @@ function responseActionsMarkup(view, actions, manual = false, model = null) {
   const materialChoice = isFusionMaterialSelection(view) || view.selection?.mode === "sum" || Number(view.selection?.minimum) > 1 || Number(view.selection?.maximum) > 1;
   if (materialChoice && view.selection?.candidates?.length) { app.cardSelection = syncCardSelection(app.cardSelection, view); return renderCardSelectionModal({ view, actions: responses, state: app.cardSelection, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) }); }
   const fieldChoices = responses.filter((action) => action.selectionCards?.length === 1 && action.selectionCards.every((card) => [4, 8].includes(Number(card.location))));
-  if (fieldChoices.length && fieldChoices.length === responses.filter((action) => action.selectionCards?.length).length) {
-    return renderDecisionBar({ view, model: interaction, actions: responses, directField: true, esc, registerAction: (action) => registerAction(actionRegistry, action) });
-  }
+  if (fieldChoices.length && fieldChoices.length === responses.filter((action) => action.selectionCards?.length).length) return renderDecisionBar({ view, model: interaction, actions: responses, directField: true, esc, registerAction: (action) => registerAction(actionRegistry, action) });
   if (hasCardChoices && view.selection?.candidates?.length) { app.cardSelection = syncCardSelection(app.cardSelection, view); return renderCardSelectionModal({ view, actions: responses, state: app.cardSelection, esc, cardMarkup, registerAction: (action) => registerAction(actionRegistry, action) }); }
   return renderDecisionBar({ view, model: interaction, actions: responses, esc, registerAction: (action) => registerAction(actionRegistry, action) });
 }
@@ -637,15 +632,35 @@ function freePriorityPrompt(view) {
 
 function syncDuelPriorityConfirmation(view) {
   if (app.mode !== "duel" || app.duel?.kind !== "ocgcore" || app.duelStart?.open) return;
-  app.duelPriorityPromptKey = null;
-  if (app.duelPhaseConfirmation?.priorityKey) app.duelPhaseConfirmation = null;
+  app.duelPriorityPromptKey = null; if (app.duelPhaseConfirmation?.priorityKey) app.duelPhaseConfirmation = null;
 }
 
 function dismissDuelPhaseConfirmation() {
-  const pending = app.duelPhaseConfirmation;
-  if (pending?.priorityKey) app.duelPriorityPromptKey = pending.priorityKey;
-  app.duelPhaseConfirmation = null;
-  render();
+  if (app.duelPhaseConfirmation?.priorityKey) app.duelPriorityPromptKey = app.duelPhaseConfirmation.priorityKey;
+  app.duelPhaseConfirmation = null; render();
+}
+
+function pileMarkup(player, kind) {
+  const grave = player.graveyard ?? player.grave ?? []; const isGrave = kind === "grave"; const isExtra = kind === "extra";
+  const count = isGrave ? grave.length : isExtra ? player.extraCount ?? player.extraDeck?.length ?? 0 : player.deckCount ?? player.deck?.length ?? 0;
+  const top = isGrave ? grave.at(-1) : null; const preview = top?.cardId ? getCard(top.cardId) : isExtra ? getCard(player.extraDeck?.find((card) => card?.cardId)?.cardId) : null;
+  const name = preview?.name ?? null; const label = isGrave ? "GY" : isExtra ? "FUSION / EXTRA" : "DECK"; const aria = isGrave ? "Cementerio" : isExtra ? "Fusion o Extra Deck" : "Deck";
+  const isInteractive = isGrave || isExtra; const tag = isInteractive ? "button" : "div"; const attributes = isInteractive ? ` type="button" data-pile="${kind}" data-player-id="${player.id}"` : "";
+  return `<${tag} class="field-pile ${kind}"${attributes} aria-label="${aria}: ${count} cartas"><span>${label}</span><b class="pile-count-badge">${count}</b><small>${name ? esc(name) : isGrave ? "Vacío" : isExtra ? (count ? "Cartas disponibles" : "Vacío") : "Boca abajo"}</small></${tag}>`;
+}
+
+function duelistFieldMarkup(player, actions, { opponent = false, priority = false, model = null } = {}) {
+  const classes = `zone-line duelist-field ${opponent ? "opponent-zones" : "player-zones"} ${priority ? "has-priority" : ""}`;
+  const monsterOptions = { motion: app.duelMotion, playerId: player.id, zone: "monster", actions, model };
+  const spellOptions = { motion: app.duelMotion, playerId: player.id, zone: "spell", actions, model };
+  return `<div class="${classes}"><div class="field-aux-column"><div class="field-zone-box"><span>CAMPO</span><div class="field-zone-slot">${zoneMarkup(player.fieldZone ?? [null], { motion: app.duelMotion, actions, model })}</div></div>${pileMarkup(player, "extra")}</div><div class="field-zone-row monster-row"><span class="zone-row-label">MONSTRUOS</span><div class="zone-slots">${zoneMarkup(player.monsterZone, monsterOptions)}</div></div><div class="field-zone-row spell-row"><span class="zone-row-label">MAGIAS / TRAMPAS</span><div class="zone-slots zone-backrow">${zoneMarkup(player.spellTrapZone, spellOptions)}</div></div><div class="field-piles field-pile-column">${pileMarkup(player, "grave")}${pileMarkup(player, "deck")}</div></div>`;
+}
+
+function eventFeedMarkup(view) { return renderEventDrawer(view, { esc, state: app.duelEventLog }); }
+function presentationMarkup(view = null) { return renderEventCue(app.duelPresentation, { motionLevel: app.settings.motionLevel, elapsed: app.duelPresentation ? Date.now() - app.duelPresentationStartedAt : 0, cardForCode, cardMarkup, esc }); }
+function turnStatusMarkup(view, manual = false) {
+  const model = createDuelInteractionModel(view, { manual });
+  return `<div class="turn-status mode-${esc(model.mode)}"><span class="turn-status-orb"></span><div><strong>${esc(model.priorityName)} puede actuar</strong><small>Turno ${view.turn ?? "—"} · ${esc(phaseLabel(view.phase))}</small></div></div>`;
 }
 
 function seriesMarkup() {
@@ -653,23 +668,18 @@ function seriesMarkup() {
   const match = pending?.match;
   if (!match || match.completed || app.duel?.winner === null || app.duel?.winner === undefined) return "";
   const deck = pending.currentDeck ?? builderDeckById(app.duelDeckId);
-  const selectedIn = pending.sideInCard;
-  const selectedOut = pending.sideOutCard;
-  const score = `${match.playerWins}-${match.opponentWins}`;
-  const side = deck.side ?? [];
-  const main = deck.main ?? [];
+  const selectedIn = pending.sideInCard; const selectedOut = pending.sideOutCard;
+  const score = `${match.playerWins}-${match.opponentWins}`; const side = deck.side ?? []; const main = deck.main ?? [];
   return `<div class="series-panel side-card"><div class="side-title"><span>MATCH BO${match.bestOf}</span><span class="tiny-label">SERIE ${score}</span></div><p>Partida ${match.gameNumber} terminada. Puedes intercambiar cartas antes de continuar.</p><div class="series-swap"><div><strong>ENTRA DESDE SIDE</strong><div class="series-card-list">${side.map((cardId) => `<button type="button" class="text-button ${selectedIn === cardId ? "selected" : ""}" data-series-side-in="${cardId}">${esc(cardLabel(cardId))}</button>`).join("") || `<span class="muted">Sin Side Deck</span>`}</div></div><div><strong>SALE DEL MAIN</strong><div class="series-card-list">${main.slice(0, 24).map((cardId) => `<button type="button" class="text-button ${selectedOut === cardId ? "selected" : ""}" data-series-side-out="${cardId}">${esc(cardLabel(cardId))}</button>`).join("")}</div></div></div>    <div class="series-actions"><button class="ghost-button" data-action="apply-series-swap" ${selectedIn === undefined || selectedOut === undefined ? "disabled" : ""}>Aplicar cambio</button><button class="primary-button" data-action="next-series-game">Siguiente partida</button><button class="text-button" data-action="end-series">Abandonar serie</button></div></div>`;
 }
 
+function duelBotName(view = null) { return view?.bot?.name ?? app.duelBotProfile?.name ?? selectedBotSpec()?.name ?? "Astra"; }
 function duelResultMarkupProxy(view) { return duelResultMarkup(view, { app, esc, duelBotName }); }
 function playerName(player, manual) { return manual ? `JUGADOR ${player.id + 1}` : player.id === 0 ? "TÚ" : duelBotName(); }
 function lifePointMarkup(player) {
-  const motion = app.lifeMotion.find((entry) => entry.playerId === player.id);
-  const state = motion ? (motion.delta < 0 ? "life-loss" : "life-gain") : "";
-  const delta = motion ? `${motion.delta > 0 ? "+" : "−"}${Math.abs(motion.delta).toLocaleString("es-ES")}` : "";
-  const lpPercent = Math.max(0, Math.min(100, (player.lp / 8000) * 100));
-  const barClass = player.lp <= 2000 ? "lp-bar-critical" : "";
-  return `<div class="lp ${state}"><span>LP</span><b>${player.lp.toLocaleString("es-ES")}</b>${motion ? `<em class="lp-delta">${esc(delta)}</em>` : ""}<div class="lp-bar-track"><div class="lp-bar-fill ${barClass}" style="width:${lpPercent}%"></div></div></div>`;
+  const motion = app.lifeMotion.find((entry) => entry.playerId === player.id); const state = motion ? (motion.delta < 0 ? "life-loss" : "life-gain") : "";
+  const delta = motion ? `${motion.delta > 0 ? "+" : "−"}${Math.abs(motion.delta).toLocaleString("es-ES")}` : ""; const lpPercent = Math.max(0, Math.min(100, (player.lp / 8000) * 100));
+  return `<div class="lp ${state}"><span>LP</span><b>${player.lp.toLocaleString("es-ES")}</b>${motion ? `<em class="lp-delta">${esc(delta)}</em>` : ""}<div class="lp-bar-track"><div class="lp-bar-fill ${player.lp <= 2000 ? "lp-bar-critical" : ""}" style="width:${lpPercent}%"></div></div></div>`;
 }
 function cardActionsFor(actions, instance) {
   return actions.filter((action) => action.cardUid ? sameCardUid(action.cardUid, instance.uid) : action.cardCode !== undefined && instance.runtimeCode !== undefined && String(action.cardCode) === String(instance.runtimeCode));
